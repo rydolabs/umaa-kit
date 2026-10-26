@@ -20,6 +20,17 @@ def main() -> int:
     try:
         time.sleep(0.5)
         pub = subprocess.run([publisher, module_path], env=env, capture_output=True, text=True, timeout=20)
+        if sim_options == ['--bad-destination']:
+            # Negative scenario: accept only the *specific* expected provider
+            # rejection AND an independent simulator that observed no outputs.
+            out, _ = sim.communicate(timeout=12)
+            print(pub.stdout)
+            print(pub.stderr)
+            print(out)
+            rejected = (pub.returncode == 3 and
+                        'command destination did not match configured provider' in pub.stderr)
+            return 0 if (rejected and sim.returncode == 0 and
+                         'ENGINE_SIM: PASS invalid destination with no Status/Ack' in out) else 3
         if pub.returncode != 0:
             print('PUBLISHER FAILED rc=', pub.returncode, pub.stdout, pub.stderr, flush=True)
             if sim.poll() is not None:

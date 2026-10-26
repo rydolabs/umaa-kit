@@ -39,7 +39,8 @@ static int matched(dds_entity_t writer,dds_entity_t status_reader,dds_entity_t a
 }
 int main(int argc,char** argv){
  const int updating=(argc==2 && strcmp(argv[1],"--update")==0);
- if(argc>2 || (argc==2 && !updating))return 2;
+ const int bad_destination=(argc==2 && strcmp(argv[1],"--bad-destination")==0);
+ if(argc>2 || (argc==2 && !updating && !bad_destination))return 2;
  dds_entity_t p=dds_create_participant(DDS_DOMAIN_DEFAULT,NULL,NULL);
  if(p<0)return 2;
  dds_entity_t ct=dds_create_topic(p,&UMAA_EO_EngineControl_EngineCommandType_desc,"EngineCommandType",NULL,NULL);
@@ -58,10 +59,37 @@ int main(int argc,char** argv){
  command.timeStamp.seconds=time(NULL);
  command.timeStamp.nanoseconds=1;
  fillid(command.source.id,0x11);
- fillid(command.destination.id,0x22);
+ fillid(command.destination.id,bad_destination?0x99:0x22);
  fillid(command.sessionID,0x33);
  if(dds_write(command_writer,&command)<0){fputs("ENGINE_SIM: issue command failed\n",stderr);return 5;}
  puts("ENGINE_SIM: issued RUN command");
+ if(bad_destination){
+   // An independently constructed wrong-destination Command must not result
+   // in any Status or Ack. The supervisor separately checks that the host
+   // exits with its explicit destination-rejection error.
+   for(int ticks=0;ticks<80;++ticks){
+     Status status={0};void* status_sample[1]={&status};dds_sample_info_t si[1]={{0}};
+     dds_return_t n=dds_take(status_reader,status_sample,si,1,1);
+     if(n<0)return 16;
+     if(n>0){
+       const int unexpected=si[0].valid_data;
+       dds_sample_free(&status,&UMAA_EO_EngineControl_EngineCommandStatusType_desc,DDS_FREE_CONTENTS);
+       if(unexpected){fputs("ENGINE_SIM: rejected Command produced Status\n",stderr);return 17;}
+     }
+     Ack ack={0};void* ack_sample[1]={&ack};dds_sample_info_t ai[1]={{0}};
+     n=dds_take(ack_reader,ack_sample,ai,1,1);
+     if(n<0)return 18;
+     if(n>0){
+       const int unexpected=ai[0].valid_data;
+       dds_sample_free(&ack,&UMAA_EO_EngineControl_EngineCommandAckReportType_desc,DDS_FREE_CONTENTS);
+       if(unexpected){fputs("ENGINE_SIM: rejected Command produced Ack\n",stderr);return 19;}
+     }
+     dds_sleepfor(DDS_MSECS(25));
+   }
+   if(dds_delete(p)<0)return 20;
+   puts("ENGINE_SIM: PASS invalid destination with no Status/Ack");
+   return 0;
+ }
  const UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_CommandStatusEnumType states[7]={
  UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_ISSUED,
  UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_COMMANDED,

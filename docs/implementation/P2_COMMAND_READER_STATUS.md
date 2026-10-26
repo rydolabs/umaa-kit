@@ -27,3 +27,11 @@ DDS tests alone do **not** establish real-wire or full UMAA conformance.
 
 RTI, broad service runtime generation, hardware behavior and the normative
 UMAA compliance suite remain open and must not be labeled complete.
+
+## Independent negative-wire scenario
+
+The official Engine simulator also sends a Command with a mismatched
+Destination UUID (`--bad-destination`). The host must return its specific
+rejection error; the independently implemented simulator must not observe
+any CommandStatus or CommandAck. This is a bounded rejection case, not full
+security or certification coverage.

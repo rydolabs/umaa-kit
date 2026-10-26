@@ -110,4 +110,12 @@ if(DEFINED UMAA_ENGINE_GENERATED_ROOT)
             "$<TARGET_FILE:umaa_official_engine_simulator>"
             "$<TARGET_FILE:umaa_dds_engine_module>" --update)
   set_tests_properties(official_umaa_engine_update_flow PROPERTIES TIMEOUT 40)
+  # Independent negative on-wire input: wrong provider destination must
+  # fail closed and yield no CommandStatus/Ack publications.
+  add_test(NAME official_umaa_engine_bad_destination_rejected
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/run.py"
+            "$<TARGET_FILE:umaa_official_engine_host>"
+            "$<TARGET_FILE:umaa_official_engine_simulator>"
+            "$<TARGET_FILE:umaa_dds_engine_module>" --bad-destination)
+  set_tests_properties(official_umaa_engine_bad_destination_rejected PROPERTIES TIMEOUT 40)
 endif()

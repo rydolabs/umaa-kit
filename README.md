@@ -72,3 +72,13 @@ The repository layout is documented at [docs/PROJECT_LAYOUT.md](docs/PROJECT_LAY
 The independently verified P1 Reader/Writer checkpoint is [PR #3](https://github.com/nssang00/umaa-dev/pull/3)
 (commit `cb9a87f`); older sections above remain as dated historical notes.
 Structure maintenance does not expand the current UMAA service-conformance scope.
+
+## P2 Cyclone Command input Reader (2026-10-27)
+
+`dds/cyclone/include/umaa/cyclone_sample_reader.hpp` provides a reusable
+RAII sample Reader shared by Command and Report; the official EngineControl
+host consumes its Command input through `CommandReader`. A rejected command,
+DDS failure or exception faults the epoch and releases sample-owned data.
+Refer to [implementation notes](docs/implementation/P2_COMMAND_READER_STATUS.md).
+This remains an EngineControl ignition-only and BatteryStatus Report subset,
+not complete UMAA service coverage.

@@ -7,6 +7,7 @@
 #include "UMAA/EO/EngineControl/EngineCommandStatusType.h"
 #include "UMAA/EO/EngineControl/EngineCommandAckReportType.h"
 #include "umaa/cyclone_command_transport.hpp"
+#include "umaa/cyclone_command_reader.hpp"
 #include "umaa/module_loader.hpp"
 #include <cstdint>
 #include <cstdlib>
@@ -138,11 +139,14 @@ int main(int argc,char** argv) {
                                            "EngineCommandAckReportType",nullptr,nullptr);
   report(ack_topic,"ack topic");
   auto* q=qos();
-  dds_entity_t reader=dds_create_reader(participant,command_topic,q,nullptr);
+  using Reader=umaa::cyclone::CommandReader<Cmd>;
+  Reader command_reader(participant,command_topic,
+                        &UMAA_EO_EngineControl_EngineCommandType_desc,q);
+  command_reader.start(1);
   dds_entity_t status_writer=dds_create_writer(participant,status_topic,q,nullptr);
   dds_entity_t ack_writer=dds_create_writer(participant,ack_topic,q,nullptr);
   dds_delete_qos(q);
-  report(reader,"command reader");report(status_writer,"status writer");report(ack_writer,"ack writer");
+  report(status_writer,"status writer");report(ack_writer,"ack writer");
   using Writer=umaa::cyclone::CommandWriter<EnginePayload,Status,Ack,EngineMapper>;
   Writer command_wire(status_writer,ack_writer,EngineMapper{});
   umaa::BoundCommandProvider<EnginePayload> engine(hexid(provider_id),handler,command_wire);
@@ -151,11 +155,8 @@ int main(int argc,char** argv) {
 
   const int attempts = std::getenv("UMAA_NETEM_RECOVERY") ? 1600 : 600;
   for(int tick=0;tick<attempts && !disposed;++tick) {
-    Cmd data{}; void* samples[1]={&data};dds_sample_info_t info[1]{};
-    auto n=dds_take(reader,samples,info,1,1);
-    report(n,"read command");
-    if(n>0) {
-      if(info[0].valid_data) {
+    const bool got = command_reader.poll(1, [&](const Cmd& data, const dds_sample_info_t& info) {
+      if (info.valid_data) {
         // Session updates use identical source+session, newer Timestamp; core validates both.
         if(std::memcmp(data.destination.id,provider_id,16)!=0)
           throw umaa::ModuleLoadError("command destination did not match configured provider");
@@ -163,33 +164,31 @@ int main(int argc,char** argv) {
         last_session=hexid(data.sessionID);
         umaa::Identity id{last_source,hexid(data.destination.id),last_session,
                           (int64_t)data.timeStamp.seconds*1000000+data.timeStamp.nanoseconds/1000};
-        // This demo implements only ignition RUN/OFF. Explicitly reject
-        // optional structs before copying; their DDS-owned pointers would
-        // become dangling after dds_sample_free below.
+        // Only the ignition RUN/OFF slice is implemented. Reject optional
+        // pointer-bearing samples BEFORE copying borrowed DDS-owned memory.
         if(data.plugState || data.propulsion)
           throw umaa::ModuleLoadError("unsupported optional engine payload");
         EnginePayload payload{};
-        payload.command=data; // safe only because all optional pointers are null
+        payload.command=data; // safe only because optional pointers are null
         payload.ignition=static_cast<int>(data.state);
         auto events=engine.receive(id,payload);
-        for(const auto& event:events){
+        for(const auto& event:events) {
           if(event.kind==umaa::Event::Kind::Ignored)
             throw umaa::ModuleLoadError("rejected command: "+event.detail);
         }
-
-
         accepted=true;
-      } else if(info[0].instance_state==DDS_IST_NOT_ALIVE_DISPOSED && accepted) {
+      } else if(info.instance_state==DDS_IST_NOT_ALIVE_DISPOSED && accepted) {
         // One-session proof; identity saved from the preceding valid sample.
         engine.command_disposed(last_source,last_session);
         disposed=true;
       }
-      dds_sample_free(&data,&UMAA_EO_EngineControl_EngineCommandType_desc,DDS_FREE_CONTENTS);
-    } else dds_sleepfor(DDS_MSECS(25));
+    });
+    if (!got) dds_sleepfor(DDS_MSECS(25));
   }
   if(!accepted || !disposed || engine.sessions()!=0 || engine.faulted() ||
      command_wire.published_status_instances()!=0)
     throw umaa::ModuleLoadError("command lifecycle incomplete");
+  command_reader.stop(1);
   report(dds_wait_for_acks(status_writer,DDS_SECS(3)),"status reliable acknowledgment");
   report(dds_wait_for_acks(ack_writer,DDS_SECS(3)),"ack reliable acknowledgment");
   dds_sleepfor(DDS_MSECS(1500)); // keep writers alive for reader invalid-data observation

@@ -55,6 +55,14 @@ if(UMAA_BUILD_TESTS)
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
     "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
   add_test(NAME umaa_cyclone_report_reader_test COMMAND umaa_cyclone_report_reader_test)
+  # Independent Command-topic reader fake-ABI tests. The official EngineControl
+  # host separately exercises this adapter with real CycloneDDS/UMAA TypeSupport.
+  add_executable(umaa_cyclone_command_reader_test tests/test_cyclone_command_reader.cpp)
+  target_link_libraries(umaa_cyclone_command_reader_test PRIVATE UMAA::Core)
+  target_include_directories(umaa_cyclone_command_reader_test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+  add_test(NAME umaa_cyclone_command_reader_test COMMAND umaa_cyclone_command_reader_test)
   add_executable(umaa_command_transport_test tests/test_command_transport.cpp)
   target_link_libraries(umaa_command_transport_test PRIVATE UMAA::Core)
   add_test(NAME umaa_command_transport_test COMMAND umaa_command_transport_test)

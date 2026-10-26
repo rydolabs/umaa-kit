@@ -19,6 +19,7 @@ build/SDK/Simulator entry points, start with the repository [README](../README.m
 - [K-MOSA modules](architecture/K_MOSA_DYNAMIC_MODULES.md) — module ABI prototype boundaries.
 - [Command transport](implementation/COMMAND_TRANSPORT_STATUS.md) — command integration checkpoint.
 - [Cyclone command adapter](implementation/P1_CYCLONE_ADAPTER_STATUS.md) — historical P1 implementation checkpoint and limitations.
+- [Cyclone Command input reader](implementation/P2_COMMAND_READER_STATUS.md) — shared sample lifetime, fail-closed epochs and official EngineControl binding.
 
 ## Validation records (stable paths retained)
 

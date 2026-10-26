@@ -143,3 +143,34 @@
   Do not infer 53 real-wire service implementations or UMAA conformance.
 - Official sources and DDS vendors unavailable in this local runtime; no
   Windows/RTI or new official on-wire tests rerun at this checkpoint.
+
+## 2026-10-27 — Canonical `rydolabs/umaa-kit` P2 Reader & independent rejection proof
+
+- The prior verified source snapshot from `nssang00/umaa-dev` was imported
+  into `rydolabs/umaa-kit`; development/testing/distribution now use the same
+  repository. The original repository still retains historical PRs. No full
+  UMAA conformance or RTI license was transferred or implied.
+- Added a reusable Cyclone DDS C `SampleReader` with ownership, stale epoch
+  fencing, fail-closed error and callback semantics and RAII sample-content
+  cleanup. The existing queryless `ReportReader` delegates to it; the genuine
+  official EngineControl ignition-only host now uses `CommandReader` for
+  incoming Command and keyed Dispose samples.
+- The independent official EngineControl Simulator additionally sends a
+  mismatched Destination Command and checks no Status/Ack response. The test
+  supervisor independently requires the host's explicit rejection error.
+  Windows real-wire CTest discovery now includes every `^official_umaa_` test
+  rather than a hard-coded four-test allowlist.
+- Feature PR [#1](https://github.com/rydolabs/umaa-kit/pull/1) is merged to
+  main at `0541a6ca42fc0b0b8baa8bbade8e4315b533feec`. Exact verified source
+  Git tree: `354102318ed618d4482242a49883dc7d4b55da42`.
+- Local GCC strict 11/11 CTest and Clang ASan+UBSan 2/2 Reader unit tests passed.
+  On the feature head, [Linux real DDS](https://github.com/rydolabs/umaa-kit/actions/runs/40413028373)
+  completed official CTest 6/6 including the negative Command; [Windows native real DDS](https://github.com/rydolabs/umaa-kit/actions/runs/40413023193)
+  completed official CTest 5/5, including the negative Command. Feature-head
+  GitHub Actions 6/6 workflow runs SUCCESS.
+- All other requirements remain gated: 51 additional service runtimes have
+  not been independently implemented; complete QoS, roles, Collection,
+  RTI cross-vendor interoperability, compliance and hardware safety are
+  **OPEN/BLOCKED**. See [tracking issue](https://github.com/rydolabs/umaa-kit/issues/2)
+  and `docs/DELIVERY_GATES.md`. The 53 reviewed typed API contracts compiling
+  does **not** imply 53 real-wire service implementations.

@@ -29,6 +29,7 @@ build/SDK/Simulator entry points, start with the repository [README](../README.m
 - [GitHub Actions](GITHUB_ACTIONS.md)
 
 Historical implementation reports are snapshots from when they were written;
-check the [current PR #3](https://github.com/nssang00/umaa-dev/pull/3) and
-its exact commit/Actions results before concluding that a limitation remains
-or has been resolved. Official AUVSI UMAA IDL is **not vendored** in this repo.
+check the [current project](https://github.com/rydolabs/umaa-kit), its
+[ongoing gate tracker](https://github.com/rydolabs/umaa-kit/issues/2)
+and the exact commit/Actions results. [Legacy PR #3](https://github.com/nssang00/umaa-dev/pull/3)
+is historical P1 evidence, not the canonical repository. Official AUVSI UMAA IDL is **not vendored** in this repo.

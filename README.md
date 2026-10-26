@@ -1,4 +1,12 @@
-# UMAA SDK + Independent Simulator
+# UMAA Kit — C++ SDK and Independent Simulator
+
+**Canonical repository:** https://github.com/rydolabs/umaa-kit  
+**Status:** experimental UMAA 6.0 implementation subset; **not** official
+UMAA/K-MOSA conformance or a complete 53-service runtime. Prior
+`nssang00/umaa-dev` links below are historical evidence, not the canonical
+repository. See [release gates](docs/DELIVERY_GATES.md), [the SDK quick start](docs/QUICKSTART.md)
+and the [open implementation roadmap](https://github.com/rydolabs/umaa-kit/issues/2).
+
 
 Two **separate projects** for development and independent verification of UMAA services:
 

@@ -1,0 +1,40 @@
+name: Full official UMAA 6.0 IDL TypeSupport coverage
+on:
+  push:
+    paths:
+      - '.github/workflows/official-idl-coverage.yml'
+      - 'tools/official_idl_coverage.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cyclone-full-idl:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Cyclone DDS C TypeSupport compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev
+      - name: Fetch and verify original official 6.0 IDL
+        shell: bash
+        run: |
+          curl --fail --show-error --location --retry 2 --max-time 120 \
+            https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl.zip \
+            --output /tmp/umaa-6.0-idl.zip
+          echo '9674ef84b92cc296a544d001d58149efbb4650f4fafe3a40819636df49c42411  /tmp/umaa-6.0-idl.zip' | sha256sum --check
+          mkdir -p /tmp/umaa-idl-original
+          unzip -qq /tmp/umaa-6.0-idl.zip -d /tmp/umaa-idl-original
+      - name: Generate and compile every official UMAA IDL
+        shell: bash
+        run: |
+          python3 tools/official_idl_coverage.py --root /tmp/umaa-idl-original --output /tmp/umaa-full-generated
+      - name: Upload coverage metadata (never official IDL)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: official-umaa-typesupport-coverage
+          path: /tmp/official_idl_coverage.json
+          if-no-files-found: warn
+# This coverage does NOT measure normative UMAA service or DDS QoS conformance.

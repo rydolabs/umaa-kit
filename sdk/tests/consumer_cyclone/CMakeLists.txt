@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(UMAAExternalCycloneMock LANGUAGES CXX)
+find_package(UMAAPrototype CONFIG REQUIRED)
+if(NOT TARGET UMAA::Cyclone)
+  message(FATAL_ERROR "Installed package lacks UMAA::Cyclone")
+endif()
+add_executable(umaa_external_cyclone_mock main.cpp)
+target_link_libraries(umaa_external_cyclone_mock PRIVATE UMAA::Cyclone)

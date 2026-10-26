@@ -1,0 +1,213 @@
+name: Cyclone DDS multi-node Linux network namespaces
+
+on:
+  push:
+    paths:
+      - '.github/workflows/dds-netns.yml'
+      - 'dds/cyclone/**'
+      - 'simulator/dds/**'
+      - 'tools/dds_netns.sh'
+      - 'tools/official_idl_compile.py'
+      - 'tools/audit_official_idl_catalog.py'
+      - 'tools/extract_icd_topic_ledger.py'
+      - 'sdk/tests/test_icd_topic_ledger.py'
+      - 'tools/generate_reviewed_type_support.py'
+      - 'sdk/tests/test_official_inventory.py'
+      - 'tools/verify_official_service_types.py'
+      - 'tools/generate_reviewed_service_api.py'
+      - 'catalog/**'
+  pull_request:
+    paths:
+      - '.github/workflows/dds-netns.yml'
+      - 'dds/cyclone/**'
+      - 'simulator/dds/**'
+      - 'tools/dds_netns.sh'
+      - 'tools/official_idl_compile.py'
+      - 'tools/audit_official_idl_catalog.py'
+      - 'tools/extract_icd_topic_ledger.py'
+      - 'sdk/tests/test_icd_topic_ledger.py'
+      - 'tools/generate_reviewed_type_support.py'
+      - 'sdk/tests/test_official_inventory.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-dds-wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Cyclone DDS and Linux namespace tooling
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev iproute2
+          idlc --version || true
+      - name: Validate namespace harness without root
+        run: |
+          python3 -m unittest discover -s simulator/dds -p test_run_netns.py -v
+          bash -n tools/dds_netns.sh
+      - name: Download and hash-check original AUVSI UMAA 6.0 IDL (ephemeral)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --show-error --retry 2 --connect-timeout 20 --max-time 120 'https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl.zip' --output "$RUNNER_TEMP/umaa-6.0-idl.zip"
+          echo "9674ef84b92cc296a544d001d58149efbb4650f4fafe3a40819636df49c42411  $RUNNER_TEMP/umaa-6.0-idl.zip" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/umaa-6.0-idl"
+          unzip -qq "$RUNNER_TEMP/umaa-6.0-idl.zip" -d "$RUNNER_TEMP/umaa-6.0-idl"
+      - name: Test full IDL catalog auditor (synthetic negative fixtures)
+        run: python3 -m unittest discover -s sdk/tests -p test_official_inventory.py -v
+      - name: Audit every official IDL file against reviewed catalog (no guessing)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/audit_official_idl_catalog.py \
+            --official-root "$RUNNER_TEMP/umaa-6.0-idl" \
+            --catalog catalog/umaa6-six-icd-reviewed.json \
+            --out build/netns-evidence/official-idl-catalog-inventory.json
+          # The release gate MUST remain red until all ICD services and QoS are reviewed.
+          set +e
+          python3 tools/audit_official_idl_catalog.py \
+            --official-root "$RUNNER_TEMP/umaa-6.0-idl" \
+            --catalog catalog/umaa6-six-icd-reviewed.json \
+            --out build/netns-evidence/official-idl-catalog-strict-evidence.json \
+            --strict-g6
+          rc=$?
+          set -e
+          if [ "$rc" -ne 3 ]; then
+            echo "Expected incomplete G6 code=3, actual=$rc"; exit 1
+          fi
+      - name: Extract pinned public ICD literal service-operation-topic ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          rev='ecb923646e7f3fe569b773c3946444e793d8a8be'
+          mkdir -p "$RUNNER_TEMP/umaa-icd-md"
+          for code in EO MO MM SA SEM SO; do
+            curl --fail --show-error --location --retry 2 --max-time 90 \
+              "https://raw.githubusercontent.com/rticommunity/rticonnextdds-usecases-umaa/$rev/docs/UMAA-SPEC-${code}ICD.md" \
+              --output "$RUNNER_TEMP/umaa-icd-md/UMAA-SPEC-${code}ICD.md"
+          done
+          python3 tools/extract_icd_topic_ledger.py \
+            --markdown-dir "$RUNNER_TEMP/umaa-icd-md" \
+            --official-root "$RUNNER_TEMP/umaa-6.0-idl" \
+            --catalog catalog/umaa6-six-icd-reviewed.json \
+            --source-revision "$rev" \
+            --out build/netns-evidence/official-icd-topic-ledger.json \
+            --expect-services 53 --expect-operations 113 \
+            --require-domain-topic-complete EO --require-domain-topic-complete MO --require-domain-topic-complete MM --require-domain-topic-complete SA --require-domain-topic-complete SEM --require-domain-topic-complete SO
+      - name: Check reviewed service contracts against pinned official IDL
+        shell: bash
+        run: |
+          python3 tools/verify_official_service_types.py \
+            --catalog catalog/umaa6-six-icd-reviewed.json \
+            --official-root "$RUNNER_TEMP/umaa-6.0-idl" \
+            --report build/netns-evidence/official-service-proof.json
+      - name: Generate official UMAA DDS TypeSupport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/official_idl_compile.py --root "$RUNNER_TEMP/umaa-6.0-idl" --out "$RUNNER_TEMP/umaa-battery-types" --source UMAA/EO/BatteryStatus/BatteryReportType.idl
+          for type in EngineCommandType EngineCommandStatusType EngineCommandAckReportType; do
+            python3 tools/official_idl_compile.py --root "$RUNNER_TEMP/umaa-6.0-idl" --out "$RUNNER_TEMP/umaa-engine-types" --source "UMAA/EO/EngineControl/$type.idl"
+          done
+      - name: Generate TypeSupport for additional reviewed EO Topic message types
+        shell: bash
+        run: |
+          python3 tools/generate_reviewed_type_support.py \
+            --catalog catalog/umaa6-six-icd-reviewed.json \
+            --official-root "$RUNNER_TEMP/umaa-6.0-idl" \
+            --out "$RUNNER_TEMP/umaa-additional-types" \
+            --exclude-service UMAA::EO::BatteryStatus \
+            --exclude-service UMAA::EO::EngineControl
+      - name: Compile generated reviewed C++ service APIs against official TypeSupport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/generate_reviewed_service_api.py \
+            --catalog catalog/umaa6-six-icd-reviewed.json \
+            --generated-root "$RUNNER_TEMP/umaa-battery-types" \
+            --generated-root "$RUNNER_TEMP/umaa-engine-types" \
+            --generated-root "$RUNNER_TEMP/umaa-additional-types" \
+            --out build/generated/include/umaa/generated/official_eo_bindings.hpp
+          cat > build/generated/official_bindings_smoke.cpp <<'CPP'
+          #include "umaa/generated/official_eo_bindings.hpp"
+          #include <type_traits>
+          static_assert(std::is_standard_layout_v<umaa::generated::BatteryStatusApi::Report>);
+          static_assert(std::is_standard_layout_v<umaa::generated::EngineControlApi::Command>);
+          static_assert(!std::is_abstract_v<umaa::generated::BatteryStatusApi>);
+          static_assert(std::is_class_v<umaa::generated::GlobalDriftControlApi::ExecutionStatus>);
+          static_assert(std::is_class_v<umaa::generated::ConditionalControlApi::ConditionalAddCommand>);
+          static_assert(std::is_class_v<umaa::generated::MissionPlanMissionControlApi::MissionPlanMissionDeleteCommand>);
+          static_assert(std::is_class_v<umaa::generated::WindStatusApi::Report>);
+          static_assert(std::is_class_v<umaa::generated::GPSStatusApi::Report>);
+          static_assert(std::is_class_v<umaa::generated::LogReportApi::Report>);
+          static_assert(std::is_standard_layout_v<umaa::generated::MastControlApi::Command>);
+          static_assert(std::is_standard_layout_v<umaa::generated::UVPlatformSpecsApi::UVPlatformCapabilitiesReportType>);
+          static_assert(std::is_standard_layout_v<umaa::generated::UVPlatformSpecsApi::UVPlatformSpecsReportType>);
+          int main() { return 0; }
+          CPP
+          c++ -std=c++17 -fsyntax-only -Wall -Wextra -Werror \
+            -I build/generated/include \
+            -isystem "$RUNNER_TEMP/umaa-battery-types" \
+            -isystem "$RUNNER_TEMP/umaa-engine-types" \
+            -isystem "$RUNNER_TEMP/umaa-additional-types" \
+            build/generated/official_bindings_smoke.cpp
+      - name: Build synthetic and official DDS binaries
+        shell: bash
+        run: |
+          cmake -S dds/cyclone -B build/netns-dds -DCMAKE_BUILD_TYPE=Debug -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/umaa-battery-types" -DUMAA_ENGINE_GENERATED_ROOT="$RUNNER_TEMP/umaa-engine-types"
+          cmake --build build/netns-dds --parallel 2
+      - name: Existing same-network DDS process tests (regression)
+        run: ctest --test-dir build/netns-dds --output-on-failure -V
+      - name: Create three isolated network namespaces
+        run: sudo bash tools/dds_netns.sh setup
+      - name: Real DDS 3-node reports and 2-node EngineControl
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/netns-evidence
+          sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_demo_dds_publisher build/netns-dds/umaa_demo_dds_simulator build/netns-dds/libumaa_dds_battery_module.so --subscribers 2 | tee build/netns-evidence/synthetic-report-3node.log
+          sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_simulator build/netns-dds/libumaa_dds_battery_module.so --subscribers 2 | tee build/netns-evidence/official-report-3node.log
+          sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_engine_host build/netns-dds/umaa_official_engine_simulator build/netns-dds/libumaa_dds_engine_module.so | tee build/netns-evidence/official-command-2node.log
+          sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_engine_host build/netns-dds/umaa_official_engine_simulator build/netns-dds/libumaa_dds_engine_module.so --update | tee build/netns-evidence/official-update-2node.log
+      - name: DDS with tc netem delay, jitter, and loss (Linux)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for iteration in 1 2 3; do
+            sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_simulator build/netns-dds/libumaa_dds_battery_module.so --subscribers 2 --profile degraded | tee "build/netns-evidence/netem-official-report-degraded-${iteration}.log"
+          done
+          sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_engine_host build/netns-dds/umaa_official_engine_simulator build/netns-dds/libumaa_dds_engine_module.so --profile degraded | tee build/netns-evidence/netem-official-command-degraded.log
+      - name: DDS discovery blackout and automatic recovery (Linux)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_simulator build/netns-dds/libumaa_dds_battery_module.so --subscribers 2 --profile outage-recover | tee build/netns-evidence/netem-official-report-recovery.log
+          sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_engine_host build/netns-dds/umaa_official_engine_simulator build/netns-dds/libumaa_dds_engine_module.so --profile outage-recover | tee build/netns-evidence/netem-official-command-recovery.log
+      - name: Official SDK Report reader across isolated namespaces and tc netem
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_sdk_consumer build/netns-dds/libumaa_dds_battery_module.so | tee build/netns-evidence/sdk-report-reader-2node-clean.log
+          for iteration in 1 2 3; do
+            sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_sdk_consumer build/netns-dds/libumaa_dds_battery_module.so --profile degraded | tee "build/netns-evidence/sdk-report-reader-2node-degraded-${iteration}.log"
+          done
+          sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_sdk_consumer build/netns-dds/libumaa_dds_battery_module.so --profile outage-recover | tee build/netns-evidence/sdk-report-reader-2node-recovery.log
+      - name: Tear down namespaces even on failure
+        if: always()
+        run: sudo bash tools/dds_netns.sh teardown
+      - name: Upload DDS logs (never official IDL)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-dds-namespace-integration
+          path: |
+            build/netns-evidence/*.log
+            build/netns-evidence/*.json
+            build/netns-dds/Testing/Temporary/LastTest.log
+          if-no-files-found: warn
+
+# Real namespace wiring is supported on the Ubuntu runner only.
+# Windows CI tests native DLL/MSVC and DDS processes without Linux netns.

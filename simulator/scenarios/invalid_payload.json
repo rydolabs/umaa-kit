@@ -1,0 +1,8 @@
+{
+  "name": "reject_invalid_device_request",
+  "actions": ["COMMAND c1 p1 s4 100 -500", "DISPOSE c1 s4"],
+  "expected_events": [
+    "STATUS s4 ISSUED SUCCEEDED", "ACK s4", "STATUS s4 FAILED VALIDATION_FAILED",
+    "DISPOSE_STATUS s4", "DISPOSE_ACK s4"
+  ]
+}

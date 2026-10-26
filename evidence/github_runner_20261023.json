@@ -1,0 +1,33 @@
+{
+  "repository": "nssang00/umaa-dev",
+  "smoke_commit": "5d37c156bf64d349c9d592a64f146b205dab0c66",
+  "runs": [
+    {
+      "url": "https://github.com/nssang00/umaa-dev/actions/runs/39930834209",
+      "results": [
+        {
+          "os": "ubuntu-24.04",
+          "compiler": "gcc",
+          "conclusion": "success",
+          "job_id": 120338394233
+        },
+        {
+          "os": "ubuntu-24.04",
+          "compiler": "clang",
+          "conclusion": "success",
+          "job_id": 120338394195
+        },
+        {
+          "os": "windows-2022",
+          "compiler": "msvc",
+          "conclusion": "success",
+          "job_id": 120338394037
+        }
+      ]
+    }
+  ],
+  "scope": "Native service plugin ABI smoke only",
+  "official_umaa_idl_tested": false,
+  "real_dds_tested": false,
+  "full_sdk_simulator_git_ci": false
+}

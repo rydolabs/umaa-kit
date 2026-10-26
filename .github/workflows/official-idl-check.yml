@@ -1,0 +1,103 @@
+name: Official UMAA 6.0 IDL acquisition check (no redistribution)
+on:
+  push:
+    paths:
+      - '.github/workflows/official-idl-check.yml'
+      - 'tools/official_idl_compile.py'
+      - 'dds/cyclone/**'
+      - 'simulator/dds/**'
+      - 'sdk/include/umaa/command_engine.hpp'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-official-archive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download original AUVSI Distro A UMAA 6.0 IDL ZIP into ephemeral runner
+        shell: bash
+        run: |
+          curl --fail --show-error --location --retry 2 --connect-timeout 20 --max-time 120 \
+            'https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl.zip' \
+            --output /tmp/umaa-6.0-idl.zip
+          echo '9674ef84b92cc296a544d001d58149efbb4650f4fafe3a40819636df49c42411  /tmp/umaa-6.0-idl.zip' | sha256sum --check
+          file /tmp/umaa-6.0-idl.zip
+          sha256sum /tmp/umaa-6.0-idl.zip
+      - name: Archive health and official service topic inventory
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          path = '/tmp/umaa-6.0-idl.zip'
+          with zipfile.ZipFile(path) as arc:
+              assert arc.testzip() is None, 'Bad CRC in official IDL ZIP'
+              names = arc.namelist()
+              idls = [n for n in names if n.lower().endswith('.idl')]
+              print('OFFICIAL_IDL_TOTAL_FILES', len(names))
+              print('OFFICIAL_IDL_IDL_FILES', len(idls))
+              for token in ('EngineCommandType', 'BatteryReportType', 'UMAACommand'):
+                  matched = [n for n in idls if token.lower() in n.lower()]
+                  print('OFFICIAL_IDL_MATCH', token, matched[:5])
+              assert len(idls) >= 100, 'Expected substantial official UMAA 6.0 IDL collection'
+          PY
+      - name: Compile actual UMAA BatteryReportType IDL with Cyclone idlc
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev
+          mkdir -p /tmp/umaa-official/idl /tmp/umaa-official/generated
+          unzip -qq /tmp/umaa-6.0-idl.zip -d /tmp/umaa-official/idl
+          test -f /tmp/umaa-official/idl/UMAA/EO/BatteryStatus/BatteryReportType.idl
+          idlc -I /tmp/umaa-official/idl -o /tmp/umaa-official/generated \
+            /tmp/umaa-official/idl/UMAA/EO/BatteryStatus/BatteryReportType.idl
+          test -s /tmp/umaa-official/generated/BatteryReportType.c
+          test -s /tmp/umaa-official/generated/BatteryReportType.h
+          echo OFFICIAL_UMAA_BATTERY_IDLC_PASS
+          python3 tools/official_idl_compile.py \
+            --root /tmp/umaa-official/idl \
+            --out /tmp/umaa-official/generated \
+            --source UMAA/EO/BatteryStatus/BatteryReportType.idl
+          echo OFFICIAL_UMAA_BATTERY_TYPE_COMPILE_PASS
+          python3 tools/official_idl_compile.py \
+            --root /tmp/umaa-official/idl \
+            --out /tmp/umaa-official/engine-type-support \
+            --source UMAA/EO/EngineControl/EngineCommandType.idl
+          python3 tools/official_idl_compile.py \
+            --root /tmp/umaa-official/idl \
+            --out /tmp/umaa-official/engine-type-support \
+            --source UMAA/EO/EngineControl/EngineCommandStatusType.idl
+          echo OFFICIAL_UMAA_ENGINE_COMMAND_TYPES_COMPILED
+          python3 tools/official_idl_compile.py \
+            --root /tmp/umaa-official/idl \
+            --out /tmp/umaa-official/engine-type-support \
+            --source UMAA/EO/EngineControl/EngineCommandAckReportType.idl
+          echo OFFICIAL_UMAA_ENGINE_ACK_TYPES_COMPILED
+      - name: Install UMAA Cyclone export and build external real vendor consumer
+        shell: bash
+        run: |
+          cmake -S sdk -B build/real-export -DUMAA_BUILD_TESTS=OFF \
+            -DUMAA_ENABLE_CYCLONE_ADAPTER=ON \
+            -DCMAKE_INSTALL_PREFIX="${PWD}/build/real-export/install"
+          cmake --build build/real-export --parallel 2
+          cmake --install build/real-export
+          cmake -S sdk/tests/consumer_cyclone_real -B build/real-consumer \
+            -DCMAKE_PREFIX_PATH="${PWD}/build/real-export/install"
+          cmake --build build/real-consumer --parallel 2
+          build/real-consumer/umaa_external_real_cyclone
+          echo UMAA_EXTERNAL_REAL_CYCLONE_EXPORT_PASS
+      - name: Configure and compile official UMAA type-based C++ plugin Host and independent simulator
+        shell: bash
+        run: |
+          cmake -S dds/cyclone -B build/official-dds \
+            -DUMAA_OFFICIAL_GENERATED_ROOT=/tmp/umaa-official/generated \
+            -DUMAA_ENGINE_GENERATED_ROOT=/tmp/umaa-official/engine-type-support \
+            -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build/official-dds --parallel 2
+      - name: Official UMAA BatteryReportType real DDS independent integration
+        shell: bash
+        run: |
+          ctest --test-dir build/official-dds -R 'official_umaa_(battery_dds_wire|engine_command_flow|engine_update_flow)' --output-on-failure -V
+# The official ZIP is NOT committed to the repository or uploaded as an Action artifact.
+# Repository users must review the AUVSI UMAA IDL Terms of Use before redistribution or use.

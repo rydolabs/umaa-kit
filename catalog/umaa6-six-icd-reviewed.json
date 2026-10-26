@@ -1,0 +1,1974 @@
+{
+  "catalog_version": "0.5.0-six-icd-literal-contract-map",
+  "scope": "53 explicit service headings and 113 operation/topic messages across six UMAA 6.0 public ICD transcriptions, curated role shapes, NOT full G6 QoS/Component/runtime conformance",
+  "basis": {
+    "document": "UMAA-SPEC-EOICD",
+    "version": "6.0",
+    "date": "2024-06-06",
+    "sha256": "47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453"
+  },
+  "complete": false,
+  "services": [
+    {
+      "name": "UMAA::EO::AnchorControl",
+      "pattern": "command_response",
+      "clauses": [
+        "5.1",
+        "6.1.1",
+        "6.1.1.1",
+        "6.1.1.2",
+        "6.1.1.3"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+          "type": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::EO::AnchorControl::AnchorCommandStatusType",
+          "type": "UMAA::EO::AnchorControl::AnchorCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::EO::AnchorControl::AnchorCommandType",
+          "type": "UMAA::EO::AnchorControl::AnchorCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportAnchorCommandAck",
+        "reportAnchorCommandStatus",
+        "setAnchor",
+        "queryAnchorCommandAck",
+        "cancelAnchorCommand"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD 6.0 Section 6.1; protocol/QoS not yet verified"
+    },
+    {
+      "name": "UMAA::EO::AnchorSpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.2",
+        "6.1.2.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::AnchorSpecs::AnchorSpecsReportType",
+          "type": "UMAA::EO::AnchorSpecs::AnchorSpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryAnchorSpecs",
+        "reportAnchorSpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD 6.0 Section 6.1; protocol/QoS not yet verified"
+    },
+    {
+      "name": "UMAA::EO::AnchorStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.3",
+        "6.1.3.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::AnchorStatus::AnchorReportType",
+          "type": "UMAA::EO::AnchorStatus::AnchorReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryAnchor",
+        "reportAnchor"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD 6.0 Section 6.1; protocol/QoS not yet verified"
+    },
+    {
+      "name": "UMAA::EO::BatterySpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.4",
+        "6.1.4.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::BatterySpecs::BatterySpecsReportType",
+          "type": "UMAA::EO::BatterySpecs::BatterySpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryBatterySpecs",
+        "reportBatterySpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD 6.0 Section 6.1; protocol/QoS not yet verified"
+    },
+    {
+      "name": "UMAA::EO::BatteryStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.5",
+        "6.1.5.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::BatteryStatus::BatteryReportType",
+          "type": "UMAA::EO::BatteryStatus::BatteryReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [
+        "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement"
+      ],
+      "operations": [
+        "queryBattery",
+        "reportBattery"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false
+    },
+    {
+      "name": "UMAA::EO::EngineControl",
+      "pattern": "command_response",
+      "clauses": [
+        "5.1",
+        "5.1.2",
+        "5.1.4.2",
+        "5.1.4.5",
+        "5.1.5",
+        "6.1.6"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::EngineControl::EngineCommandStatusType",
+          "type": "UMAA::EO::EngineControl::EngineCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+          "type": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+          "role": "ack"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::EO::EngineControl::EngineCommandType",
+          "type": "UMAA::EO::EngineControl::EngineCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "setEngine",
+        "queryEngineCommandAck",
+        "cancelEngineCommand",
+        "reportEngineCommandStatus",
+        "reportEngineCommandAck"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false
+    },
+    {
+      "name": "UMAA::EO::EngineStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.7",
+        "6.1.7.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::EngineStatus::EngineReportType",
+          "type": "UMAA::EO::EngineStatus::EngineReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryEngine",
+        "reportEngine"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::FuelTankSpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.8",
+        "6.1.8.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::FuelTankSpecs::FuelTankSpecsReportType",
+          "type": "UMAA::EO::FuelTankSpecs::FuelTankSpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryFuelTankSpecs",
+        "reportFuelTankSpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::FuelTankStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.9",
+        "6.1.9.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::FuelTankStatus::FuelTankReportType",
+          "type": "UMAA::EO::FuelTankStatus::FuelTankReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryFuelTank",
+        "reportFuelTank"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::GeneratorSpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.10",
+        "6.1.10.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::GeneratorSpecs::GeneratorSpecsReportType",
+          "type": "UMAA::EO::GeneratorSpecs::GeneratorSpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryGeneratorSpecs",
+        "reportGeneratorSpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::GeneratorStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.11",
+        "6.1.11.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::GeneratorStatus::GeneratorReportType",
+          "type": "UMAA::EO::GeneratorStatus::GeneratorReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryGenerator",
+        "reportGenerator"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::MastControl",
+      "pattern": "command_response",
+      "clauses": [
+        "5.1",
+        "6.1.12",
+        "6.1.12.1",
+        "6.1.12.2",
+        "6.1.12.3"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::MastControl::MastCommandAckReportType",
+          "type": "UMAA::EO::MastControl::MastCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::EO::MastControl::MastCommandStatusType",
+          "type": "UMAA::EO::MastControl::MastCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::EO::MastControl::MastCommandType",
+          "type": "UMAA::EO::MastControl::MastCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "setMast",
+        "queryMastCommandAck",
+        "cancelMastCommand",
+        "reportMastCommandAck",
+        "reportMastCommandStatus"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::MastStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.13",
+        "6.1.13.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::MastStatus::MastReportType",
+          "type": "UMAA::EO::MastStatus::MastReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryMast",
+        "reportMast"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::UVPlatformSpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.14",
+        "6.1.14.1",
+        "6.1.14.2"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::UVPlatformSpecs::UVPlatformCapabilitiesReportType",
+          "type": "UMAA::EO::UVPlatformSpecs::UVPlatformCapabilitiesReportType",
+          "role": "report"
+        },
+        {
+          "name": "UMAA::EO::UVPlatformSpecs::UVPlatformSpecsReportType",
+          "type": "UMAA::EO::UVPlatformSpecs::UVPlatformSpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryUVPlatformCapabilities",
+        "reportUVPlatformCapabilities",
+        "queryUVPlatformSpecs",
+        "reportUVPlatformSpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::MM::ActiveConstraintsControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.1",
+        "6.1.1.1",
+        "6.1.1.2",
+        "6.1.1.3"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandAckReportType",
+          "type": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandStatusType",
+          "type": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandType",
+          "type": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportActiveConstraintsCommandAck",
+        "reportActiveConstraintsCommandStatus",
+        "setActiveConstraints"
+      ],
+      "command_groups": [
+        {
+          "name": "ActiveConstraints",
+          "command": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandType",
+          "ack": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandAckReportType",
+          "status": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::ConditionalControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.2",
+        "6.1.2.1",
+        "6.1.2.2",
+        "6.1.2.3",
+        "6.1.2.4",
+        "6.1.2.5",
+        "6.1.2.6"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalAddCommandAckReportType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalAddCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalAddCommandStatusType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalAddCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandAckReportType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandStatusType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalAddCommandType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalAddCommandType",
+          "role": "command"
+        },
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportConditionalAddCommandAck",
+        "reportConditionalAddCommandStatus",
+        "reportConditionalDeleteCommandAck",
+        "reportConditionalDeleteCommandStatus",
+        "setConditionalAdd",
+        "setConditionalDelete"
+      ],
+      "command_groups": [
+        {
+          "name": "ConditionalAdd",
+          "command": "UMAA::MM::ConditionalControl::ConditionalAddCommandType",
+          "ack": "UMAA::MM::ConditionalControl::ConditionalAddCommandAckReportType",
+          "status": "UMAA::MM::ConditionalControl::ConditionalAddCommandStatusType"
+        },
+        {
+          "name": "ConditionalDelete",
+          "command": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandType",
+          "ack": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandAckReportType",
+          "status": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::ConditionalReport",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.3",
+        "6.1.3.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::ConditionalReport::ConditionalReportType",
+          "type": "UMAA::MM::ConditionalReport::ConditionalReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportConditional"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanConstraintControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.4",
+        "6.1.4.1",
+        "6.1.4.2",
+        "6.1.4.3",
+        "6.1.4.4",
+        "6.1.4.5",
+        "6.1.4.6"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandStatusType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandStatusType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandType",
+          "role": "command"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportMissionPlanConstraintAddCommandAck",
+        "reportMissionPlanConstraintAddCommandStatus",
+        "reportMissionPlanConstraintDeleteCommandAck",
+        "reportMissionPlanConstraintDeleteCommandStatus",
+        "setMissionPlanConstraintAdd",
+        "setMissionPlanConstraintDelete"
+      ],
+      "command_groups": [
+        {
+          "name": "MissionPlanConstraintAdd",
+          "command": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandType",
+          "ack": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandAckReportType",
+          "status": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandStatusType"
+        },
+        {
+          "name": "MissionPlanConstraintDelete",
+          "command": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandType",
+          "ack": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandAckReportType",
+          "status": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanExecutionControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.5",
+        "6.1.5.1",
+        "6.1.5.2",
+        "6.1.5.3"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandStatusType",
+          "type": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandType",
+          "type": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportMissionPlanExecutionCommandAck",
+        "reportMissionPlanExecutionCommandStatus",
+        "setMissionPlanExecution"
+      ],
+      "command_groups": [
+        {
+          "name": "MissionPlanExecution",
+          "command": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandType",
+          "ack": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandAckReportType",
+          "status": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanExecutionStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.6",
+        "6.1.6.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanExecutionStatus::MissionPlanExecutionReportType",
+          "type": "UMAA::MM::MissionPlanExecutionStatus::MissionPlanExecutionReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportMissionPlanExecution"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanMissionControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.7",
+        "6.1.7.1",
+        "6.1.7.2",
+        "6.1.7.3",
+        "6.1.7.4",
+        "6.1.7.5",
+        "6.1.7.6",
+        "6.1.7.7",
+        "6.1.7.8",
+        "6.1.7.9"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandStatusType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandStatusType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandStatusType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandType",
+          "role": "command"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandType",
+          "role": "command"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportMissionPlanMissionAddCommandAck",
+        "reportMissionPlanMissionAddCommandStatus",
+        "reportMissionPlanMissionClearCommandAck",
+        "reportMissionPlanMissionClearCommandStatus",
+        "reportMissionPlanMissionDeleteCommandAck",
+        "reportMissionPlanMissionDeleteCommandStatus",
+        "setMissionPlanMissionAdd",
+        "setMissionPlanMissionClear",
+        "setMissionPlanMissionDelete"
+      ],
+      "command_groups": [
+        {
+          "name": "MissionPlanMissionAdd",
+          "command": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandType",
+          "ack": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandAckReportType",
+          "status": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandStatusType"
+        },
+        {
+          "name": "MissionPlanMissionClear",
+          "command": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandType",
+          "ack": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandAckReportType",
+          "status": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandStatusType"
+        },
+        {
+          "name": "MissionPlanMissionDelete",
+          "command": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandType",
+          "ack": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandAckReportType",
+          "status": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanObjectiveControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.8",
+        "6.1.8.1",
+        "6.1.8.2",
+        "6.1.8.3",
+        "6.1.8.4",
+        "6.1.8.5",
+        "6.1.8.6"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandStatusType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandStatusType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandType",
+          "role": "command"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportMissionPlanObjectiveAddCommandAck",
+        "reportMissionPlanObjectiveAddCommandStatus",
+        "reportMissionPlanObjectiveDeleteCommandAck",
+        "reportMissionPlanObjectiveDeleteCommandStatus",
+        "setMissionPlanObjectiveAdd",
+        "setMissionPlanObjectiveDelete"
+      ],
+      "command_groups": [
+        {
+          "name": "MissionPlanObjectiveAdd",
+          "command": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandType",
+          "ack": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandAckReportType",
+          "status": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandStatusType"
+        },
+        {
+          "name": "MissionPlanObjectiveDelete",
+          "command": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandType",
+          "ack": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandAckReportType",
+          "status": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanReport",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.9",
+        "6.1.9.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanReport::MissionPlanReportType",
+          "type": "UMAA::MM::MissionPlanReport::MissionPlanReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportMissionPlan"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanTaskControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.10",
+        "6.1.10.1",
+        "6.1.10.2",
+        "6.1.10.3",
+        "6.1.10.4",
+        "6.1.10.5",
+        "6.1.10.6"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandStatusType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandStatusType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandType",
+          "role": "command"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportMissionPlanTaskAddCommandAck",
+        "reportMissionPlanTaskAddCommandStatus",
+        "reportMissionPlanTaskDeleteCommandAck",
+        "reportMissionPlanTaskDeleteCommandStatus",
+        "setMissionPlanTaskAdd",
+        "setMissionPlanTaskDelete"
+      ],
+      "command_groups": [
+        {
+          "name": "MissionPlanTaskAdd",
+          "command": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandType",
+          "ack": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandAckReportType",
+          "status": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandStatusType"
+        },
+        {
+          "name": "MissionPlanTaskDelete",
+          "command": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandType",
+          "ack": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandAckReportType",
+          "status": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::ObjectiveExecutionControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.11",
+        "6.1.11.1",
+        "6.1.11.2",
+        "6.1.11.3"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandAckReportType",
+          "type": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandStatusType",
+          "type": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandType",
+          "type": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportObjectiveExecutionCommandAck",
+        "reportObjectiveExecutionCommandStatus",
+        "setObjectiveExecution"
+      ],
+      "command_groups": [
+        {
+          "name": "ObjectiveExecution",
+          "command": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandType",
+          "ack": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandAckReportType",
+          "status": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::ObjectiveExecutionStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.12",
+        "6.1.12.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::ObjectiveExecutionStatus::ObjectiveExecutionReportType",
+          "type": "UMAA::MM::ObjectiveExecutionStatus::ObjectiveExecutionReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportObjectiveExecution"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MM::TaskPlanExecutionControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.13",
+        "6.1.13.1",
+        "6.1.13.2",
+        "6.1.13.3"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType",
+          "type": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType",
+          "type": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType",
+          "type": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportTaskPlanExecutionCommandAck",
+        "reportTaskPlanExecutionCommandStatus",
+        "setTaskPlanExecution"
+      ],
+      "command_groups": [
+        {
+          "name": "TaskPlanExecution",
+          "command": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType",
+          "ack": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType",
+          "status": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MO::ContactManeuverInfluenceStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.1",
+        "6.1.1.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MO::ContactManeuverInfluenceStatus::ContactManeuverInfluenceReportType",
+          "type": "UMAA::MO::ContactManeuverInfluenceStatus::ContactManeuverInfluenceReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportContactManeuverInfluence"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MOICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MO::CoordinationSituationalSignalStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.2",
+        "6.1.2.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MO::CoordinationSituationalSignalStatus::CoordinationSituationalSignalReportType",
+          "type": "UMAA::MO::CoordinationSituationalSignalStatus::CoordinationSituationalSignalReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportCoordinationSituationalSignal"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MOICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MO::GlobalDriftControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.3",
+        "6.1.3.1",
+        "6.1.3.2",
+        "6.1.3.3",
+        "6.1.3.4"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType",
+          "type": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType",
+          "type": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MO::GlobalDriftControl::GlobalDriftExecutionStatusReportType",
+          "type": "UMAA::MO::GlobalDriftControl::GlobalDriftExecutionStatusReportType",
+          "role": "execution_status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType",
+          "type": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportGlobalDriftCommandAck",
+        "reportGlobalDriftCommandStatus",
+        "reportGlobalDriftExecutionStatus",
+        "setGlobalDrift"
+      ],
+      "command_groups": [
+        {
+          "name": "GlobalDrift",
+          "command": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType",
+          "ack": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType",
+          "status": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MOICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MO::GlobalHoverControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.4",
+        "6.1.4.1",
+        "6.1.4.2",
+        "6.1.4.3",
+        "6.1.4.4"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandAckReportType",
+          "type": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandStatusType",
+          "type": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MO::GlobalHoverControl::GlobalHoverExecutionStatusReportType",
+          "type": "UMAA::MO::GlobalHoverControl::GlobalHoverExecutionStatusReportType",
+          "role": "execution_status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandType",
+          "type": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportGlobalHoverCommandAck",
+        "reportGlobalHoverCommandStatus",
+        "reportGlobalHoverExecutionStatus",
+        "setGlobalHover"
+      ],
+      "command_groups": [
+        {
+          "name": "GlobalHover",
+          "command": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandType",
+          "ack": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandAckReportType",
+          "status": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MOICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MO::GlobalVectorControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.5",
+        "6.1.5.1",
+        "6.1.5.2",
+        "6.1.5.3",
+        "6.1.5.4"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandAckReportType",
+          "type": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandStatusType",
+          "type": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MO::GlobalVectorControl::GlobalVectorExecutionStatusReportType",
+          "type": "UMAA::MO::GlobalVectorControl::GlobalVectorExecutionStatusReportType",
+          "role": "execution_status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandType",
+          "type": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportGlobalVectorCommandAck",
+        "reportGlobalVectorCommandStatus",
+        "reportGlobalVectorExecutionStatus",
+        "setGlobalVector"
+      ],
+      "command_groups": [
+        {
+          "name": "GlobalVector",
+          "command": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandType",
+          "ack": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandAckReportType",
+          "status": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MOICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MO::GlobalWaypointControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.6",
+        "6.1.6.1",
+        "6.1.6.2",
+        "6.1.6.3",
+        "6.1.6.4"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandAckReportType",
+          "type": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandStatusType",
+          "type": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MO::GlobalWaypointControl::GlobalWaypointExecutionStatusReportType",
+          "type": "UMAA::MO::GlobalWaypointControl::GlobalWaypointExecutionStatusReportType",
+          "role": "execution_status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandType",
+          "type": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportGlobalWaypointCommandAck",
+        "reportGlobalWaypointCommandStatus",
+        "reportGlobalWaypointExecutionStatus",
+        "setGlobalWaypoint"
+      ],
+      "command_groups": [
+        {
+          "name": "GlobalWaypoint",
+          "command": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandType",
+          "ack": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandAckReportType",
+          "status": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MOICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::MO::PrimitiveDriverControl",
+      "pattern": "command_response",
+      "clauses": [
+        "6.1.7",
+        "6.1.7.1",
+        "6.1.7.2",
+        "6.1.7.3",
+        "6.1.7.4"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandAckReportType",
+          "type": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandStatusType",
+          "type": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverExecutionStatusReportType",
+          "type": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverExecutionStatusReportType",
+          "role": "execution_status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandType",
+          "type": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportPrimitiveDriverCommandAck",
+        "reportPrimitiveDriverCommandStatus",
+        "reportPrimitiveDriverExecutionStatus",
+        "setPrimitiveDriver"
+      ],
+      "command_groups": [
+        {
+          "name": "PrimitiveDriver",
+          "command": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandType",
+          "ack": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandAckReportType",
+          "status": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-MOICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::ContactCOLREGSClassificationStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.1",
+        "6.1.1.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::ContactCOLREGSClassificationStatus::ContactCOLREGSClassificationReportType",
+          "type": "UMAA::SA::ContactCOLREGSClassificationStatus::ContactCOLREGSClassificationReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportContactCOLREGSClassification"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::ContactReport",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.2",
+        "6.1.2.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::ContactReport::ContactReportType",
+          "type": "UMAA::SA::ContactReport::ContactReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportContact"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::ContactVisualClassificationStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.3",
+        "6.1.3.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::ContactVisualClassificationStatus::ContactVisualClassificationReportType",
+          "type": "UMAA::SA::ContactVisualClassificationStatus::ContactVisualClassificationReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportContactVisualClassification"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::DateTimeStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.4",
+        "6.1.4.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::DateTimeStatus::DateTimeReportType",
+          "type": "UMAA::SA::DateTimeStatus::DateTimeReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportDateTime"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::ECEFPoseStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.5",
+        "6.1.5.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::ECEFPoseStatus::ECEFPoseReportType",
+          "type": "UMAA::SA::ECEFPoseStatus::ECEFPoseReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportECEFPose"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::GlobalPoseStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.6",
+        "6.1.6.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::GlobalPoseStatus::GlobalPoseReportType",
+          "type": "UMAA::SA::GlobalPoseStatus::GlobalPoseReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportGlobalPose"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::MagneticVariationSpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.7",
+        "6.1.7.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::MagneticVariationSpecs::MagneticVariationSpecsReportType",
+          "type": "UMAA::SA::MagneticVariationSpecs::MagneticVariationSpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportMagneticVariationSpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::MagneticVariationStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.8",
+        "6.1.8.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::MagneticVariationStatus::MagneticVariationReportType",
+          "type": "UMAA::SA::MagneticVariationStatus::MagneticVariationReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportMagneticVariation"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::SeaStateReport",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.9",
+        "6.1.9.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::SeaStateReport::SeaStateReportType",
+          "type": "UMAA::SA::SeaStateReport::SeaStateReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportSeaState"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::SpeedStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.10",
+        "6.1.10.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::SpeedStatus::SpeedReportType",
+          "type": "UMAA::SA::SpeedStatus::SpeedReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportSpeed"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::TranslationalShipMotionStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.11",
+        "6.1.11.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::TranslationalShipMotionStatus::TranslationalShipMotionReportType",
+          "type": "UMAA::SA::TranslationalShipMotionStatus::TranslationalShipMotionReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportTranslationalShipMotion"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::VelocityStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.12",
+        "6.1.12.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::VelocityStatus::VelocityReportType",
+          "type": "UMAA::SA::VelocityStatus::VelocityReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportVelocity"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::WaterCurrentStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.13",
+        "6.1.13.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::WaterCurrentStatus::WaterCurrentReportType",
+          "type": "UMAA::SA::WaterCurrentStatus::WaterCurrentReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportWaterCurrent"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SA::WindStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "6.1.14",
+        "6.1.14.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SA::WindStatus::WindReportType",
+          "type": "UMAA::SA::WindStatus::WindReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportWind"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SAICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SEM::GPSStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.1.1",
+        "5.1.1.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SEM::GPSStatus::GPSReportType",
+          "type": "UMAA::SEM::GPSStatus::GPSReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportGPS"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SEMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SEM::InertialSensorControl",
+      "pattern": "command_response",
+      "clauses": [
+        "5.1.2",
+        "5.1.2.1",
+        "5.1.2.2",
+        "5.1.2.3"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SEM::InertialSensorControl::InertialSensorCommandAckReportType",
+          "type": "UMAA::SEM::InertialSensorControl::InertialSensorCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::SEM::InertialSensorControl::InertialSensorCommandStatusType",
+          "type": "UMAA::SEM::InertialSensorControl::InertialSensorCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::SEM::InertialSensorControl::InertialSensorCommandType",
+          "type": "UMAA::SEM::InertialSensorControl::InertialSensorCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportInertialSensorCommandAck",
+        "reportInertialSensorCommandStatus",
+        "setInertialSensor"
+      ],
+      "command_groups": [
+        {
+          "name": "InertialSensor",
+          "command": "UMAA::SEM::InertialSensorControl::InertialSensorCommandType",
+          "ack": "UMAA::SEM::InertialSensorControl::InertialSensorCommandAckReportType",
+          "status": "UMAA::SEM::InertialSensorControl::InertialSensorCommandStatusType"
+        }
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SEMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SEM::InertialSensorStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.1.3",
+        "5.1.3.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SEM::InertialSensorStatus::InertialSensorReportType",
+          "type": "UMAA::SEM::InertialSensorStatus::InertialSensorReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportInertialSensor"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SEMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SO::HealthReport",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.1.1",
+        "5.1.1.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SO::HealthReport::HealthReportType",
+          "type": "UMAA::SO::HealthReport::HealthReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportHealth"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SOICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    },
+    {
+      "name": "UMAA::SO::LogReport",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.1.2",
+        "5.1.2.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::SO::LogReport::LogReportType",
+          "type": "UMAA::SO::LogReport::LogReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "reportLogReport"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-SOICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    }
+  ],
+  "reviewed_domain_topic_coverage": [
+    "EO",
+    "MO",
+    "MM",
+    "SA",
+    "SEM",
+    "SO"
+  ],
+  "ledger_source_revision": "ecb923646e7f3fe569b773c3946444e793d8a8be"
+}

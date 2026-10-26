@@ -1,0 +1,29 @@
+# Build outputs and installed SDK test copies
+/build/
+/cmake-build-*/
+/out/
+/_build/
+
+# Generated machine-specific test evidence; committed manifests are not ignored
+/evidence/ci/
+
+# Python and editor scratch
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+.vscode/
+.idea/
+.DS_Store
+
+# CMake scratch outside the designated /build directory
+CMakeFiles/
+CMakeCache.txt
+Testing/
+
+# Local unpacked official input and generated TypeSupport (never redistribute)
+/official-idl/
+/official-umaa-idl/
+/vendor-sdk/
+/generated-typesupport/

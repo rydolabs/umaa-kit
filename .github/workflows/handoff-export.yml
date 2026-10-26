@@ -1,0 +1,42 @@
+name: Handoff source snapshot export
+on:
+  push:
+    paths:
+      - '.github/workflows/handoff-export.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Export tracked sources with immutable commit identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p export
+          git rev-parse HEAD > export/SOURCE_COMMIT.txt
+          git branch --show-current > export/SOURCE_BRANCH.txt
+          printf '%s\n' 'Snapshot contains only tracked source files at SOURCE_COMMIT.txt.' > export/RESTORE_NOTE.txt
+          printf '%s\n' 'Official AUVSI IDL is NOT redistributed; obtain separately and verify pinned hash.' >> export/RESTORE_NOTE.txt
+          printf '%s\n' 'Run: sha256sum -c SNAPSHOT_SHA256.txt && unzip -tqq umaa-dev-snapshot.zip' >> export/RESTORE_NOTE.txt
+          git remote get-url origin > export/SOURCE_REPOSITORY.txt
+          git ls-files > export/TRACKED_FILES.txt
+          git archive --format=zip -o export/umaa-dev-snapshot.zip HEAD
+          sha256sum export/umaa-dev-snapshot.zip > export/SNAPSHOT_SHA256.txt
+          unzip -tqq export/umaa-dev-snapshot.zip
+          printf 'Source revision: '; cat export/SOURCE_COMMIT.txt
+          printf 'Tracked files: '; wc -l < export/TRACKED_FILES.txt
+          cat export/SNAPSHOT_SHA256.txt
+      - name: Make source bundle available for handoff
+        uses: actions/upload-artifact@v4
+        with:
+          name: umaa-dev-source-handoff
+          path: export/
+          retention-days: 14
+          if-no-files-found: error
+# git archive only includes tracked repository files; do not archive .git or CI secrets.

@@ -1,0 +1,12 @@
+// DELIBERATELY SYNTHETIC fixture. This is NOT official UMAA IDL.
+module Demo {
+  module EO {
+    struct BatteryReportType {
+      double levelPct;
+    };
+    struct EngineCommandType {
+      @key string sessionID;
+      double targetRpm;
+    };
+  };
+};

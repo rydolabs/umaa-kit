@@ -1,0 +1,448 @@
+{
+  "catalog_version": "0.4.0-reviewed-eo-section6-1",
+  "scope": "EO ICD 6.0 Section 6.1 complete literal operation-topic type mapping: 14 services/21 topics; no runtime/QoS/conformance claim",
+  "basis": {
+    "document": "UMAA-SPEC-EOICD",
+    "version": "6.0",
+    "date": "2024-06-06",
+    "sha256": "47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453"
+  },
+  "complete": false,
+  "services": [
+    {
+      "name": "UMAA::EO::AnchorControl",
+      "pattern": "command_response",
+      "clauses": [
+        "5.1",
+        "6.1.1",
+        "6.1.1.1",
+        "6.1.1.2",
+        "6.1.1.3"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+          "type": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::EO::AnchorControl::AnchorCommandStatusType",
+          "type": "UMAA::EO::AnchorControl::AnchorCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::EO::AnchorControl::AnchorCommandType",
+          "type": "UMAA::EO::AnchorControl::AnchorCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "reportAnchorCommandAck",
+        "reportAnchorCommandStatus",
+        "setAnchor",
+        "queryAnchorCommandAck",
+        "cancelAnchorCommand"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD 6.0 Section 6.1; protocol/QoS not yet verified"
+    },
+    {
+      "name": "UMAA::EO::AnchorSpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.2",
+        "6.1.2.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::AnchorSpecs::AnchorSpecsReportType",
+          "type": "UMAA::EO::AnchorSpecs::AnchorSpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryAnchorSpecs",
+        "reportAnchorSpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD 6.0 Section 6.1; protocol/QoS not yet verified"
+    },
+    {
+      "name": "UMAA::EO::AnchorStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.3",
+        "6.1.3.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::AnchorStatus::AnchorReportType",
+          "type": "UMAA::EO::AnchorStatus::AnchorReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryAnchor",
+        "reportAnchor"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD 6.0 Section 6.1; protocol/QoS not yet verified"
+    },
+    {
+      "name": "UMAA::EO::BatterySpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.4",
+        "6.1.4.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::BatterySpecs::BatterySpecsReportType",
+          "type": "UMAA::EO::BatterySpecs::BatterySpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryBatterySpecs",
+        "reportBatterySpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD 6.0 Section 6.1; protocol/QoS not yet verified"
+    },
+    {
+      "name": "UMAA::EO::BatteryStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.5",
+        "6.1.5.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::BatteryStatus::BatteryReportType",
+          "type": "UMAA::EO::BatteryStatus::BatteryReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [
+        "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement"
+      ],
+      "operations": [
+        "queryBattery",
+        "reportBattery"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false
+    },
+    {
+      "name": "UMAA::EO::EngineControl",
+      "pattern": "command_response",
+      "clauses": [
+        "5.1",
+        "5.1.2",
+        "5.1.4.2",
+        "5.1.4.5",
+        "5.1.5",
+        "6.1.6"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::EngineControl::EngineCommandStatusType",
+          "type": "UMAA::EO::EngineControl::EngineCommandStatusType",
+          "role": "status"
+        },
+        {
+          "name": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+          "type": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+          "role": "ack"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::EO::EngineControl::EngineCommandType",
+          "type": "UMAA::EO::EngineControl::EngineCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "setEngine",
+        "queryEngineCommandAck",
+        "cancelEngineCommand",
+        "reportEngineCommandStatus",
+        "reportEngineCommandAck"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false
+    },
+    {
+      "name": "UMAA::EO::EngineStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.7",
+        "6.1.7.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::EngineStatus::EngineReportType",
+          "type": "UMAA::EO::EngineStatus::EngineReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryEngine",
+        "reportEngine"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::FuelTankSpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.8",
+        "6.1.8.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::FuelTankSpecs::FuelTankSpecsReportType",
+          "type": "UMAA::EO::FuelTankSpecs::FuelTankSpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryFuelTankSpecs",
+        "reportFuelTankSpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::FuelTankStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.9",
+        "6.1.9.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::FuelTankStatus::FuelTankReportType",
+          "type": "UMAA::EO::FuelTankStatus::FuelTankReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryFuelTank",
+        "reportFuelTank"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::GeneratorSpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.10",
+        "6.1.10.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::GeneratorSpecs::GeneratorSpecsReportType",
+          "type": "UMAA::EO::GeneratorSpecs::GeneratorSpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryGeneratorSpecs",
+        "reportGeneratorSpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::GeneratorStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.11",
+        "6.1.11.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::GeneratorStatus::GeneratorReportType",
+          "type": "UMAA::EO::GeneratorStatus::GeneratorReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryGenerator",
+        "reportGenerator"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::MastControl",
+      "pattern": "command_response",
+      "clauses": [
+        "5.1",
+        "6.1.12",
+        "6.1.12.1",
+        "6.1.12.2",
+        "6.1.12.3"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::MastControl::MastCommandAckReportType",
+          "type": "UMAA::EO::MastControl::MastCommandAckReportType",
+          "role": "ack"
+        },
+        {
+          "name": "UMAA::EO::MastControl::MastCommandStatusType",
+          "type": "UMAA::EO::MastControl::MastCommandStatusType",
+          "role": "status"
+        }
+      ],
+      "consumer_topics": [
+        {
+          "name": "UMAA::EO::MastControl::MastCommandType",
+          "type": "UMAA::EO::MastControl::MastCommandType",
+          "role": "command"
+        }
+      ],
+      "collection_topics": [],
+      "operations": [
+        "setMast",
+        "queryMastCommandAck",
+        "cancelMastCommand",
+        "reportMastCommandAck",
+        "reportMastCommandStatus"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::MastStatus",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.13",
+        "6.1.13.1"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::MastStatus::MastReportType",
+          "type": "UMAA::EO::MastStatus::MastReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryMast",
+        "reportMast"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    },
+    {
+      "name": "UMAA::EO::UVPlatformSpecs",
+      "pattern": "request_reply_without_query_data",
+      "clauses": [
+        "5.2.1",
+        "6.1.14",
+        "6.1.14.1",
+        "6.1.14.2"
+      ],
+      "icd_reviewed": true,
+      "provider_topics": [
+        {
+          "name": "UMAA::EO::UVPlatformSpecs::UVPlatformCapabilitiesReportType",
+          "type": "UMAA::EO::UVPlatformSpecs::UVPlatformCapabilitiesReportType",
+          "role": "report"
+        },
+        {
+          "name": "UMAA::EO::UVPlatformSpecs::UVPlatformSpecsReportType",
+          "type": "UMAA::EO::UVPlatformSpecs::UVPlatformSpecsReportType",
+          "role": "report"
+        }
+      ],
+      "consumer_topics": [],
+      "collection_topics": [],
+      "operations": [
+        "queryUVPlatformCapabilities",
+        "reportUVPlatformCapabilities",
+        "queryUVPlatformSpecs",
+        "reportUVPlatformSpecs"
+      ],
+      "official_idl_verified": false,
+      "dds_qos_verified": false,
+      "dds_behavior_verified": false,
+      "source": "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    }
+  ]
+}

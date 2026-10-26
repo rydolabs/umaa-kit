@@ -1,0 +1,9 @@
+{
+  "name": "complete_then_dispose",
+  "actions": ["COMMAND c1 p1 s1 100 1200", "FINISH s1 SUCCESS", "DISPOSE c1 s1"],
+  "expected_events": [
+    "STATUS s1 ISSUED SUCCEEDED", "ACK s1", "STATUS s1 COMMANDED SUCCEEDED",
+    "STATUS s1 EXECUTING SUCCEEDED", "STATUS s1 COMPLETED SUCCEEDED",
+    "DISPOSE_STATUS s1", "DISPOSE_ACK s1"
+  ]
+}

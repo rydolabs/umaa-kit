@@ -1,0 +1,162 @@
+name: Cyclone DDS real-wire Windows portability
+on:
+  push:
+    paths:
+      - '.github/workflows/real-dds-windows.yml'
+      - 'dds/cyclone/**'
+      - 'simulator/dds/**'
+      - 'tools/official_idl_compile.py'
+      - 'tools/verify_official_service_types.py'
+      - 'tools/generate_reviewed_type_support.py'
+      - 'tools/generate_reviewed_service_api.py'
+      - 'tools/reviewed_api_smoke/**'
+      - 'catalog/**'
+  pull_request:
+    paths:
+      - '.github/workflows/real-dds-windows.yml'
+      - 'dds/cyclone/**'
+      - 'simulator/dds/**'
+      - 'tools/official_idl_compile.py'
+      - 'tools/verify_official_service_types.py'
+      - 'tools/generate_reviewed_type_support.py'
+      - 'tools/generate_reviewed_service_api.py'
+      - 'tools/reviewed_api_smoke/**'
+      - 'catalog/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-dds:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Cyclone DDS + IDL compiler
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
+          $vcpkg = Join-Path $vcpkgRoot 'vcpkg.exe'
+          if (-not (Test-Path $vcpkg)) { throw "vcpkg missing at $vcpkg" }
+          & $vcpkg install 'cyclonedds[idlc]:x64-windows'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install real Cyclone export and build external Windows Consumer
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
+          $install = Join-Path (Get-Location) 'build/real-export-win/install'
+          cmake -S sdk -B build/real-export-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake" -DUMAA_BUILD_TESTS=OFF -DUMAA_ENABLE_CYCLONE_ADAPTER=ON -DCMAKE_INSTALL_PREFIX="$install"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/real-export-win --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --install build/real-export-win --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake -S sdk/tests/consumer_cyclone_real -B build/real-consumer-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake" -DCMAKE_PREFIX_PATH="$install"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/real-consumer-win --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:PATH = "$vcpkgRoot/installed/x64-windows/bin;$env:PATH"
+          & 'build/real-consumer-win/Release/umaa_external_real_cyclone.exe'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Host 'UMAA_EXTERNAL_REAL_CYCLONE_EXPORT_PASS'
+      - name: Configure
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
+          cmake -S dds/cyclone -B build/real-dds-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build real DDS publisher and independent simulator
+        run: cmake --build build/real-dds-win --config Release --parallel 2
+      - name: Run real DDS Windows process integration
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
+          $env:PATH = "$vcpkgRoot/installed/x64-windows/bin;$env:PATH"
+          ctest --test-dir build/real-dds-win -C Release --output-on-failure -V
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Obtain original UMAA 6.0 IDL into temporary Windows workspace
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'umaa-6.0-idl.zip'
+          $root = Join-Path $env:RUNNER_TEMP 'umaa-6.0-idl'
+          Invoke-WebRequest 'https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl.zip' -OutFile $archive
+          $expected = '9674EF84B92CC296A544D001D58149EFBB4650F4FAFE3A40819636DF49C42411'
+          $actual = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+          if ($actual -ne $expected) { throw "Unexpected official UMAA IDL SHA256: $actual" }
+          Expand-Archive -LiteralPath $archive -DestinationPath $root -Force
+          if (-not (Test-Path "$root/UMAA/EO/BatteryStatus/BatteryReportType.idl")) { throw 'Official UMAA IDL archive is incomplete' }
+      - name: Generate official UMAA BatteryReport TypeSupport with vcpkg idlc
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
+          $idlc = Get-ChildItem -Path "$vcpkgRoot/installed/x64-windows" -Filter idlc.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $idlc) { throw 'No Cyclone idlc.exe found in vcpkg installation' }
+          $root = Join-Path $env:RUNNER_TEMP 'umaa-6.0-idl'
+          $output = Join-Path $env:RUNNER_TEMP 'umaa-official-generated'
+          python tools/official_idl_compile.py --root $root --out $output --idlc $idlc --generate-only --source UMAA/EO/BatteryStatus/BatteryReportType.idl
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $engineOutput = Join-Path $env:RUNNER_TEMP 'umaa-engine-generated'
+          foreach ($idl in @('EngineCommandType','EngineCommandStatusType','EngineCommandAckReportType')) {
+            python tools/official_idl_compile.py --root $root --out $engineOutput --idlc $idlc --generate-only --source "UMAA/EO/EngineControl/$idl.idl"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Generate and compile reviewed official UMAA Handler APIs with MSVC
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
+          $idlc = Get-ChildItem -Path "$vcpkgRoot/installed/x64-windows" -Filter idlc.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $idlc) { throw 'Cyclone idlc.exe missing for reviewed service APIs' }
+          $original = Join-Path $env:RUNNER_TEMP 'umaa-6.0-idl'
+          $battery = Join-Path $env:RUNNER_TEMP 'umaa-official-generated'
+          $engine = Join-Path $env:RUNNER_TEMP 'umaa-engine-generated'
+          $extra = Join-Path $env:RUNNER_TEMP 'umaa-extra-reviewed'
+          $apiIncludes = Join-Path (Get-Location) 'build/reviewed-win/include'
+          $apiHeader = Join-Path $apiIncludes 'umaa/generated/official_eo_bindings.hpp'
+          python tools/verify_official_service_types.py --catalog catalog/umaa6-six-icd-reviewed.json --official-root $original
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/generate_reviewed_type_support.py --catalog catalog/umaa6-six-icd-reviewed.json --official-root $original --out $extra --idlc $idlc --exclude-service 'UMAA::EO::BatteryStatus' --exclude-service 'UMAA::EO::EngineControl'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/generate_reviewed_service_api.py --catalog catalog/umaa6-six-icd-reviewed.json --generated-root $battery --generated-root $engine --generated-root $extra --out $apiHeader
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake -S tools/reviewed_api_smoke -B build/reviewed-api-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake" -DUMAA_REVIEWED_API_INCLUDE="$apiIncludes" -DUMAA_BATTERY_TYPES_INCLUDE="$battery" -DUMAA_ENGINE_TYPES_INCLUDE="$engine" -DUMAA_EXTRA_TYPES_INCLUDE="$extra"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/reviewed-api-win --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir build/reviewed-api-win -C Release --output-on-failure
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compile actual official UMAA BatteryReportType on Windows MSVC
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
+          $root = Join-Path $env:RUNNER_TEMP 'umaa-official-generated'
+          $engineRoot = Join-Path $env:RUNNER_TEMP 'umaa-engine-generated'
+          cmake -S dds/cyclone -B build/official-dds-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake" -DUMAA_OFFICIAL_GENERATED_ROOT="$root" -DUMAA_ENGINE_GENERATED_ROOT="$engineRoot"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/official-dds-win --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Actual UMAA 6.0 BatteryStatus DDS independent Windows integration
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
+          $env:PATH = "$vcpkgRoot/installed/x64-windows/bin;$env:PATH"
+          ctest --test-dir build/official-dds-win -C Release -R 'official_umaa_(battery_dds_wire|battery_sdk_reader_wire|engine_command_flow|engine_update_flow)' --output-on-failure -V
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload CTest output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-cyclone-windows-ctest
+          path: |
+            build/real-dds-win/Testing/Temporary/
+            build/official-dds-win/Testing/Temporary/
+            build/reviewed-api-win/Testing/Temporary/
+          if-no-files-found: warn
+
+# Official UMAA source is obtained only into the ephemeral runner and not redistributed.

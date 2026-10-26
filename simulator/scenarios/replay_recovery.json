@@ -1,0 +1,10 @@
+{
+  "name": "reject_replay_and_fail_unrecoverable",
+  "actions": ["COMMAND c1 p1 s3 200 1200", "COMMAND c1 p1 s3 200 1500", "COMMAND c2 p1 s3 201 1800", "RESTART", "DISPOSE c1 s3"],
+  "expected_events": [
+    "STATUS s3 ISSUED SUCCEEDED", "ACK s3", "STATUS s3 COMMANDED SUCCEEDED",
+    "STATUS s3 EXECUTING SUCCEEDED", "IGNORED s3 STALE_OR_REPLAY",
+    "IGNORED s3 SOURCE_CONFLICT", "STATUS s3 FAILED SERVICE_FAILED",
+    "DISPOSE_STATUS s3", "DISPOSE_ACK s3"
+  ]
+}

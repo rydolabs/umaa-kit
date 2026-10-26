@@ -1,0 +1,65 @@
+name: UMAA SDK + Independent Simulator / cross-platform prototype
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Prototype checks / ${{ matrix.os }} / ${{ matrix.compiler }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            compiler: default
+          - os: ubuntu-24.04
+            compiler: clang
+          - os: windows-2022
+            compiler: default
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build and verify C++ library, dynamic modules, generator, independent simulator
+        run: python tools/ci_verify.py --compiler ${{ matrix.compiler }}
+      - name: Validate official service catalog, typed generation, and inventory
+        run: |
+          python -m unittest discover -s sdk/tests -p test_official_service_types.py -v
+          python -m unittest discover -s sdk/tests -p test_reviewed_service_bindings.py -v
+          python -m unittest discover -s sdk/tests -p test_official_inventory.py -v
+          python -m unittest discover -s sdk/tests -p test_generate_reviewed_type_support.py -v
+          python -m unittest discover -s sdk/tests -p test_icd_topic_ledger.py -v
+          python -m unittest discover -s sdk/tests -p test_six_icd_contracts.py -v
+      - name: Clang UBSan SDK and module regression
+        if: matrix.os == 'ubuntu-24.04' && matrix.compiler == 'clang'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S sdk -B build/ubsan-sdk \
+            -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="-fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=undefined" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=undefined"
+          cmake --build build/ubsan-sdk --parallel 2
+          UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+            ctest --test-dir build/ubsan-sdk --output-on-failure -V
+      - name: Upload evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umaa-prototype-${{ matrix.os }}-${{ matrix.compiler }}-evidence
+          path: evidence/ci/
+          if-no-files-found: warn
+
+# This workflow verifies SYNTHETIC IDL + core prototype + stdio simulation.
+# It does not validate real Cyclone / RTI DDS or official UMAA conformance.

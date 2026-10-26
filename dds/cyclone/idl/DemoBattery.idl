@@ -1,0 +1,9 @@
+// INTERNAL WIRE TRANSPORT TEST FIXTURE ONLY. Not official UMAA IDL.
+module Demo {
+  module EO {
+    struct BatteryReportType {
+      @key long source_id;
+      long level_percent;
+    };
+  };
+};

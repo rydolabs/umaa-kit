@@ -1,0 +1,37 @@
+name: Cyclone DDS real-wire integration (synthetic IDL)
+on:
+  push:
+    paths:
+      - 'dds/cyclone/**'
+      - 'simulator/dds/**'
+      - '.github/workflows/real-dds.yml'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cyclonedds-wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Cyclone DDS C and IDL compiler from Ubuntu
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev
+          dpkg-query -W 'cyclonedds*' 'libddsc*' || true
+          idlc --version || true
+      - name: Configure DDS C and TypeSupport
+        run: cmake -S dds/cyclone -B build/real-dds -DCMAKE_BUILD_TYPE=Debug
+      - name: Build DDS publisher and independent simulator
+        run: cmake --build build/real-dds --parallel 2
+      - name: Independent real DDS wire test
+        run: ctest --test-dir build/real-dds --output-on-failure -V
+      - name: Upload evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclonedds-real-wire-evidence
+          path: build/real-dds/Testing/Temporary/
+          if-no-files-found: warn
+# Deliberately synthetic IDL; this does not prove official UMAA 6.0 wire compliance.

@@ -1,0 +1,21 @@
+{
+  "schema_version": "demo-only",
+  "services": [
+    {
+      "name": "Demo::EO::EngineControl",
+      "kind": "command",
+      "command_type": "Demo::EO::EngineCommandType",
+      "command_topic": "Demo::EO::EngineCommandType",
+      "status_topic": "Demo::EO::EngineCommandStatusType",
+      "ack_topic": "Demo::EO::EngineCommandAckReportType",
+      "origin": "synthetic fixture, NOT official UMAA schema"
+    },
+    {
+      "name": "Demo::EO::BatteryStatus",
+      "kind": "report",
+      "report_type": "Demo::EO::BatteryReportType",
+      "report_topic": "Demo::EO::BatteryReportType",
+      "origin": "synthetic fixture, NOT official UMAA schema"
+    }
+  ]
+}

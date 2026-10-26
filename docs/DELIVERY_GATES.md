@@ -24,3 +24,14 @@
 5. Add the missing protocol rules, dynamic/distributed lifecycle and exhaustive negative tests; do not silently emulate unsupported QoS.
 
 If these gates cannot be met, the correct delivery status is *partial* rather than success.
+## 2026-10-27 P2 scoped evidence (does not change gate verdicts)
+
+- The Cyclone Command input path uses a shared fail-closed `SampleReader`.
+- Official Linux CTest **6/6** and Windows official CTest **5/5** include an
+  independently constructed wrong-Destination Command and verify the host
+  explicitly rejects it without publishing CommandStatus/CommandAck.
+  See Linux [run 40413028373](https://github.com/rydolabs/umaa-kit/actions/runs/40413028373)
+  and Windows [run 40413023193](https://github.com/rydolabs/umaa-kit/actions/runs/40413023193).
+- G8 remains **PARTIAL**, G6/G7/G11 **OPEN**, G9/G10 **BLOCKED**, G12
+  **PARTIAL**. No newly implemented 51-service runtime or license-backed RTI
+  proof is claimed.

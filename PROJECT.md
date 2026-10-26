@@ -72,7 +72,8 @@ IDL is not redistributed by this repo. Public upstream ICD Markdown
 transcriptions can assist traceability but are not themselves a replacement
 for authoritative AUVSI normative documents.
 
-GitHub repository: `nssang00/umaa-dev`. CI uses hosted `ubuntu-24.04`
+Canonical GitHub repository: `rydolabs/umaa-kit` (source snapshot imported from
+`nssang00/umaa-dev` on 2026-10-26, which retains earlier PR history). CI uses hosted `ubuntu-24.04`
 (GCC/Clang) and `windows-2022` (MSVC). Real Linux DDS,
 network-namespace/netem and native Windows DDS workflows upload logs.
 Use the **exact Actions run and Git commit** as evidence for each assertion.

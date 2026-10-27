@@ -35,7 +35,7 @@ Sources are linked, not copied into the repository. The public official source P
 8. Water Environment
 9. Weather
 
-This is the nine-entry **public v1.0 table of contents**, not a claim that only nine Component types exist in the government model. Do not assign any provider/consumer services from guesses.
+This is the nine-entry **public v1.0 table of contents**, not a claim that only nine Component types exist in the government model. The original PDF's section 3.x.3 text yielded **91 service mention rows**. They are recorded under `service_assignment_candidates` with source-section and extracted-text line references. A tilde annotation is preserved verbatim as a boolean and **not interpreted as provider/consumer, optional or required** until the PDF legend is reviewed. Some service names occur twice within one Component; both rows are preserved. **No normative membership or direction is accepted yet.**
 
 ## Existing Catalog audit discrepancy
 
@@ -82,3 +82,20 @@ Evidence: [source provenance workflow](https://github.com/rydolabs/umaa-kit/acti
 For Compliance Rev 1, the PDF text pass located **31 lines containing "shall"**, including administrative front matter. **26 post-front-matter line candidates** are stored in `normative_clause_candidates` with stable extracted-text line locators. These are not parsed or reviewed requirements; one requirement can span several lines and some lines are only context. Do not use them as a requirement count.
 
 The machine-readable `normative_requirements` remains empty until a reviewer reads each complete clause, checks conditions/exceptions and attaches authoritative page and selected Component applicability. CO and Component service assignments remain unverified. Correct interpretation is **source acquisition PASS, clause-level G6/G11 BLOCKED**.
+
+
+### Component service table extraction checkpoint (unreviewed)
+
+| Public Component | PDF section | Source table mentions | Tilde-annotated mentions |
+|---|---|---:|---:|
+| Autopilot | 3.1.3 | 14 | 7 |
+| COLREGS And Hazard Avoidance | 3.2.3 | 17 | 10 |
+| Logging | 3.3.3 | 1 | 1 |
+| Mission Executor | 3.4.3 | 28 | 13 |
+| USV Navigation | 3.5.3 | 5 | 0 |
+| UUV Hazard Avoidance | 3.6.3 | 14 | 8 |
+| UUV Navigation | 3.7.3 | 6 | 1 |
+| Water Environment | 3.8.3 | 3 | 0 |
+| Weather | 3.9.3 | 3 | 0 |
+
+Original PDF SHA-256 `872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75` and [candidate extraction runner](https://github.com/rydolabs/umaa-kit/actions/runs/40474336528). A service mentioned twice is **not** two distinct services; these 91 mention rows cannot be added to the 53-service six-ICD inventory to obtain any normative total. Assigning precise provider/consumer role and optionality requires inspecting the visual/semantic original Component Definitions and selected Component specification.

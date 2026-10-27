@@ -108,63 +108,909 @@
       "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
       "service_assignments": [],
       "assignment_reviewed": false,
-      "applicability": "undetermined"
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 175,
+          "service_name": "PrimitiveDriverControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 176,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 177,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 178,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 179,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 180,
+          "service_name": "UVPlatformSpecs",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 181,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 182,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 183,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 184,
+          "service_name": "WindStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 185,
+          "service_name": "WaterCurrentStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 186,
+          "service_name": "MissionPlanConstraintControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 187,
+          "service_name": "ActiveConstraintsControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 188,
+          "service_name": "ConditionalReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
     },
     {
       "name": "COLREGS And Hazard Avoidance",
       "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
       "service_assignments": [],
       "assignment_reviewed": false,
-      "applicability": "undetermined"
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 216,
+          "service_name": "GlobalWaypointControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 217,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 218,
+          "service_name": "ContactReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 219,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 220,
+          "service_name": "ContactCOLREGSClassificationStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 221,
+          "service_name": "ContactVisualClassificationStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 222,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 223,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 224,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 225,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 226,
+          "service_name": "UVPlatformSpecs",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 227,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 228,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 229,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 230,
+          "service_name": "ContactManeuverInfluenceStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 231,
+          "service_name": "ActiveConstraintsControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 232,
+          "service_name": "ConditionalReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
     },
     {
       "name": "Logging",
       "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
       "service_assignments": [],
       "assignment_reviewed": false,
-      "applicability": "undetermined"
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.3.3",
+          "extracted_pdf_text_line": 244,
+          "service_name": "LogReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
     },
     {
       "name": "Mission Executor",
       "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
       "service_assignments": [],
       "assignment_reviewed": false,
-      "applicability": "undetermined"
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 283,
+          "service_name": "ConditionalControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 284,
+          "service_name": "MissionPlanConstraintControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 285,
+          "service_name": "MissionPlanMissionControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 286,
+          "service_name": "MissionPlanTaskControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 287,
+          "service_name": "MissionPlanObjectiveControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 289,
+          "service_name": "MissionPlanExecutionStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 290,
+          "service_name": "TaskPlanExecutionStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 291,
+          "service_name": "MissionPlanExecutionControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 292,
+          "service_name": "TaskPlanExecutionControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 293,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 294,
+          "service_name": "ActiveConstraintsControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 295,
+          "service_name": "ConditionalReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 296,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 297,
+          "service_name": "ObjectiveExecutionStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 298,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 299,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 300,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 301,
+          "service_name": "GlobalWaypointControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 302,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 303,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 304,
+          "service_name": "ContactReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 305,
+          "service_name": "UVPlatformSpecs",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 306,
+          "service_name": "MissionPlanReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 307,
+          "service_name": "ObjectiveExecutionControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 308,
+          "service_name": "ContactCOLREGSClassificationStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 309,
+          "service_name": "ContactVisualClassificationStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 310,
+          "service_name": "WaterCurrentStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 311,
+          "service_name": "WindStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
     },
     {
       "name": "USV Navigation",
       "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
       "service_assignments": [],
       "assignment_reviewed": false,
-      "applicability": "undetermined"
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.5.3",
+          "extracted_pdf_text_line": 324,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.5.3",
+          "extracted_pdf_text_line": 325,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.5.3",
+          "extracted_pdf_text_line": 326,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.5.3",
+          "extracted_pdf_text_line": 327,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.5.3",
+          "extracted_pdf_text_line": 328,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
     },
     {
       "name": "UUV Hazard Avoidance",
       "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
       "service_assignments": [],
       "assignment_reviewed": false,
-      "applicability": "undetermined"
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 355,
+          "service_name": "ActiveConstraintsControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 356,
+          "service_name": "GlobalWaypointControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 357,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 358,
+          "service_name": "ContactReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 359,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 360,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 361,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 362,
+          "service_name": "UVPlatformSpecs",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 363,
+          "service_name": "ConditionalReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 364,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 365,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 366,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 367,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 368,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
     },
     {
       "name": "UUV Navigation",
       "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
       "service_assignments": [],
       "assignment_reviewed": false,
-      "applicability": "undetermined"
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 383,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 384,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 385,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 386,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 387,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 388,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
     },
     {
       "name": "Water Environment",
       "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
       "service_assignments": [],
       "assignment_reviewed": false,
-      "applicability": "undetermined"
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.8.3",
+          "extracted_pdf_text_line": 399,
+          "service_name": "WaterCurrentStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.8.3",
+          "extracted_pdf_text_line": 400,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.8.3",
+          "extracted_pdf_text_line": 401,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
     },
     {
       "name": "Weather",
       "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
       "service_assignments": [],
       "assignment_reviewed": false,
-      "applicability": "undetermined"
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.9.3",
+          "extracted_pdf_text_line": 412,
+          "service_name": "WindStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.9.3",
+          "extracted_pdf_text_line": 413,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.9.3",
+          "extracted_pdf_text_line": 414,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
     }
   ],
   "existing_six_icd_catalog": {
@@ -2257,5 +3103,16 @@
       "applicability": "undetermined",
       "verdict": "not_assessed"
     }
-  ]
+  ],
+  "component_definition_extraction": {
+    "source_id": "COMPONENT_DEFINITIONS_1_0",
+    "pdf_pages": 12,
+    "source_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75",
+    "source_audit_run": "https://github.com/rydolabs/umaa-kit/actions/runs/40474336528",
+    "published_component_candidates": 9,
+    "service_mention_rows": 91,
+    "role_and_tilde_semantics_reviewed": false,
+    "duplicates_preserved": true,
+    "extraction_status": "source_table_candidates_only"
+  }
 }

@@ -60,6 +60,18 @@ def validate(catalog, scope):
         errors.append('public v1.0 component name candidates incomplete')
     if any(c.get('assignment_reviewed') and not c.get('service_assignments') for c in components):
         errors.append('reviewed Component membership has no services')
+    candidate_rows = [x for c in components for x in c.get('service_assignment_candidates', [])]
+    summary = scope.get('component_definition_extraction', {})
+    if summary.get('service_mention_rows') != len(candidate_rows) or len(candidate_rows) != 91:
+        errors.append('component candidate row coverage drift')
+    if any(x.get('provider_consumer_role') != 'undetermined' or x.get('authoritative_role_reviewed') is not False
+           or x.get('applicability') != 'undetermined' for x in candidate_rows):
+        errors.append('prematurely assigned Component role or applicability')
+    if any(not x.get('source_section') or not x.get('service_name') or not isinstance(x.get('extracted_pdf_text_line'), int)
+           for x in candidate_rows):
+        errors.append('missing original Component table locator')
+    if summary.get('role_and_tilde_semantics_reviewed') is not False or summary.get('source_sha256') != '872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75':
+        errors.append('unreviewed Component table or source provenance altered')
     originals = {s['name']: s for s in catalog.get('services', [])}
     candidates = scope.get('service_candidates', [])
     cand_names = [s.get('name') for s in candidates]
@@ -146,6 +158,7 @@ def validate(catalog, scope):
             'documented_topic_count': stats.get('documented_topic_count'),
             'count_discrepancy_open': mismatch,
             'published_component_name_candidates': len(components),
+            'component_service_mention_candidates': len(candidate_rows),
             'normative_requirements_traced': len(normative),
             'source_full_compliance_reviewed': source_map.get('COMPLIANCE_REV1', {}).get('full_text_reviewed',False),
             'claim_blocked': blocked, 'errors': errors}

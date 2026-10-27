@@ -48,6 +48,16 @@ class ScopeTests(unittest.TestCase):
         next(x for x in d['sources'] if x['id']=='COMPONENT_DEFINITIONS_1_0')['kind']='normative'
         self.rejected(d,'are not the requirements')
 
+    def test_component_row_cannot_be_dropped(self):
+        d=copy.deepcopy(self.scope)
+        d['component_candidates'][0]['service_assignment_candidates'].pop()
+        self.rejected(d,'component candidate row coverage drift')
+
+    def test_unreviewed_component_role_cannot_be_invented(self):
+        d=copy.deepcopy(self.scope)
+        d['component_candidates'][0]['service_assignment_candidates'][0]['provider_consumer_role']='provider'
+        self.rejected(d,'prematurely assigned Component role')
+
     def test_unreviewed_pdf_line_cannot_be_marked_pass(self):
         d=copy.deepcopy(self.scope)
         d['normative_clause_candidates'][0]['verdict']='pass'

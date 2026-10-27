@@ -1,0 +1,25 @@
+name: Compliance trace schema and open scope
+on:
+  push:
+    paths:
+      - 'catalog/umaa6-compliance-trace.json'
+      - 'catalog/umaa6-six-icd-reviewed.json'
+      - 'tools/verify_compliance_trace.py'
+      - '.github/workflows/compliance-trace.yml'
+  pull_request:
+    paths:
+      - 'catalog/umaa6-compliance-trace.json'
+      - 'catalog/umaa6-six-icd-reviewed.json'
+      - 'tools/verify_compliance_trace.py'
+      - '.github/workflows/compliance-trace.yml'
+permissions:
+  contents: read
+jobs:
+  trace-schema:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python tools/verify_compliance_trace.py --root .

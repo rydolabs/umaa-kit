@@ -1,0 +1,308 @@
+{
+  "schema": "umaa-kit-compliance-trace-v1",
+  "snapshot_commit": "be4a1d6e29e21a4da459d58845f491b99c31e0db",
+  "sources": [
+    {
+      "id": "T0300-BE-IDS-010-Rev1",
+      "title": "UMAA Compliance Specification Rev. 1",
+      "url": "https://auvsilink.org/PDFs/2022%20revisions_v10_T0300-BE-IDS-010_08.04.20.pdf",
+      "publication": "2022-05",
+      "review_status": "chapter_1_reviewed",
+      "notes": "2022 Rev 1 public edition. Verify against procurement-designated revision. Source copyrighted; retain citations, not full text."
+    },
+    {
+      "id": "UMAA-COMPDEF-v1",
+      "title": "UMAA Component Definitions v1.0",
+      "url": "https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf",
+      "review_status": "NOT_FULLY_RETRIEVED",
+      "notes": "Public document indexed, but direct PDF retrieval not confirmed; no normative component mappings asserted."
+    }
+  ],
+  "scope": {
+    "claim": "UNRESOLVED",
+    "component_id": null,
+    "component_provider_services": [],
+    "component_consumer_services": [],
+    "status": "BLOCKED_PENDING_COMPONENT_DEFINITIONS_AND_TARGET_COMPONENT",
+    "icd_domains_reviewed": [
+      "EO",
+      "MO",
+      "MM",
+      "SA",
+      "SEM",
+      "SO"
+    ],
+    "icd_domains_pending": [
+      "CO"
+    ],
+    "experimental": "OUT_OF_BASELINE_COMPLIANCE_UNLESS_CONTRACT_SPECIFIES",
+    "service_catalog_status": "LITERAL_MAPPING_ONLY_NOT_NORMATIVE_QOS",
+    "required_scope": "Component-level, not blanket SDK certification"
+  },
+  "requirements": [
+    {
+      "id": "UMAA-CS-001",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-1(1)",
+      "category": "component",
+      "summary": "All interfaces/messages for each Component-defined Provider",
+      "applicability": "UNRESOLVED",
+      "verification": "component-provider-map",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-002",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-1(2)",
+      "category": "component",
+      "summary": "No duplicative non-UMAA interface for Component Consumer",
+      "applicability": "UNRESOLVED",
+      "verification": "component-interface-audit",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-003",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-1(3)",
+      "category": "component",
+      "summary": "Correct interpretation of each participant operation and fields",
+      "applicability": "UNRESOLVED",
+      "verification": "service-operations-test",
+      "status": "PARTIAL",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-004",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-1(4)",
+      "category": "component",
+      "summary": "No required external non-UMAA dependency for provider functions, except exposure adapter",
+      "applicability": "UNRESOLVED",
+      "verification": "component-dependency-review",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-005",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-1(5)",
+      "category": "component",
+      "summary": "No additional undeclared Service Consumer dependency for provider functions",
+      "applicability": "UNRESOLVED",
+      "verification": "component-dependency-review",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-006",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-1(6)",
+      "category": "component",
+      "summary": "Specified interface flow control implemented",
+      "applicability": "UNRESOLVED",
+      "verification": "command-report-collection-test",
+      "status": "PARTIAL",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-007",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-2",
+      "category": "documentation",
+      "summary": "Performance/dependency document accompanies each Component",
+      "applicability": "UNRESOLVED",
+      "verification": "component-specification",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-008",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-2(a)",
+      "category": "documentation",
+      "summary": "Data generation and message update timing documented",
+      "applicability": "UNRESOLVED",
+      "verification": "component-specification",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-009",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-2(b)",
+      "category": "documentation",
+      "summary": "Data accuracy, quality, expected error tolerance and precision documented",
+      "applicability": "UNRESOLVED",
+      "verification": "component-specification",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-010",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-2(c)",
+      "category": "documentation",
+      "summary": "Provider startup/shutdown/recovery and functional characteristics documented",
+      "applicability": "UNRESOLVED",
+      "verification": "component-specification",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-011",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-2(d)",
+      "category": "documentation",
+      "summary": "Participant-required DDS QoS documented",
+      "applicability": "UNRESOLVED",
+      "verification": "component-specification",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-012",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-2(e)",
+      "category": "documentation",
+      "summary": "Optional and union field interpretation documented",
+      "applicability": "UNRESOLVED",
+      "verification": "component-specification",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-013",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-2(f)",
+      "category": "documentation",
+      "summary": "Required DDS Security configuration documented",
+      "applicability": "UNRESOLVED",
+      "verification": "component-specification",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-014",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-3",
+      "category": "dds",
+      "summary": "Use OMG DDS for participant communication unless specific service exception",
+      "applicability": "UNRESOLVED",
+      "verification": "real-dds-cross-process",
+      "status": "PARTIAL",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-015",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-3.1",
+      "category": "dds",
+      "summary": "DDS product must comply with OMG DDS spec identified by UMAA ICDs (vendor not mandated)",
+      "applicability": "UNRESOLVED",
+      "verification": "vendor-dds-evidence",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-016",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-3.2",
+      "category": "idl",
+      "summary": "Component compatible with official UMAA IDL for every applicable service",
+      "applicability": "UNRESOLVED",
+      "verification": "official-idl-runtime",
+      "status": "PARTIAL",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-017",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-3.2(a)",
+      "category": "idl",
+      "summary": "Populate all mandatory fields per service ICD",
+      "applicability": "UNRESOLVED",
+      "verification": "semantic-field-oracle",
+      "status": "PARTIAL",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-018",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-3.2(b)(1)",
+      "category": "idl",
+      "summary": "Publish available optional data in Status/Report",
+      "applicability": "UNRESOLVED",
+      "verification": "optional-report-oracle",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-019",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-3.2(b)(2)",
+      "category": "idl",
+      "summary": "Reject Command missing provider-required optional field except valid ICD/default exception",
+      "applicability": "UNRESOLVED",
+      "verification": "optional-command-oracle",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-020",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-3.2(b)(3)",
+      "category": "idl",
+      "summary": "Reject Command containing optional field unsupported by provider",
+      "applicability": "UNRESOLVED",
+      "verification": "unsupported-command-oracle",
+      "status": "PARTIAL",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-021",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "1-3.2(c)",
+      "category": "idl",
+      "summary": "Support one or more valid union alternatives in Command",
+      "applicability": "UNRESOLVED",
+      "verification": "union-command-oracle",
+      "status": "OPEN",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    },
+    {
+      "id": "UMAA-CS-022",
+      "source_id": "T0300-BE-IDS-010-Rev1",
+      "clause": "A-4.2",
+      "category": "conditional-security",
+      "summary": "For program cybersecurity communication requirements comply with DDS Security specification",
+      "applicability": "UNRESOLVED",
+      "verification": "program-specific-security-criteria",
+      "status": "SCOPE_UNSET",
+      "evidence_refs": [],
+      "review_notes": "Not closed; requires component-specific normative mapping and independent evidence."
+    }
+  ]
+}

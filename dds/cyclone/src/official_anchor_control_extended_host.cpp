@@ -27,6 +27,8 @@ constexpr auto COMMANDED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule
 constexpr auto EXECUTING=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_EXECUTING;
 constexpr auto CANCELED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_CANCELED;
 constexpr auto COMPLETED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_COMPLETED;
+constexpr auto FAILED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_FAILED;
+constexpr auto OBJECTIVE_FAILED=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_OBJECTIVE_FAILED;
 constexpr auto SUCCEEDED=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_SUCCEEDED;
 constexpr auto CANCELED_REASON=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_CANCELED;
 constexpr auto UPDATED_REASON=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_UPDATED;
@@ -82,6 +84,7 @@ auto state_enum(const std::string& state) {
   if(state=="EXECUTING")return EXECUTING;
   if(state=="CANCELED")return CANCELED;
   if(state=="COMPLETED")return COMPLETED;
+  if(state=="FAILED")return FAILED;
   throw std::runtime_error("unsupported anchor state");
 }
 // Session IDs in protocol events are hex-encoded UUID bytes, never arbitrary
@@ -103,7 +106,8 @@ struct AnchorMapper {
     s.timeStamp.seconds=(decltype(s.timeStamp.seconds))time(nullptr);
     s.commandStatus=state_enum(event.detail);
     s.commandStatusReason=(event.detail=="CANCELED"?CANCELED_REASON:
-      (event.reason=="UPDATED"?UPDATED_REASON:SUCCEEDED));
+      (event.reason=="OBJECTIVE_FAILED"?OBJECTIVE_FAILED:
+       (event.reason=="UPDATED"?UPDATED_REASON:SUCCEEDED)));
     return s;
   }
   Ack make_ack(const umaa::Identity& id,const AnchorPayload& payload) const {
@@ -181,9 +185,11 @@ int main(int argc,char** argv) {
         }
         // CI-only virtual device completion callback; no actual anchor moves.
         // Production code must wait for device-observed achievement first.
-        if(std::getenv("UMAA_ANCHOR_SIMULATE_COMPLETE") &&
+        if((std::getenv("UMAA_ANCHOR_SIMULATE_COMPLETE") ||
+            std::getenv("UMAA_ANCHOR_SIMULATE_FAILURE")) &&
            payload.action==UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_RAISE) {
-          const auto done=anchor.complete(id.session,true);
+          const bool success=std::getenv("UMAA_ANCHOR_SIMULATE_COMPLETE") != nullptr;
+          const auto done=anchor.complete(id.session,success);
           for(const auto& event:done)
             if(event.kind==umaa::Event::Kind::Ignored)
               throw std::runtime_error("completion refused: "+event.detail);

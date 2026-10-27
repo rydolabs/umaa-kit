@@ -41,8 +41,9 @@ int main(int argc,char** argv){
  const int updating=(argc==2 && strcmp(argv[1],"--update")==0);
  const int raising=(argc==2 && strcmp(argv[1],"--raise")==0);
  const int completing=(argc==2 && strcmp(argv[1],"--complete")==0);
+ const int failing=(argc==2 && strcmp(argv[1],"--fail")==0);
  const int bad_destination=(argc==2 && strcmp(argv[1],"--bad-destination")==0);
- if(argc>2 || (argc==2 && !updating && !bad_destination && !raising && !completing))return 2;
+ if(argc>2 || (argc==2 && !updating && !bad_destination && !raising && !completing && !failing))return 2;
  dds_entity_t p=dds_create_participant(DDS_DOMAIN_DEFAULT,NULL,NULL);
  if(p<0)return 2;
  dds_entity_t ct=dds_create_topic(p,&UMAA_EO_AnchorControl_AnchorCommandType_desc,"AnchorCommandType",NULL,NULL);
@@ -57,7 +58,7 @@ int main(int argc,char** argv){
  if(command_writer<0||status_reader<0||ack_reader<0)return 3;
  if(!matched(command_writer,status_reader,ack_reader)){fputs("ANCHOR_CONTROL_ORACLE: host discovery timeout\n",stderr);return 4;}
  Cmd command={0};
- command.action=(raising||completing)?UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_RAISE:
+ command.action=(raising||completing||failing)?UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_RAISE:
   UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_LOWER;
  command.timeStamp.seconds=time(NULL);
  command.timeStamp.nanoseconds=1;
@@ -65,7 +66,7 @@ int main(int argc,char** argv){
  fillid(command.destination.id,bad_destination?0x99:0x52);
  fillid(command.sessionID,0x33);
  if(dds_write(command_writer,&command)<0){fputs("ANCHOR_CONTROL_ORACLE: issue command failed\n",stderr);return 5;}
- puts((raising||completing)?"ANCHOR_CONTROL_ORACLE: issued RAISE anchor command":
+ puts((raising||completing||failing)?"ANCHOR_CONTROL_ORACLE: issued RAISE anchor command":
               "ANCHOR_CONTROL_ORACLE: issued LOWER anchor command");
  if(bad_destination){
    // An independently constructed wrong-destination Command must not result
@@ -94,7 +95,7 @@ int main(int argc,char** argv){
    puts("ANCHOR_CONTROL_ORACLE: PASS invalid destination with no Status/Ack");
    return 0;
  }
- const UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_CommandStatusEnumType states[8]={
+ const UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_CommandStatusEnumType states[9]={
  UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_ISSUED,
  UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_COMMANDED,
  UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_EXECUTING,
@@ -102,11 +103,12 @@ int main(int argc,char** argv){
  UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_COMMANDED,
  UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_EXECUTING,
  UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_CANCELED,
- UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_COMPLETED
+ UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_COMPLETED,
+ UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_FAILED
  };
- const char* labels[8]={"ISSUED","COMMANDED","EXECUTING","ISSUED_UPDATED","COMMANDED","EXECUTING","CANCELED","COMPLETED"};
+ const char* labels[9]={"ISSUED","COMMANDED","EXECUTING","ISSUED_UPDATED","COMMANDED","EXECUTING","CANCELED","COMPLETED","FAILED"};
  const int expected=updating?7:4;
- const int terminal_idx=completing?7:6;
+ const int terminal_idx=completing?7:(failing?8:6);
  int nstate=0;int got_ack=0;int sent_cancel=0;int sent_update=0;int disposed_status=0;int disposed_ack=0;
  for(int ticks=0;ticks<650;++ticks){
    Status s={0};void* sample[1]={&s};dds_sample_info_t info[1]={{0}};
@@ -116,11 +118,13 @@ int main(int argc,char** argv){
      if(info[0].valid_data){
        if(nstate>=expected || !same(s.sessionID,command.sessionID) ||
           s.commandStatus!=states[updating?nstate:(nstate==3?terminal_idx:nstate)] ||
-          s.commandStatusReason != ((nstate==expected-1 && !completing)?
+          s.commandStatusReason != ((nstate==expected-1 && !completing && !failing)?
           UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_CANCELED:
           (updating && nstate==3?
           UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_UPDATED:
-          UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_SUCCEEDED))) {
+          (failing && nstate==expected-1?
+          UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_OBJECTIVE_FAILED:
+          UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_SUCCEEDED)))) {
          fprintf(stderr,"ANCHOR_CONTROL_ORACLE: bad status, phase=%d got=%d reason=%d\n",
                  nstate,(int)s.commandStatus,(int)s.commandStatusReason);
          return 7;
@@ -147,7 +151,7 @@ int main(int argc,char** argv){
        if(got_ack >= (updating?2:1) || !same(ack.sessionID,command.sessionID) ||
           !same(ack.command.sessionID,command.sessionID) ||
           ack.command.action!=(got_ack==0?
-             ((raising||completing)?UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_RAISE:
+             ((raising||completing||failing)?UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_RAISE:
                       UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_LOWER):
              UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_STOP)){
           fputs("ANCHOR_CONTROL_ORACLE: malformed or duplicate Ack\n",stderr);return 10;
@@ -168,10 +172,11 @@ int main(int argc,char** argv){
      if(dds_write(command_writer,&command)<0){fputs("ANCHOR_CONTROL_ORACLE: update command failed\n",stderr);return 15;}
      sent_update=1;puts("ANCHOR_CONTROL_ORACLE: command UPDATE issued (same source/session, later timestamp)");
    }
-   if(nstate>=(completing?expected:expected-1) && got_ack>=(updating?2:1) && !sent_cancel){
+   if(nstate>=((completing||failing)?expected:expected-1) && got_ack>=(updating?2:1) && !sent_cancel){
      if(dds_dispose(command_writer,&command)<0){fputs("ANCHOR_CONTROL_ORACLE: command dispose failed\n",stderr);return 12;}
-     sent_cancel=1;puts(completing?"ANCHOR_CONTROL_ORACLE: command Dispose after COMPLETED":
-                              "ANCHOR_CONTROL_ORACLE: command Dispose initiated to cancel");
+     sent_cancel=1;puts(failing?"ANCHOR_CONTROL_ORACLE: command Dispose after FAILED":
+                        (completing?"ANCHOR_CONTROL_ORACLE: command Dispose after COMPLETED":
+                              "ANCHOR_CONTROL_ORACLE: command Dispose initiated to cancel"));
    }
    if(nstate==expected && disposed_status && disposed_ack)break;
    dds_sleepfor(DDS_MSECS(25));
@@ -182,8 +187,9 @@ int main(int argc,char** argv){
    return 13;
  }
  if(dds_delete(p)<0)return 14;
- puts(completing?"ANCHOR_CONTROL_ORACLE: PASS official UMAA AnchorControl RAISE/COMPLETED/Ack/Status/Dispose":
+ puts(failing?"ANCHOR_CONTROL_ORACLE: PASS official UMAA AnchorControl RAISE/FAILED/OBJECTIVE_FAILED/Ack/Status/Dispose":
+     (completing?"ANCHOR_CONTROL_ORACLE: PASS official UMAA AnchorControl RAISE/COMPLETED/Ack/Status/Dispose":
      (updating?"ANCHOR_CONTROL_ORACLE: PASS official UMAA AnchorControl UPDATE/Ack/Status/Cancel/Dispose":
-               "ANCHOR_CONTROL_ORACLE: PASS official UMAA AnchorControl AnchorCommand/Ack/Status/Cancel/Dispose"));
+               "ANCHOR_CONTROL_ORACLE: PASS official UMAA AnchorControl AnchorCommand/Ack/Status/Cancel/Dispose")));
  return 0;
 }

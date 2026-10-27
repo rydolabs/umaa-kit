@@ -219,7 +219,7 @@ if(DEFINED UMAA_PROBE_GENERATED_ROOT)
   add_executable(umaa_anchor_control_extended_oracle
     "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/official_anchor_control_extended_oracle.c")
   target_link_libraries(umaa_anchor_control_extended_oracle PRIVATE umaa_probe_type_support)
-  foreach(mode IN ITEMS normal update raise bad-destination complete)
+  foreach(mode IN ITEMS normal update raise bad-destination complete fail)
     if(mode STREQUAL "normal")
       set(extra_arg "")
     else()

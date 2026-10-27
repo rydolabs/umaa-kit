@@ -17,7 +17,7 @@
       "version": "Rev 1",
       "url": "https://www.auvsi.org/wp-content/uploads/2025/03/T0300-BE-IDS-010-Rev.-1.pdf",
       "full_text_reviewed": false,
-      "clause_extraction": "blocked_source_access",
+      "clause_extraction": "pdf_fetched_in_ci_not_clause_or_component_reviewed",
       "purpose": "required compliance and conditional applicability rules"
     },
     {
@@ -26,7 +26,7 @@
       "version": "1.0",
       "url": "https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf",
       "full_text_reviewed": false,
-      "clause_extraction": "toc_only",
+      "clause_extraction": "pdf_fetched_in_ci_not_clause_or_component_reviewed",
       "purpose": "published public component names and provider/consumer service assignments"
     },
     {
@@ -89,7 +89,7 @@
       "version": "6.0",
       "url": "https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-CO-EXP-ICD.pdf",
       "full_text_reviewed": false,
-      "clause_extraction": "not_ingested",
+      "clause_extraction": "pdf_fetched_in_ci_not_clause_or_component_reviewed",
       "purpose": "communications operations service and Topic scope"
     },
     {
@@ -1963,5 +1963,299 @@
     "unmapped_normative_requirements": true,
     "unselected_target_component": true,
     "unresolved_discrepancy": false
-  }
+  },
+  "official_public_pdf_provenance": [
+    {
+      "source_id": "COMPLIANCE_REV1",
+      "source_url": "https://www.auvsi.org/wp-content/uploads/2025/03/T0300-BE-IDS-010-Rev.-1.pdf",
+      "sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "pdf_pages": 24,
+      "bytes": 417251,
+      "metadata_ci_run": "https://github.com/rydolabs/umaa-kit/actions/runs/40473732828",
+      "acquisition": "fetched_ephemerally_in_ci",
+      "normative_reviewed": false
+    },
+    {
+      "source_id": "COMPONENT_DEFINITIONS_1_0",
+      "source_url": "https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf",
+      "sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75",
+      "pdf_pages": 12,
+      "bytes": 411359,
+      "metadata_ci_run": "https://github.com/rydolabs/umaa-kit/actions/runs/40473732828",
+      "acquisition": "fetched_ephemerally_in_ci",
+      "normative_reviewed": false
+    },
+    {
+      "source_id": "ICD_CO_6_0",
+      "source_url": "https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-CO-EXP-ICD.pdf",
+      "sha256": "d019f406290b0d9ad2d2eb98bbd6ab76437b0d391b15c40f973abe18dd596ed6",
+      "pdf_pages": 76,
+      "bytes": 1786979,
+      "metadata_ci_run": "https://github.com/rydolabs/umaa-kit/actions/runs/40473732828",
+      "acquisition": "fetched_ephemerally_in_ci",
+      "normative_reviewed": false
+    }
+  ],
+  "normative_clause_candidates": [
+    {
+      "candidate_id": "COMP-RAW-L0185",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 185,
+      "locator_fragment": "A Component shall consist of one or more Service Participants. A Service Participant is either a Service",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0187",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 187,
+      "locator_fragment": "Compliance with the Unmanned Maritime Autonomy Architecture (UMAA) standard shall be evaluated",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0188",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 188,
+      "locator_fragment": "individually per Component. Each Component shall meet the following criteria:",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0189",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 189,
+      "locator_fragment": "a. Shall implement all interface messages for all Service Participants defined as part of the",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0191",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 191,
+      "locator_fragment": "b. Shall not use non-UMAA interfaces that provide duplicative data or control for any Service",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0193",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 193,
+      "locator_fragment": "c. Shall implement and interpret all Service Participant operations appropriately as specified by their",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0195",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 195,
+      "locator_fragment": "d. Shall implement the full specification of the Component without the requirement for any external",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0198",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 198,
+      "locator_fragment": "e. Shall implement the full specification of the Component without the requirement for any additional",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0200",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 200,
+      "locator_fragment": "f. Shall implement all specified interface flow control as defined in the flow control section of the",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0202",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 202,
+      "locator_fragment": "The aggregation of all Components that comprise a system shall incorporate all Services that are needed to",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0204",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 204,
+      "locator_fragment": "specified by UMAA ICDs) shall comply with the UMAA ICD. Components shall be delineated outside",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0208",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 208,
+      "locator_fragment": "In order to be compliant with the UMAA standard, each Component shall be accompanied by a performance",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0212",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 212,
+      "locator_fragment": "The performance and dependency document shall provide the following:",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0253",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 253,
+      "locator_fragment": "Vehicle (UMV), the OMG DDS standard shall be used for all communication between Service Participants",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0256",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 256,
+      "locator_fragment": "Definition Language (IDL) in parallel with ICD generation. Any OMG DDS product shall only be used as",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0259",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 259,
+      "locator_fragment": "1-3.2 UMAA IDL FOR COMPILATION. A compliant Component shall be fully compatible with the",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0261",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 261,
+      "locator_fragment": "a. Non-optional fields. All required fields within a Service message shall be populated with a value",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0265",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 265,
+      "locator_fragment": "(1) For Status/Report type messages, any optional field shall be included in the published message",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0268",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 268,
+      "locator_fragment": "provided by the commanding Service Consumer, the Service Provider shall fail the command.",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0273",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 273,
+      "locator_fragment": "Provider shall not reject the command based solely on the optional field not being provided.",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0275",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 275,
+      "locator_fragment": "is provided by the commanding Service Consumer, the Service Provider shall reject the",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0277",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 277,
+      "locator_fragment": "c. Unions. In the case of unions in a command, a Service Provider shall implement one or more",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0288",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 288,
+      "locator_fragment": "Service shall only be granted if explicitly described in the corresponding ICD service definitions.",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0303",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 303,
+      "locator_fragment": "2-1.1 OMG DDS Security Specification. In order to be UMAA-compliant, a UMAA Component shall",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0314",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 314,
+      "locator_fragment": "messaging through standards defined in the ICDs. Any system-safety-related issues shall be addressed as",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0333",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 333,
+      "locator_fragment": "Participant is critical. Requirements around data quality, frequency, and accuracy shall be considered when",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    }
+  ]
 }

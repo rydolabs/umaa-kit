@@ -108,6 +108,21 @@ def validate(catalog, scope):
         errors.append('unrecorded Topic count discrepancy')
     if not mismatch and not any(d.get('status') == 'resolved_classification' and d.get('collection_reference_entries') == reference_count for d in discrepancies):
         errors.append('missing classification evidence for 113 Topic plus 1 Collection reference')
+    # Original PDFs may be fetched by a CI runner; that does NOT imply the
+    # complete clause, Component role or applicability has been reviewed.
+    fingerprints = scope.get('official_public_pdf_provenance', [])
+    if len(fingerprints) != 3 or len({x.get('source_id') for x in fingerprints}) != 3:
+        errors.append('missing/duplicate official PDF provenance records')
+    for item in fingerprints:
+        if item.get('normative_reviewed') or not __import__('re').fullmatch(r'[0-9a-f]{64}', item.get('sha256', '')) or (item.get('pdf_pages') or 0) < 1:
+            errors.append('invalid or prematurely reviewed source fingerprint')
+    draft = scope.get('normative_clause_candidates', [])
+    if len({x.get('candidate_id') for x in draft}) != len(draft):
+        errors.append('duplicated extracted requirement candidate locator')
+    if any(x.get('review_status') != 'unreviewed_extracted_line_not_full_normative_clause'
+           or x.get('verdict') != 'not_assessed' or x.get('applicability') != 'undetermined'
+           for x in draft):
+        errors.append('unreviewed PDF line upgraded without authoritative clause evaluation')
     normative = scope.get('normative_requirements', [])
     ids = [r.get('requirement_id') for r in normative]
     if len(ids) != len(set(ids)):

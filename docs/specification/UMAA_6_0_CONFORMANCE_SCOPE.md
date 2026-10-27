@@ -14,10 +14,10 @@
 
 | Authority | Source link | Status in this repository |
 |---|---|---|
-| AUVSI Compliance Specification T0300-BE-IDS-010 Rev 1 | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/T0300-BE-IDS-010-Rev.-1.pdf) | **BLOCKED**: public download link identified, entire PDF not fetched / clause-level reviewed |
-| AUVSI Component Definitions v1.0 | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf) | **PARTIAL**: public table-of-contents component names only; no authoritative service/direction matrix extracted |
+| AUVSI Compliance Specification T0300-BE-IDS-010 Rev 1 | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/T0300-BE-IDS-010-Rev.-1.pdf) | **IN PROGRESS**: original 24-page PDF fetched and SHA-pinned on CI, line candidates found, but exact requirement clauses and applicability not reviewed |
+| AUVSI Component Definitions v1.0 | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf) | **PARTIAL**: original 12-page PDF fetched and SHA-pinned on CI; component names identified, provided/consumed service rows still require verified extraction |
 | UMAA 6.0 ICDs EO / MO / MM / SA / SEM / SO | [official publication table](https://www.auvsi.org/advocacy/advocacy-initiatives/unmanned-maritime-autonomy-architecture/) | **PARTIAL**: 53 literal service headings from secondary public Markdown, 114 candidate Topic rows in current JSON; original normative clauses and DDS roles/QoS not fully reconciled |
-| UMAA 6.0 CO ICD | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-CO-EXP-ICD.pdf) | **MISSING** from existing six-ICD Catalog; must ingest separately |
+| UMAA 6.0 CO ICD | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-CO-EXP-ICD.pdf) | **PARTIAL**: original 76-page PDF fetched and SHA-pinned on CI; service clauses not yet ingested into the six-ICD Catalog |
 | UMAA 6.0 EXP ICD | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-EXP-ICD.pdf) | Experimental; exclude from baseline compliance, keep conditional contract overrides separate |
 | Official UMAA IDL | [official publication table](https://www.auvsi.org/advocacy/advocacy-initiatives/unmanned-maritime-autonomy-architecture/) | 352 TypeSupports generated/compiled in CI; this verifies type compilation, **not** normative service behavior or compliance |
 
@@ -69,3 +69,16 @@ The `normative_requirements` array is **empty on purpose** until clauses can be 
 ## Fail-closed verification
 
 `python tools/verify_compliance_scope.py` checks that the candidates have not drifted from the actual Catalog and do not contain invented conformance claims. `--strict` deliberately returns exit **3** while authoritative clause extraction, component choice or applicability are missing. Normal validation PASS is **data integrity only**, never official compliance. Open umbrella backlog: [issue #2](https://github.com/rydolabs/umaa-kit/issues/2).
+
+## Public original PDF provenance — independently fetched on GitHub runner
+
+| Document | Pages | SHA-256 | Clause/service acceptance |
+|---|---:|---|---|
+| COMPLIANCE_REV1 | 24 | `6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9` | **NOT REVIEWED** |
+| COMPONENT_DEFINITIONS_1_0 | 12 | `872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75` | **NOT REVIEWED** |
+| ICD_CO_6_0 | 76 | `d019f406290b0d9ad2d2eb98bbd6ab76437b0d391b15c40f973abe18dd596ed6` | **NOT REVIEWED** |
+
+Evidence: [source provenance workflow](https://github.com/rydolabs/umaa-kit/actions/runs/40473732828).
+For Compliance Rev 1, the PDF text pass located **31 lines containing "shall"**, including administrative front matter. **26 post-front-matter line candidates** are stored in `normative_clause_candidates` with stable extracted-text line locators. These are not parsed or reviewed requirements; one requirement can span several lines and some lines are only context. Do not use them as a requirement count.
+
+The machine-readable `normative_requirements` remains empty until a reviewer reads each complete clause, checks conditions/exceptions and attaches authoritative page and selected Component applicability. CO and Component service assignments remain unverified. Correct interpretation is **source acquisition PASS, clause-level G6/G11 BLOCKED**.

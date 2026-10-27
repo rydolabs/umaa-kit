@@ -48,6 +48,16 @@ class ScopeTests(unittest.TestCase):
         next(x for x in d['sources'] if x['id']=='COMPONENT_DEFINITIONS_1_0')['kind']='normative'
         self.rejected(d,'are not the requirements')
 
+    def test_unreviewed_pdf_line_cannot_be_marked_pass(self):
+        d=copy.deepcopy(self.scope)
+        d['normative_clause_candidates'][0]['verdict']='pass'
+        self.rejected(d,'unreviewed PDF line upgraded')
+
+    def test_fingerprint_does_not_mean_normative_review(self):
+        d=copy.deepcopy(self.scope)
+        d['official_public_pdf_provenance'][0]['normative_reviewed']=True
+        self.rejected(d,'prematurely reviewed source fingerprint')
+
     def test_unreviewed_requirements_cannot_pass(self):
         d=copy.deepcopy(self.scope)
         d['normative_requirements'].append({'requirement_id':'FAKE','applicability':'applicable','verdict':'pass','authoritative_document':'COMPLIANCE_REV1'})

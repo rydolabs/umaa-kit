@@ -40,3 +40,5 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 # git archive only includes tracked repository files; do not archive .git or CI secrets.
+
+# One-time handoff export trigger (main snapshot: e6ba98d467de3dbe316af345150eb5ed3942e38e).

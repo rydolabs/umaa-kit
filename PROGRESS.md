@@ -197,3 +197,27 @@
 - **P3-1 remains PARTIAL** until actual reviewed new Report/Command payload
   fields and lifecycle are implemented and independently validated. G6 QoS,
   G7 Collection, RTI, broader 51 services and compliance are not closed.
+
+## 2026-10-27 — P4 Anchor semantics merged and independently verified
+
+- [PR #6](https://github.com/rydolabs/umaa-kit/pull/6) adds a new
+  `AnchorSpecs` semantic real-wire Report update/Dispose path and
+  `AnchorControl` virtual-device LOWER/RAISE/STOP, Command/Ack/Status,
+  later-timestamp UPDATE, DDS Cancel/Dispose and negative Destination tests.
+- Official AUVSI 6.0 TypeSupport and **independent C DDS oracles** used on
+  Ubuntu and Windows; report physical fields are non-zero and checked twice.
+  These are prototype-valued fixtures, not Component Definition-approved QoS.
+- Exact validated feature commit `5ad1131033a0de7f4c78f3215c5d254195b5a66c`.
+  [Linux real DDS](https://github.com/rydolabs/umaa-kit/actions/runs/40450127689):
+  official CTest **15/15 PASS**, Linux namespace test **15/15**, impaired
+  **7**, blackout/recovery **3**.
+  [Windows real DDS](https://github.com/rydolabs/umaa-kit/actions/runs/40450127737):
+  official CTest **14/14 PASS**, installed real Cyclone CMake package external
+  Consumer PASS.
+  All **9/9** exact-source GitHub workflow runs succeeded.
+- Merged into `main` as `ed4af11870fa8313c2d823a25ae1523e4661ec4d`
+  with exact source tree `10a0cf40190a9636a6dd4a89fa87ad063dfc52d7`.
+- Official service catalog QoS, full command/sensor/device semantics,
+  remaining 49 reviewed service runtimes, RTI, conformance corpus and
+  production/hardware acceptance remain **OPEN/BLOCKED**; do not release as
+  a fully compliant SDK.

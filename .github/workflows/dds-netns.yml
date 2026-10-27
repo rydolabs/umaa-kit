@@ -114,6 +114,13 @@ jobs:
           for type in EngineCommandType EngineCommandStatusType EngineCommandAckReportType; do
             python3 tools/official_idl_compile.py --root "$RUNNER_TEMP/umaa-6.0-idl" --out "$RUNNER_TEMP/umaa-engine-types" --source "UMAA/EO/EngineControl/$type.idl"
           done
+      - name: Generate two additional official UMAA service discovery TypeSupports
+        shell: bash
+        run: |
+          set -euo pipefail
+          for type in UMAA/EO/AnchorSpecs/AnchorSpecsReportType.idl UMAA/EO/AnchorControl/AnchorCommandType.idl; do
+            python3 tools/official_idl_compile.py --root "$RUNNER_TEMP/umaa-6.0-idl" --out "$RUNNER_TEMP/umaa-probe-types" --source "$type"
+          done
       - name: Generate TypeSupport for additional reviewed EO Topic message types
         shell: bash
         run: |
@@ -159,7 +166,7 @@ jobs:
       - name: Build synthetic and official DDS binaries
         shell: bash
         run: |
-          cmake -S dds/cyclone -B build/netns-dds -DCMAKE_BUILD_TYPE=Debug -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/umaa-battery-types" -DUMAA_ENGINE_GENERATED_ROOT="$RUNNER_TEMP/umaa-engine-types"
+          cmake -S dds/cyclone -B build/netns-dds -DCMAKE_BUILD_TYPE=Debug -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/umaa-battery-types" -DUMAA_ENGINE_GENERATED_ROOT="$RUNNER_TEMP/umaa-engine-types" -DUMAA_PROBE_GENERATED_ROOT="$RUNNER_TEMP/umaa-probe-types"
           cmake --build build/netns-dds --parallel 2
       - name: Existing same-network DDS process tests (regression)
         run: ctest --test-dir build/netns-dds --output-on-failure -V

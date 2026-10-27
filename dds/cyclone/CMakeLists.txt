@@ -119,3 +119,37 @@ if(DEFINED UMAA_ENGINE_GENERATED_ROOT)
             "$<TARGET_FILE:umaa_dds_engine_module>" --bad-destination)
   set_tests_properties(official_umaa_engine_bad_destination_rejected PROPERTIES TIMEOUT 40)
 endif()
+
+# Two additional reviewed official services: generated from pinned original
+# AUVSI IDL in CI, not redistributed. Tests prove independent DDS discovery
+# for a Report Provider and Command Consumer, not payload semantics or QoS.
+if(DEFINED UMAA_PROBE_GENERATED_ROOT)
+  file(TO_CMAKE_PATH "${UMAA_PROBE_GENERATED_ROOT}" PROBE_ROOT)
+  file(GLOB_RECURSE PROBE_TYPES CONFIGURE_DEPENDS "${PROBE_ROOT}/UMAA/*.c")
+  if(NOT PROBE_TYPES)
+    message(FATAL_ERROR "Official TypeSupport for reviewed service probes is missing")
+  endif()
+  add_library(umaa_probe_type_support STATIC ${PROBE_TYPES})
+  target_include_directories(umaa_probe_type_support PUBLIC "${PROBE_ROOT}")
+  target_link_libraries(umaa_probe_type_support PUBLIC CycloneDDS::ddsc)
+  foreach(probe IN ITEMS ANCHOR_SPECS_REPORT ANCHOR_CONTROL_COMMAND)
+    string(TOLOWER "${probe}" probe_id)
+    add_executable(umaa_${probe_id}_host src/official_reviewed_discovery_host.cpp)
+    target_compile_definitions(umaa_${probe_id}_host PRIVATE UMAA_${probe})
+    target_compile_features(umaa_${probe_id}_host PRIVATE cxx_std_17)
+    target_include_directories(umaa_${probe_id}_host PRIVATE
+      "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk/include")
+    target_link_libraries(umaa_${probe_id}_host PRIVATE umaa_probe_type_support)
+    add_executable(umaa_${probe_id}_oracle
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/official_reviewed_discovery_oracle.c")
+    target_compile_definitions(umaa_${probe_id}_oracle PRIVATE UMAA_${probe})
+    target_link_libraries(umaa_${probe_id}_oracle PRIVATE umaa_probe_type_support)
+    add_test(NAME official_umaa_${probe_id}_discovery
+      COMMAND "${Python3_EXECUTABLE}"
+              "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/run_reviewed_discovery.py"
+              "$<TARGET_FILE:umaa_${probe_id}_host>"
+              "$<TARGET_FILE:umaa_${probe_id}_oracle>")
+    set_tests_properties(official_umaa_${probe_id}_discovery PROPERTIES TIMEOUT 40)
+  endforeach()
+endif()

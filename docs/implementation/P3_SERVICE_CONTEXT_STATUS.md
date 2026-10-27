@@ -38,3 +38,18 @@
    scenarios. Run both Linux and Windows. Until this passes, **P3-1 PARTIAL**.
 3. Extend generated service runtime and per-service compliance matrix; never
    substitute synthetic IDL or default QoS for normative acceptance.
+
+## New reviewed official service endpoints — discovery-only milestone
+
+The optional `UMAA_PROBE_GENERATED_ROOT` generates real original TypeSupport for
+`UMAA::EO::AnchorSpecs::AnchorSpecsReportType` (Report Provider) and
+`UMAA::EO::AnchorControl::AnchorCommandType` (Command Consumer). A new
+`ServiceContext` creates the host's actual DDS endpoint, while an independent
+C simulator creates the **opposite** endpoint. Each requires a genuine Cyclone
+DDS discovery-match status on its own participant before passing. Both are
+compile- and real-discovery tests on Linux/Windows once verified in CI.
+
+**Explicit limitation:** neither probe sends a user payload. Their presence
+must **not** be counted as a third/fourth fully running UMAA service or
+normative Report/Command lifecycle validation. Payload fields, keys, Status/Ack,
+Dispose and QoS still need independent on-wire and Component review.

@@ -1,0 +1,30 @@
+name: UMAA official PDF source provenance (not conformance)
+on:
+  pull_request:
+    paths:
+      - 'tools/probe_official_umaa_sources.py'
+      - '.github/workflows/compliance-source-provenance.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/probe_official_umaa_sources.py'
+      - '.github/workflows/compliance-source-provenance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-source-provenance:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm Poppler availability
+        run: command -v pdftotext && command -v pdfinfo
+      - name: Probe public official PDF access without committing/repackaging PDF bytes
+        run: python3 tools/probe_official_umaa_sources.py --report build/compliance/source-provenance.json
+      - name: Upload source fingerprint metadata only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umaa-official-public-source-metadata
+          path: build/compliance/source-provenance.json
+          if-no-files-found: warn

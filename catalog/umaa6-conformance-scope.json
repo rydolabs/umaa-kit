@@ -174,15 +174,21 @@
     "actual_service_count": 53,
     "actual_topic_entries": 114,
     "observed_unique_topic_names": 114,
-    "not_official_service_completeness": true
+    "not_official_service_completeness": true,
+    "actual_typed_topic_entries": 113,
+    "collection_reference_entries": 1
   },
   "known_discrepancies": [
     {
       "id": "TOPIC_COUNT_001",
-      "status": "unresolved",
+      "status": "resolved_classification",
       "catalog_documented_count": 113,
       "service_topic_entries": 114,
-      "action": "reconcile 113 literal topic ledger rows versus 114 candidate service topic entries with official source and per-topic evidence; do not silently delete"
+      "typed_topic_entries": 113,
+      "collection_reference_entries": 1,
+      "explanation": "The single BatteryStatus collection_topics entry is a named Collection element reference string rather than a typed DDS Topic contract; 113 typed Topic records are unchanged.",
+      "source_catalog": "catalog/umaa6-six-icd-reviewed.json",
+      "service": "UMAA::EO::BatteryStatus"
     }
   ],
   "normative_requirements": [],
@@ -367,7 +373,10 @@
           "direction": "provider"
         },
         {
-          "direction": "collection"
+          "direction": "collection_reference",
+          "name": "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement",
+          "type": null,
+          "role": "collection_element_reference"
         }
       ],
       "legacy_literal_icd_reviewed": true,
@@ -1953,6 +1962,6 @@
     "unreviewed_primary_documents": true,
     "unmapped_normative_requirements": true,
     "unselected_target_component": true,
-    "unresolved_discrepancy": true
+    "unresolved_discrepancy": false
   }
 }

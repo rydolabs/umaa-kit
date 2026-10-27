@@ -40,8 +40,8 @@ This is the nine-entry **public v1.0 table of contents**, not a claim that only 
 ## Existing Catalog audit discrepancy
 
 - Existing six-ICD audit documentation says **53 service sections and 113 Topic types**.
-- Counting the current Catalog's three arrays for each of 53 services yields **114 candidate Topic entries**; 114 unique names were observed.
-- Record `TOPIC_COUNT_001` as unresolved, instead of declaring 113=114 or deleting an entry automatically. This is a **measurement difference**, not yet proof that either source is wrong.
+- The six-ICD Catalog has **113 typed DDS Topic contract objects** plus **one BatteryStatus Collection element reference string** (`BatteryReportTypeCellsListElement`): 114 total entries in its three arrays, but **not** 114 DDS Topics.
+- Initial `TOPIC_COUNT_001` count discrepancy is **resolved as a classification error**. Keep the reconciliation evidence and ensure CI rejects another silent change. The 113 Topic records still require authoritative ICD verification; the count reconciliation itself is **not** G6 compliance.
 - CO services are absent. EXP services are separately excluded by default. The existing 53 service candidates cannot be labeled all UMAA 6.0 requirements.
 
 ## Requirement-level trace data contract
@@ -60,7 +60,7 @@ The `normative_requirements` array is **empty on purpose** until clauses can be 
 
 1. Obtain and SHA-pin the full official Compliance Specification Rev 1; extract every numbered normative requirement and applicability condition, including tables/notes. Reviewer cross-check must reconcile number of clauses extracted to the source. This is **not done**.
 2. Download and SHA-pin full Component Definitions v1.0; for each published public Component, extract **each** provider/consumer service row and service document reference. Cross-map to the Compliance Specification and actual intended government Component/Platform Specification. This is **not done**.
-3. Review authoritative EO/MO/MM/SA/SEM/SO **and CO** ICD text, including Section 3 DDS behavior and Section 6 operation-level contracts. Reconcile 53/113/114 and any scope additions. EXP optional-only.
+3. Review authoritative EO/MO/MM/SA/SEM/SO **and CO** ICD text, including Section 3 DDS behavior and Section 6 operation-level contracts. Confirm the 53 six-ICD services / 113 literal Topic contracts **plus separate Collection-element metadata** and any scope additions. EXP optional-only.
 4. Select the exact Component/Platform compliance profile to be claimed. A reusable SDK by itself has no automatically implied single UMAA Component role.
 5. For every applicable requirement, link exact service/Topic/IDL type, required DDS key and runtime policy, implementation path, independent Simulator oracle, evidence run, and reviewer result.
 6. Re-run source/IDL/type/API checks and full service-specific Linux/Windows DDS tests. Verify QoS, Presentation, Liveliness, concurrency, recovery, vendor scope and applicable security/safety obligations.

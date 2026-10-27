@@ -19,7 +19,7 @@ class ScopeTests(unittest.TestCase):
     def test_current_candidate_preflight(self):
         r=validate(self.catalog,self.scope)
         self.assertEqual(r['errors'],[])
-        self.assertEqual((r['candidate_services'],r['candidate_topic_entries']), (53,114))
+        self.assertEqual((r['candidate_services'],r['candidate_topic_entries'],r['collection_element_references']), (53,113,1))
         self.assertEqual(r['normative_requirements_traced'],0)
         self.assertTrue(r['claim_blocked'])
 
@@ -33,7 +33,7 @@ class ScopeTests(unittest.TestCase):
 
     def test_discrepancy_cannot_disappear(self):
         d=copy.deepcopy(self.scope);d['known_discrepancies']=[]
-        self.rejected(d,'unrecorded Topic')
+        self.rejected(d,'missing classification evidence')
 
     def test_fabricated_pass(self):
         d=copy.deepcopy(self.scope);d['service_candidates'][0]['conformance_verdict']='pass'

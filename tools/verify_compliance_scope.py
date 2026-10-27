@@ -18,9 +18,20 @@ def load_json(path):
 
 
 def normalize_topics(original):
-    return sorted(({'name': t['name'], 'type': t['type'], 'role': t['role'], 'direction': direction}
-                   for group, direction in GROUPS.items() for t in original.get(group, [])),
-                  key=lambda t: (t['name'], t['type'], t['role'], t['direction']))
+    records = []
+    for group, direction in GROUPS.items():
+        for item in original.get(group, []):
+            # Unlike provider/consumer Topic objects, BatteryStatus also has
+            # one *string* Collection element reference. Do NOT count that
+            # extra reference as a 114th DDS Topic contract.
+            if isinstance(item, str):
+                records.append({'name': item, 'type': None,
+                                'role': 'collection_element_reference',
+                                'direction': 'collection_reference'})
+            else:
+                records.append({'name': item['name'], 'type': item['type'],
+                                'role': item['role'], 'direction': direction})
+    return sorted(records, key=lambda t: (t['name'], str(t['type']), t['role'], t['direction']))
 
 
 def validate(catalog, scope):
@@ -64,7 +75,7 @@ def validate(catalog, scope):
         if s.get('icd') != name.split('::')[1] or s.get('source_clauses') != original.get('clauses', []):
             errors.append('source/ICD mapping drift: ' + name)
         try:
-            actual = sorted(s.get('topics', []), key=lambda t: (t['name'], t['type'], t['role'], t['direction']))
+            actual = sorted(s.get('topics', []), key=lambda t: (t['name'], str(t['type']), t['role'], t['direction']))
             if actual != normalize_topics(original):
                 errors.append('Topic role/type/direction drift: ' + name)
         except (TypeError, KeyError):
@@ -82,12 +93,21 @@ def validate(catalog, scope):
         errors.append('candidate count drift')
     if stats.get('documented_service_count') != 53:
         errors.append('legacy service count changed without review')
-    mismatch = total != stats.get('documented_topic_count')
-    discrepancies = [d for d in scope.get('known_discrepancies', []) if d.get('id') == 'TOPIC_COUNT_001' and d.get('status') == 'unresolved' and d.get('catalog_documented_count') == stats.get('documented_topic_count') and d.get('service_topic_entries') == total]
-    if mismatch and len(discrepancies) != 1:
+    reference_count = sum(1 for s in candidates for t in s.get('topics', [])
+                          if t.get('direction') == 'collection_reference')
+    typed_count = total - reference_count
+    if stats.get('actual_typed_topic_entries') != typed_count or stats.get('collection_reference_entries') != reference_count:
+        errors.append('typed Topic vs Collection reference classification drift')
+    mismatch = typed_count != stats.get('documented_topic_count')
+    discrepancies = [d for d in scope.get('known_discrepancies', [])
+                     if d.get('id') == 'TOPIC_COUNT_001'
+                     and d.get('catalog_documented_count') == stats.get('documented_topic_count')
+                     and d.get('service_topic_entries') == total
+                     and d.get('typed_topic_entries') == typed_count]
+    if mismatch and not any(d.get('status') == 'unresolved' for d in discrepancies):
         errors.append('unrecorded Topic count discrepancy')
-    if not mismatch and discrepancies:
-        errors.append('stale resolved Topic discrepancy')
+    if not mismatch and not any(d.get('status') == 'resolved_classification' and d.get('collection_reference_entries') == reference_count for d in discrepancies):
+        errors.append('missing classification evidence for 113 Topic plus 1 Collection reference')
     normative = scope.get('normative_requirements', [])
     ids = [r.get('requirement_id') for r in normative]
     if len(ids) != len(set(ids)):
@@ -105,7 +125,9 @@ def validate(catalog, scope):
     blocked = bool(not normative or not profile.get('applicability_locked') or mismatch or any(s.get('applicability') == 'undetermined' for s in candidates) or any(not source_map.get(x, {}).get('full_text_reviewed') for x in ('COMPLIANCE_REV1','COMPONENT_DEFINITIONS_1_0','ICD_CO_6_0')))
     if blocked and scope.get('acceptance', {}).get('claim_status') != 'BLOCKED':
         errors.append('false compliance accepted status')
-    return {'candidate_services': len(candidates), 'candidate_topic_entries': total,
+    return {'candidate_services': len(candidates), 'candidate_catalog_entries': total,
+            'candidate_topic_entries': typed_count,
+            'collection_element_references': reference_count,
             'documented_topic_count': stats.get('documented_topic_count'),
             'count_discrepancy_open': mismatch,
             'published_component_name_candidates': len(components),

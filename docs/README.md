@@ -13,6 +13,7 @@ build/SDK/Simulator entry points, start with the repository [README](../README.m
 
 - [ICD catalog audit](specification/ICD_CATALOG_AUDIT.md) — reviewed service and Topic mappings, omissions and assumptions.
 - [Traceability](specification/TRACEABILITY.md) — evidence links and limits.
+- [Official UMAA 6.0 conformance scope](specification/UMAA_6_0_CONFORMANCE_SCOPE.md) — original authority sources, 9 Component tables, trace candidates and fail-closed G6/G11 evidence.
 
 ## Implementation design
 

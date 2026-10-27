@@ -102,3 +102,30 @@ If these gates cannot be met, the correct delivery status is *partial* rather th
   service runtime, all Collection semantics, RTI interoperability, official
   conformance or production safety. G1/G8 stay PARTIAL; G6/G7/G11 OPEN;
   G9/G10 BLOCKED; G12 PARTIAL. 
+
+## 2026-10-27 M1 — authoritative source and Component trace checkpoint
+
+- Official public AUVSI source PDFs were fetched ephemerally in [CI run 40473732828](https://github.com/rydolabs/umaa-kit/actions/runs/40473732828), not redistributed:
+  Compliance Rev1 (24pp, SHA-256 6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9);
+  Component Definitions v1.0 (12pp, 872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75);
+  CO ICD 6.0 (76pp, d019f406290b0d9ad2d2eb98bbd6ab76437b0d391b15c40f973abe18dd596ed6).
+- [Machine-readable candidate scope](../catalog/umaa6-conformance-scope.json):
+  53 six-ICD service headings, 113 typed DDS Topics and a **separate**
+  BatteryStatus Collection-element reference (not a 114th Topic).
+- Nine public Component Definition candidate names map to 91 verbatim service
+  mentions (including repeated names). Provider/Consumer roles and the meaning
+  of the tilde annotation are deliberately UNREVIEWED.
+- Compliance Rev1 text contains 31 initial SHALL-bearing lines including
+  administrative front matter; 26 later draft locators are indexed. They are
+  NOT reviewed complete normative clauses.
+- Reviewer-approved normative requirements: ZERO; selected Component/Platform
+  acceptance profile: NONE. G6 and G11 remain OPEN.
+- New source acquisition, component-row, and strict trace tests protect against
+  Catalog drift, invented provider roles, unjustified N/A and false PASS.
+  Strict conformance mode intentionally returns exit code 3.
+- Required next: visually cross-check Compliance clauses and Component role
+  markers against original PDFs, resolve nonexperimental CO services, select
+  explicit Component/Platform scope, map each applicable requirement to tests,
+  and obtain external review where contractually required.
+
+This source and candidate inventory is NOT a UMAA 6.0 certification.

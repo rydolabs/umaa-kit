@@ -1,0 +1,3118 @@
+{
+  "schema_version": "1.0.0",
+  "review_date": "2026-10-27",
+  "baseline_commit": "be4a1d6e29e21a4da459d58845f491b99c31e0db",
+  "scope_profile": {
+    "kind": "reusable_sdk_and_independent_simulator",
+    "declared_umaa_component": null,
+    "claimed_full_umaa_conformance": false,
+    "applicability_locked": false,
+    "experimental_default": "excluded_unless_explicitly_required",
+    "status": "undetermined"
+  },
+  "sources": [
+    {
+      "id": "COMPLIANCE_REV1",
+      "kind": "normative_compliance",
+      "version": "Rev 1",
+      "url": "https://www.auvsi.org/wp-content/uploads/2025/03/T0300-BE-IDS-010-Rev.-1.pdf",
+      "full_text_reviewed": false,
+      "clause_extraction": "pdf_fetched_in_ci_not_clause_or_component_reviewed",
+      "purpose": "required compliance and conditional applicability rules"
+    },
+    {
+      "id": "COMPONENT_DEFINITIONS_1_0",
+      "kind": "component_definitions_not_requirements",
+      "version": "1.0",
+      "url": "https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf",
+      "full_text_reviewed": false,
+      "clause_extraction": "pdf_fetched_in_ci_not_clause_or_component_reviewed",
+      "purpose": "published public component names and provider/consumer service assignments"
+    },
+    {
+      "id": "ICD_EO_6_0",
+      "kind": "normative_icd",
+      "version": "6.0",
+      "url": "https://www.auvsi.org/advocacy/advocacy-initiatives/unmanned-maritime-autonomy-architecture/",
+      "full_text_reviewed": false,
+      "clause_extraction": "secondary_literal_mapping_only",
+      "purpose": "verify each selected service and operation against official PDF; existing RTI community Markdown is non-authoritative"
+    },
+    {
+      "id": "ICD_MO_6_0",
+      "kind": "normative_icd",
+      "version": "6.0",
+      "url": "https://www.auvsi.org/advocacy/advocacy-initiatives/unmanned-maritime-autonomy-architecture/",
+      "full_text_reviewed": false,
+      "clause_extraction": "secondary_literal_mapping_only",
+      "purpose": "verify each selected service and operation against official PDF; existing RTI community Markdown is non-authoritative"
+    },
+    {
+      "id": "ICD_MM_6_0",
+      "kind": "normative_icd",
+      "version": "6.0",
+      "url": "https://www.auvsi.org/advocacy/advocacy-initiatives/unmanned-maritime-autonomy-architecture/",
+      "full_text_reviewed": false,
+      "clause_extraction": "secondary_literal_mapping_only",
+      "purpose": "verify each selected service and operation against official PDF; existing RTI community Markdown is non-authoritative"
+    },
+    {
+      "id": "ICD_SA_6_0",
+      "kind": "normative_icd",
+      "version": "6.0",
+      "url": "https://www.auvsi.org/advocacy/advocacy-initiatives/unmanned-maritime-autonomy-architecture/",
+      "full_text_reviewed": false,
+      "clause_extraction": "secondary_literal_mapping_only",
+      "purpose": "verify each selected service and operation against official PDF; existing RTI community Markdown is non-authoritative"
+    },
+    {
+      "id": "ICD_SEM_6_0",
+      "kind": "normative_icd",
+      "version": "6.0",
+      "url": "https://www.auvsi.org/advocacy/advocacy-initiatives/unmanned-maritime-autonomy-architecture/",
+      "full_text_reviewed": false,
+      "clause_extraction": "secondary_literal_mapping_only",
+      "purpose": "verify each selected service and operation against official PDF; existing RTI community Markdown is non-authoritative"
+    },
+    {
+      "id": "ICD_SO_6_0",
+      "kind": "normative_icd",
+      "version": "6.0",
+      "url": "https://www.auvsi.org/advocacy/advocacy-initiatives/unmanned-maritime-autonomy-architecture/",
+      "full_text_reviewed": false,
+      "clause_extraction": "secondary_literal_mapping_only",
+      "purpose": "verify each selected service and operation against official PDF; existing RTI community Markdown is non-authoritative"
+    },
+    {
+      "id": "ICD_CO_6_0",
+      "kind": "normative_icd",
+      "version": "6.0",
+      "url": "https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-CO-EXP-ICD.pdf",
+      "full_text_reviewed": false,
+      "clause_extraction": "pdf_fetched_in_ci_not_clause_or_component_reviewed",
+      "purpose": "communications operations service and Topic scope"
+    },
+    {
+      "id": "ICD_EXP_6_0",
+      "kind": "experimental_icd",
+      "version": "6.0",
+      "url": "https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-EXP-ICD.pdf",
+      "full_text_reviewed": false,
+      "clause_extraction": "explicitly_outside_default_compliance",
+      "purpose": "separate nonmandatory experiment scope; conditional contract inclusion only"
+    }
+  ],
+  "component_candidates": [
+    {
+      "name": "Autopilot",
+      "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
+      "service_assignments": [],
+      "assignment_reviewed": false,
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 175,
+          "service_name": "PrimitiveDriverControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 176,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 177,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 178,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 179,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 180,
+          "service_name": "UVPlatformSpecs",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 181,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 182,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 183,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 184,
+          "service_name": "WindStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 185,
+          "service_name": "WaterCurrentStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 186,
+          "service_name": "MissionPlanConstraintControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 187,
+          "service_name": "ActiveConstraintsControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.1.3",
+          "extracted_pdf_text_line": 188,
+          "service_name": "ConditionalReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
+    },
+    {
+      "name": "COLREGS And Hazard Avoidance",
+      "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
+      "service_assignments": [],
+      "assignment_reviewed": false,
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 216,
+          "service_name": "GlobalWaypointControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 217,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 218,
+          "service_name": "ContactReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 219,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 220,
+          "service_name": "ContactCOLREGSClassificationStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 221,
+          "service_name": "ContactVisualClassificationStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 222,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 223,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 224,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 225,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 226,
+          "service_name": "UVPlatformSpecs",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 227,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 228,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 229,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 230,
+          "service_name": "ContactManeuverInfluenceStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 231,
+          "service_name": "ActiveConstraintsControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.2.3",
+          "extracted_pdf_text_line": 232,
+          "service_name": "ConditionalReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
+    },
+    {
+      "name": "Logging",
+      "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
+      "service_assignments": [],
+      "assignment_reviewed": false,
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.3.3",
+          "extracted_pdf_text_line": 244,
+          "service_name": "LogReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
+    },
+    {
+      "name": "Mission Executor",
+      "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
+      "service_assignments": [],
+      "assignment_reviewed": false,
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 283,
+          "service_name": "ConditionalControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 284,
+          "service_name": "MissionPlanConstraintControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 285,
+          "service_name": "MissionPlanMissionControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 286,
+          "service_name": "MissionPlanTaskControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 287,
+          "service_name": "MissionPlanObjectiveControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 289,
+          "service_name": "MissionPlanExecutionStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 290,
+          "service_name": "TaskPlanExecutionStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 291,
+          "service_name": "MissionPlanExecutionControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 292,
+          "service_name": "TaskPlanExecutionControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 293,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 294,
+          "service_name": "ActiveConstraintsControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 295,
+          "service_name": "ConditionalReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 296,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 297,
+          "service_name": "ObjectiveExecutionStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 298,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 299,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 300,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 301,
+          "service_name": "GlobalWaypointControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 302,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 303,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 304,
+          "service_name": "ContactReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 305,
+          "service_name": "UVPlatformSpecs",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 306,
+          "service_name": "MissionPlanReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 307,
+          "service_name": "ObjectiveExecutionControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 308,
+          "service_name": "ContactCOLREGSClassificationStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 309,
+          "service_name": "ContactVisualClassificationStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 310,
+          "service_name": "WaterCurrentStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.4.3",
+          "extracted_pdf_text_line": 311,
+          "service_name": "WindStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
+    },
+    {
+      "name": "USV Navigation",
+      "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
+      "service_assignments": [],
+      "assignment_reviewed": false,
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.5.3",
+          "extracted_pdf_text_line": 324,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.5.3",
+          "extracted_pdf_text_line": 325,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.5.3",
+          "extracted_pdf_text_line": 326,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.5.3",
+          "extracted_pdf_text_line": 327,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.5.3",
+          "extracted_pdf_text_line": 328,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
+    },
+    {
+      "name": "UUV Hazard Avoidance",
+      "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
+      "service_assignments": [],
+      "assignment_reviewed": false,
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 355,
+          "service_name": "ActiveConstraintsControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 356,
+          "service_name": "GlobalWaypointControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 357,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 358,
+          "service_name": "ContactReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 359,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 360,
+          "service_name": "GlobalVectorControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 361,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 362,
+          "service_name": "UVPlatformSpecs",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 363,
+          "service_name": "ConditionalReport",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 364,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 365,
+          "service_name": "GlobalHoverControl",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 366,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 367,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.6.3",
+          "extracted_pdf_text_line": 368,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
+    },
+    {
+      "name": "UUV Navigation",
+      "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
+      "service_assignments": [],
+      "assignment_reviewed": false,
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 383,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 384,
+          "service_name": "VelocityStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 385,
+          "service_name": "SpeedStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 386,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 387,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.7.3",
+          "extracted_pdf_text_line": 388,
+          "service_name": "GlobalPoseStatus",
+          "tilde_annotation_present": true,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
+    },
+    {
+      "name": "Water Environment",
+      "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
+      "service_assignments": [],
+      "assignment_reviewed": false,
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.8.3",
+          "extracted_pdf_text_line": 399,
+          "service_name": "WaterCurrentStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.8.3",
+          "extracted_pdf_text_line": 400,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.8.3",
+          "extracted_pdf_text_line": 401,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
+    },
+    {
+      "name": "Weather",
+      "provenance": "COMPONENT_DEFINITIONS_1_0 table of contents (search index only)",
+      "service_assignments": [],
+      "assignment_reviewed": false,
+      "applicability": "undetermined",
+      "service_assignment_candidates": [
+        {
+          "source_section": "3.9.3",
+          "extracted_pdf_text_line": 412,
+          "service_name": "WindStatus",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.9.3",
+          "extracted_pdf_text_line": 413,
+          "service_name": "LogReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        },
+        {
+          "source_section": "3.9.3",
+          "extracted_pdf_text_line": 414,
+          "service_name": "HealthReport",
+          "tilde_annotation_present": false,
+          "provider_consumer_role": "undetermined",
+          "applicability": "undetermined",
+          "authoritative_role_reviewed": false
+        }
+      ],
+      "original_pdf_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75"
+    }
+  ],
+  "existing_six_icd_catalog": {
+    "path": "catalog/umaa6-six-icd-reviewed.json",
+    "documented_service_count": 53,
+    "documented_topic_count": 113,
+    "actual_service_count": 53,
+    "actual_topic_entries": 114,
+    "observed_unique_topic_names": 114,
+    "not_official_service_completeness": true,
+    "actual_typed_topic_entries": 113,
+    "collection_reference_entries": 1
+  },
+  "known_discrepancies": [
+    {
+      "id": "TOPIC_COUNT_001",
+      "status": "resolved_classification",
+      "catalog_documented_count": 113,
+      "service_topic_entries": 114,
+      "typed_topic_entries": 113,
+      "collection_reference_entries": 1,
+      "explanation": "The single BatteryStatus collection_topics entry is a named Collection element reference string rather than a typed DDS Topic contract; 113 typed Topic records are unchanged.",
+      "source_catalog": "catalog/umaa6-six-icd-reviewed.json",
+      "service": "UMAA::EO::BatteryStatus"
+    }
+  ],
+  "normative_requirements": [],
+  "candidate_rule_areas": [
+    {
+      "area": "command_state_reasons_and_update",
+      "source": "ICD_EO_6_0",
+      "source_hint": "section 5.1",
+      "verified_normative_text": false
+    },
+    {
+      "area": "command_restart_dispose_liveliness",
+      "source": "ICD_EO_6_0",
+      "source_hint": "section 5.1",
+      "verified_normative_text": false
+    },
+    {
+      "area": "report_subscribe_update_and_dispose",
+      "source": "ICD_EO_6_0",
+      "source_hint": "section 5.2",
+      "verified_normative_text": false
+    },
+    {
+      "area": "large_collection_order_atomicity",
+      "source": "ICD_EO_6_0",
+      "source_hint": "section 3.8",
+      "verified_normative_text": false
+    },
+    {
+      "area": "specialized_type_lifecycle",
+      "source": "ICD_EO_6_0",
+      "source_hint": "section 3.9",
+      "verified_normative_text": false
+    },
+    {
+      "area": "dds_keys_names_roles_and_qos",
+      "source": "COMPONENT_DEFINITIONS_1_0",
+      "source_hint": "Component service assignments plus applicable ICD protocol; needs authoritative review",
+      "verified_normative_text": false
+    },
+    {
+      "area": "co_service_interfaces",
+      "source": "ICD_CO_6_0",
+      "source_hint": "not yet ingested",
+      "verified_normative_text": false
+    },
+    {
+      "area": "component_selection_and_applicability",
+      "source": "COMPLIANCE_REV1",
+      "source_hint": "full clauses not yet extracted",
+      "verified_normative_text": false
+    }
+  ],
+  "service_candidates": [
+    {
+      "name": "UMAA::EO::AnchorControl",
+      "icd": "EO",
+      "source_clauses": [
+        "5.1",
+        "6.1.1",
+        "6.1.1.1",
+        "6.1.1.2",
+        "6.1.1.3"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+          "type": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::EO::AnchorControl::AnchorCommandStatusType",
+          "type": "UMAA::EO::AnchorControl::AnchorCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::EO::AnchorControl::AnchorCommandType",
+          "type": "UMAA::EO::AnchorControl::AnchorCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "bounded_real_wire_prototype",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::AnchorSpecs",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.2",
+        "6.1.2.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::AnchorSpecs::AnchorSpecsReportType",
+          "type": "UMAA::EO::AnchorSpecs::AnchorSpecsReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "bounded_real_wire_prototype",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::AnchorStatus",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.3",
+        "6.1.3.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::AnchorStatus::AnchorReportType",
+          "type": "UMAA::EO::AnchorStatus::AnchorReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::BatterySpecs",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.4",
+        "6.1.4.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::BatterySpecs::BatterySpecsReportType",
+          "type": "UMAA::EO::BatterySpecs::BatterySpecsReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::BatteryStatus",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.5",
+        "6.1.5.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::BatteryStatus::BatteryReportType",
+          "type": "UMAA::EO::BatteryStatus::BatteryReportType",
+          "role": "report",
+          "direction": "provider"
+        },
+        {
+          "direction": "collection_reference",
+          "name": "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement",
+          "type": null,
+          "role": "collection_element_reference"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "bounded_real_wire_prototype",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::EngineControl",
+      "icd": "EO",
+      "source_clauses": [
+        "5.1",
+        "5.1.2",
+        "5.1.4.2",
+        "5.1.4.5",
+        "5.1.5",
+        "6.1.6"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::EngineControl::EngineCommandStatusType",
+          "type": "UMAA::EO::EngineControl::EngineCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+          "type": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::EO::EngineControl::EngineCommandType",
+          "type": "UMAA::EO::EngineControl::EngineCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "bounded_real_wire_prototype",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::EngineStatus",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.7",
+        "6.1.7.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::EngineStatus::EngineReportType",
+          "type": "UMAA::EO::EngineStatus::EngineReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::FuelTankSpecs",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.8",
+        "6.1.8.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::FuelTankSpecs::FuelTankSpecsReportType",
+          "type": "UMAA::EO::FuelTankSpecs::FuelTankSpecsReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::FuelTankStatus",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.9",
+        "6.1.9.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::FuelTankStatus::FuelTankReportType",
+          "type": "UMAA::EO::FuelTankStatus::FuelTankReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::GeneratorSpecs",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.10",
+        "6.1.10.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::GeneratorSpecs::GeneratorSpecsReportType",
+          "type": "UMAA::EO::GeneratorSpecs::GeneratorSpecsReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::GeneratorStatus",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.11",
+        "6.1.11.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::GeneratorStatus::GeneratorReportType",
+          "type": "UMAA::EO::GeneratorStatus::GeneratorReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::MastControl",
+      "icd": "EO",
+      "source_clauses": [
+        "5.1",
+        "6.1.12",
+        "6.1.12.1",
+        "6.1.12.2",
+        "6.1.12.3"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::MastControl::MastCommandAckReportType",
+          "type": "UMAA::EO::MastControl::MastCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::EO::MastControl::MastCommandStatusType",
+          "type": "UMAA::EO::MastControl::MastCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::EO::MastControl::MastCommandType",
+          "type": "UMAA::EO::MastControl::MastCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::MastStatus",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.13",
+        "6.1.13.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::MastStatus::MastReportType",
+          "type": "UMAA::EO::MastStatus::MastReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::EO::UVPlatformSpecs",
+      "icd": "EO",
+      "source_clauses": [
+        "5.2.1",
+        "6.1.14",
+        "6.1.14.1",
+        "6.1.14.2"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::EO::UVPlatformSpecs::UVPlatformCapabilitiesReportType",
+          "type": "UMAA::EO::UVPlatformSpecs::UVPlatformCapabilitiesReportType",
+          "role": "report",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::EO::UVPlatformSpecs::UVPlatformSpecsReportType",
+          "type": "UMAA::EO::UVPlatformSpecs::UVPlatformSpecsReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::ActiveConstraintsControl",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.1",
+        "6.1.1.1",
+        "6.1.1.2",
+        "6.1.1.3"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandAckReportType",
+          "type": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandStatusType",
+          "type": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandType",
+          "type": "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::ConditionalControl",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.2",
+        "6.1.2.1",
+        "6.1.2.2",
+        "6.1.2.3",
+        "6.1.2.4",
+        "6.1.2.5",
+        "6.1.2.6"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalAddCommandAckReportType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalAddCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalAddCommandStatusType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalAddCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandAckReportType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandStatusType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalAddCommandType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalAddCommandType",
+          "role": "command",
+          "direction": "consumer"
+        },
+        {
+          "name": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandType",
+          "type": "UMAA::MM::ConditionalControl::ConditionalDeleteCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::ConditionalReport",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.3",
+        "6.1.3.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::ConditionalReport::ConditionalReportType",
+          "type": "UMAA::MM::ConditionalReport::ConditionalReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanConstraintControl",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.4",
+        "6.1.4.1",
+        "6.1.4.2",
+        "6.1.4.3",
+        "6.1.4.4",
+        "6.1.4.5",
+        "6.1.4.6"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandStatusType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandStatusType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandType",
+          "role": "command",
+          "direction": "consumer"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandType",
+          "type": "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanExecutionControl",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.5",
+        "6.1.5.1",
+        "6.1.5.2",
+        "6.1.5.3"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandStatusType",
+          "type": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandType",
+          "type": "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanExecutionStatus",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.6",
+        "6.1.6.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::MissionPlanExecutionStatus::MissionPlanExecutionReportType",
+          "type": "UMAA::MM::MissionPlanExecutionStatus::MissionPlanExecutionReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanMissionControl",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.7",
+        "6.1.7.1",
+        "6.1.7.2",
+        "6.1.7.3",
+        "6.1.7.4",
+        "6.1.7.5",
+        "6.1.7.6",
+        "6.1.7.7",
+        "6.1.7.8",
+        "6.1.7.9"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandStatusType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandStatusType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandStatusType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandType",
+          "role": "command",
+          "direction": "consumer"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandType",
+          "role": "command",
+          "direction": "consumer"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandType",
+          "type": "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanObjectiveControl",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.8",
+        "6.1.8.1",
+        "6.1.8.2",
+        "6.1.8.3",
+        "6.1.8.4",
+        "6.1.8.5",
+        "6.1.8.6"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandStatusType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandStatusType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandType",
+          "role": "command",
+          "direction": "consumer"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandType",
+          "type": "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanReport",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.9",
+        "6.1.9.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::MissionPlanReport::MissionPlanReportType",
+          "type": "UMAA::MM::MissionPlanReport::MissionPlanReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::MissionPlanTaskControl",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.10",
+        "6.1.10.1",
+        "6.1.10.2",
+        "6.1.10.3",
+        "6.1.10.4",
+        "6.1.10.5",
+        "6.1.10.6"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandStatusType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandAckReportType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandStatusType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandType",
+          "role": "command",
+          "direction": "consumer"
+        },
+        {
+          "name": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandType",
+          "type": "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::ObjectiveExecutionControl",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.11",
+        "6.1.11.1",
+        "6.1.11.2",
+        "6.1.11.3"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandAckReportType",
+          "type": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandStatusType",
+          "type": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandType",
+          "type": "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::ObjectiveExecutionStatus",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.12",
+        "6.1.12.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::ObjectiveExecutionStatus::ObjectiveExecutionReportType",
+          "type": "UMAA::MM::ObjectiveExecutionStatus::ObjectiveExecutionReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MM::TaskPlanExecutionControl",
+      "icd": "MM",
+      "source_clauses": [
+        "6.1.13",
+        "6.1.13.1",
+        "6.1.13.2",
+        "6.1.13.3"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType",
+          "type": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType",
+          "type": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType",
+          "type": "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MO::ContactManeuverInfluenceStatus",
+      "icd": "MO",
+      "source_clauses": [
+        "6.1.1",
+        "6.1.1.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MO::ContactManeuverInfluenceStatus::ContactManeuverInfluenceReportType",
+          "type": "UMAA::MO::ContactManeuverInfluenceStatus::ContactManeuverInfluenceReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MO::CoordinationSituationalSignalStatus",
+      "icd": "MO",
+      "source_clauses": [
+        "6.1.2",
+        "6.1.2.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MO::CoordinationSituationalSignalStatus::CoordinationSituationalSignalReportType",
+          "type": "UMAA::MO::CoordinationSituationalSignalStatus::CoordinationSituationalSignalReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MO::GlobalDriftControl",
+      "icd": "MO",
+      "source_clauses": [
+        "6.1.3",
+        "6.1.3.1",
+        "6.1.3.2",
+        "6.1.3.3",
+        "6.1.3.4"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType",
+          "type": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType",
+          "type": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalDriftControl::GlobalDriftExecutionStatusReportType",
+          "type": "UMAA::MO::GlobalDriftControl::GlobalDriftExecutionStatusReportType",
+          "role": "execution_status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType",
+          "type": "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MO::GlobalHoverControl",
+      "icd": "MO",
+      "source_clauses": [
+        "6.1.4",
+        "6.1.4.1",
+        "6.1.4.2",
+        "6.1.4.3",
+        "6.1.4.4"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandAckReportType",
+          "type": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandStatusType",
+          "type": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalHoverControl::GlobalHoverExecutionStatusReportType",
+          "type": "UMAA::MO::GlobalHoverControl::GlobalHoverExecutionStatusReportType",
+          "role": "execution_status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandType",
+          "type": "UMAA::MO::GlobalHoverControl::GlobalHoverCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MO::GlobalVectorControl",
+      "icd": "MO",
+      "source_clauses": [
+        "6.1.5",
+        "6.1.5.1",
+        "6.1.5.2",
+        "6.1.5.3",
+        "6.1.5.4"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandAckReportType",
+          "type": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandStatusType",
+          "type": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalVectorControl::GlobalVectorExecutionStatusReportType",
+          "type": "UMAA::MO::GlobalVectorControl::GlobalVectorExecutionStatusReportType",
+          "role": "execution_status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandType",
+          "type": "UMAA::MO::GlobalVectorControl::GlobalVectorCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MO::GlobalWaypointControl",
+      "icd": "MO",
+      "source_clauses": [
+        "6.1.6",
+        "6.1.6.1",
+        "6.1.6.2",
+        "6.1.6.3",
+        "6.1.6.4"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandAckReportType",
+          "type": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandStatusType",
+          "type": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalWaypointControl::GlobalWaypointExecutionStatusReportType",
+          "type": "UMAA::MO::GlobalWaypointControl::GlobalWaypointExecutionStatusReportType",
+          "role": "execution_status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandType",
+          "type": "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::MO::PrimitiveDriverControl",
+      "icd": "MO",
+      "source_clauses": [
+        "6.1.7",
+        "6.1.7.1",
+        "6.1.7.2",
+        "6.1.7.3",
+        "6.1.7.4"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandAckReportType",
+          "type": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandStatusType",
+          "type": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverExecutionStatusReportType",
+          "type": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverExecutionStatusReportType",
+          "role": "execution_status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandType",
+          "type": "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::ContactCOLREGSClassificationStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.1",
+        "6.1.1.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::ContactCOLREGSClassificationStatus::ContactCOLREGSClassificationReportType",
+          "type": "UMAA::SA::ContactCOLREGSClassificationStatus::ContactCOLREGSClassificationReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::ContactReport",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.2",
+        "6.1.2.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::ContactReport::ContactReportType",
+          "type": "UMAA::SA::ContactReport::ContactReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::ContactVisualClassificationStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.3",
+        "6.1.3.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::ContactVisualClassificationStatus::ContactVisualClassificationReportType",
+          "type": "UMAA::SA::ContactVisualClassificationStatus::ContactVisualClassificationReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::DateTimeStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.4",
+        "6.1.4.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::DateTimeStatus::DateTimeReportType",
+          "type": "UMAA::SA::DateTimeStatus::DateTimeReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::ECEFPoseStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.5",
+        "6.1.5.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::ECEFPoseStatus::ECEFPoseReportType",
+          "type": "UMAA::SA::ECEFPoseStatus::ECEFPoseReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::GlobalPoseStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.6",
+        "6.1.6.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::GlobalPoseStatus::GlobalPoseReportType",
+          "type": "UMAA::SA::GlobalPoseStatus::GlobalPoseReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::MagneticVariationSpecs",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.7",
+        "6.1.7.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::MagneticVariationSpecs::MagneticVariationSpecsReportType",
+          "type": "UMAA::SA::MagneticVariationSpecs::MagneticVariationSpecsReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::MagneticVariationStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.8",
+        "6.1.8.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::MagneticVariationStatus::MagneticVariationReportType",
+          "type": "UMAA::SA::MagneticVariationStatus::MagneticVariationReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::SeaStateReport",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.9",
+        "6.1.9.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::SeaStateReport::SeaStateReportType",
+          "type": "UMAA::SA::SeaStateReport::SeaStateReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::SpeedStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.10",
+        "6.1.10.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::SpeedStatus::SpeedReportType",
+          "type": "UMAA::SA::SpeedStatus::SpeedReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::TranslationalShipMotionStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.11",
+        "6.1.11.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::TranslationalShipMotionStatus::TranslationalShipMotionReportType",
+          "type": "UMAA::SA::TranslationalShipMotionStatus::TranslationalShipMotionReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::VelocityStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.12",
+        "6.1.12.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::VelocityStatus::VelocityReportType",
+          "type": "UMAA::SA::VelocityStatus::VelocityReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::WaterCurrentStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.13",
+        "6.1.13.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::WaterCurrentStatus::WaterCurrentReportType",
+          "type": "UMAA::SA::WaterCurrentStatus::WaterCurrentReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SA::WindStatus",
+      "icd": "SA",
+      "source_clauses": [
+        "6.1.14",
+        "6.1.14.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SA::WindStatus::WindReportType",
+          "type": "UMAA::SA::WindStatus::WindReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SEM::GPSStatus",
+      "icd": "SEM",
+      "source_clauses": [
+        "5.1.1",
+        "5.1.1.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SEM::GPSStatus::GPSReportType",
+          "type": "UMAA::SEM::GPSStatus::GPSReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SEM::InertialSensorControl",
+      "icd": "SEM",
+      "source_clauses": [
+        "5.1.2",
+        "5.1.2.1",
+        "5.1.2.2",
+        "5.1.2.3"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SEM::InertialSensorControl::InertialSensorCommandAckReportType",
+          "type": "UMAA::SEM::InertialSensorControl::InertialSensorCommandAckReportType",
+          "role": "ack",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::SEM::InertialSensorControl::InertialSensorCommandStatusType",
+          "type": "UMAA::SEM::InertialSensorControl::InertialSensorCommandStatusType",
+          "role": "status",
+          "direction": "provider"
+        },
+        {
+          "name": "UMAA::SEM::InertialSensorControl::InertialSensorCommandType",
+          "type": "UMAA::SEM::InertialSensorControl::InertialSensorCommandType",
+          "role": "command",
+          "direction": "consumer"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SEM::InertialSensorStatus",
+      "icd": "SEM",
+      "source_clauses": [
+        "5.1.3",
+        "5.1.3.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SEM::InertialSensorStatus::InertialSensorReportType",
+          "type": "UMAA::SEM::InertialSensorStatus::InertialSensorReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SO::HealthReport",
+      "icd": "SO",
+      "source_clauses": [
+        "5.1.1",
+        "5.1.1.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SO::HealthReport::HealthReportType",
+          "type": "UMAA::SO::HealthReport::HealthReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    },
+    {
+      "name": "UMAA::SO::LogReport",
+      "icd": "SO",
+      "source_clauses": [
+        "5.1.2",
+        "5.1.2.1"
+      ],
+      "topics": [
+        {
+          "name": "UMAA::SO::LogReport::LogReportType",
+          "type": "UMAA::SO::LogReport::LogReportType",
+          "role": "report",
+          "direction": "provider"
+        }
+      ],
+      "legacy_literal_icd_reviewed": true,
+      "authoritative_icd_reconciled": false,
+      "component_membership_reviewed": false,
+      "applicability": "undetermined",
+      "applicability_rationale": null,
+      "service_runtime_status": "generated_contract_only",
+      "normative_requirements": [],
+      "conformance_verdict": "not_assessed"
+    }
+  ],
+  "acceptance": {
+    "claim_status": "BLOCKED",
+    "unreviewed_primary_documents": true,
+    "unmapped_normative_requirements": true,
+    "unselected_target_component": true,
+    "unresolved_discrepancy": false
+  },
+  "official_public_pdf_provenance": [
+    {
+      "source_id": "COMPLIANCE_REV1",
+      "source_url": "https://www.auvsi.org/wp-content/uploads/2025/03/T0300-BE-IDS-010-Rev.-1.pdf",
+      "sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "pdf_pages": 24,
+      "bytes": 417251,
+      "metadata_ci_run": "https://github.com/rydolabs/umaa-kit/actions/runs/40473732828",
+      "acquisition": "fetched_ephemerally_in_ci",
+      "normative_reviewed": false
+    },
+    {
+      "source_id": "COMPONENT_DEFINITIONS_1_0",
+      "source_url": "https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf",
+      "sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75",
+      "pdf_pages": 12,
+      "bytes": 411359,
+      "metadata_ci_run": "https://github.com/rydolabs/umaa-kit/actions/runs/40473732828",
+      "acquisition": "fetched_ephemerally_in_ci",
+      "normative_reviewed": false
+    },
+    {
+      "source_id": "ICD_CO_6_0",
+      "source_url": "https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-CO-EXP-ICD.pdf",
+      "sha256": "d019f406290b0d9ad2d2eb98bbd6ab76437b0d391b15c40f973abe18dd596ed6",
+      "pdf_pages": 76,
+      "bytes": 1786979,
+      "metadata_ci_run": "https://github.com/rydolabs/umaa-kit/actions/runs/40473732828",
+      "acquisition": "fetched_ephemerally_in_ci",
+      "normative_reviewed": false
+    }
+  ],
+  "normative_clause_candidates": [
+    {
+      "candidate_id": "COMP-RAW-L0185",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 185,
+      "locator_fragment": "A Component shall consist of one or more Service Participants. A Service Participant is either a Service",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0187",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 187,
+      "locator_fragment": "Compliance with the Unmanned Maritime Autonomy Architecture (UMAA) standard shall be evaluated",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0188",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 188,
+      "locator_fragment": "individually per Component. Each Component shall meet the following criteria:",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0189",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 189,
+      "locator_fragment": "a. Shall implement all interface messages for all Service Participants defined as part of the",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0191",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 191,
+      "locator_fragment": "b. Shall not use non-UMAA interfaces that provide duplicative data or control for any Service",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0193",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 193,
+      "locator_fragment": "c. Shall implement and interpret all Service Participant operations appropriately as specified by their",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0195",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 195,
+      "locator_fragment": "d. Shall implement the full specification of the Component without the requirement for any external",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0198",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 198,
+      "locator_fragment": "e. Shall implement the full specification of the Component without the requirement for any additional",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0200",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 200,
+      "locator_fragment": "f. Shall implement all specified interface flow control as defined in the flow control section of the",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0202",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 202,
+      "locator_fragment": "The aggregation of all Components that comprise a system shall incorporate all Services that are needed to",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0204",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 204,
+      "locator_fragment": "specified by UMAA ICDs) shall comply with the UMAA ICD. Components shall be delineated outside",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0208",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 208,
+      "locator_fragment": "In order to be compliant with the UMAA standard, each Component shall be accompanied by a performance",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0212",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 212,
+      "locator_fragment": "The performance and dependency document shall provide the following:",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0253",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 253,
+      "locator_fragment": "Vehicle (UMV), the OMG DDS standard shall be used for all communication between Service Participants",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0256",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 256,
+      "locator_fragment": "Definition Language (IDL) in parallel with ICD generation. Any OMG DDS product shall only be used as",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0259",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 259,
+      "locator_fragment": "1-3.2 UMAA IDL FOR COMPILATION. A compliant Component shall be fully compatible with the",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0261",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 261,
+      "locator_fragment": "a. Non-optional fields. All required fields within a Service message shall be populated with a value",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0265",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 265,
+      "locator_fragment": "(1) For Status/Report type messages, any optional field shall be included in the published message",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0268",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 268,
+      "locator_fragment": "provided by the commanding Service Consumer, the Service Provider shall fail the command.",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0273",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 273,
+      "locator_fragment": "Provider shall not reject the command based solely on the optional field not being provided.",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0275",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 275,
+      "locator_fragment": "is provided by the commanding Service Consumer, the Service Provider shall reject the",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0277",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 277,
+      "locator_fragment": "c. Unions. In the case of unions in a command, a Service Provider shall implement one or more",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0288",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 288,
+      "locator_fragment": "Service shall only be granted if explicitly described in the corresponding ICD service definitions.",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0303",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 303,
+      "locator_fragment": "2-1.1 OMG DDS Security Specification. In order to be UMAA-compliant, a UMAA Component shall",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0314",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 314,
+      "locator_fragment": "messaging through standards defined in the ICDs. Any system-safety-related issues shall be addressed as",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    },
+    {
+      "candidate_id": "COMP-RAW-L0333",
+      "authoritative_document": "COMPLIANCE_REV1",
+      "source_sha256": "6570067f3d2f03320afaeb721fe03344cca333d81ede17922d7756dda82661a9",
+      "extracted_text_line": 333,
+      "locator_fragment": "Participant is critical. Requirements around data quality, frequency, and accuracy shall be considered when",
+      "review_status": "unreviewed_extracted_line_not_full_normative_clause",
+      "applicability": "undetermined",
+      "verdict": "not_assessed"
+    }
+  ],
+  "component_definition_extraction": {
+    "source_id": "COMPONENT_DEFINITIONS_1_0",
+    "pdf_pages": 12,
+    "source_sha256": "872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75",
+    "source_audit_run": "https://github.com/rydolabs/umaa-kit/actions/runs/40474336528",
+    "published_component_candidates": 9,
+    "service_mention_rows": 91,
+    "role_and_tilde_semantics_reviewed": false,
+    "duplicates_preserved": true,
+    "extraction_status": "source_table_candidates_only"
+  }
+}

@@ -132,6 +132,30 @@ if(DEFINED UMAA_PROBE_GENERATED_ROOT)
   add_library(umaa_probe_type_support STATIC ${PROBE_TYPES})
   target_include_directories(umaa_probe_type_support PUBLIC "${PROBE_ROOT}")
   target_link_libraries(umaa_probe_type_support PUBLIC CycloneDDS::ddsc)
+  # Actual AnchorControl virtual-device Command lifecycle, separate from
+  # the historical default-initialized discovery/type-only probe.
+  add_executable(umaa_anchor_control_lifecycle_host src/official_anchor_control_host.cpp)
+  target_compile_features(umaa_anchor_control_lifecycle_host PRIVATE cxx_std_17)
+  target_include_directories(umaa_anchor_control_lifecycle_host PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk/include")
+  target_link_libraries(umaa_anchor_control_lifecycle_host PRIVATE umaa_probe_type_support)
+  add_executable(umaa_anchor_control_lifecycle_oracle
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/official_anchor_control_oracle.c")
+  target_link_libraries(umaa_anchor_control_lifecycle_oracle PRIVATE umaa_probe_type_support)
+  foreach(anchor_case IN ITEMS normal update bad-destination)
+    if(anchor_case STREQUAL "normal")
+      set(anchor_flag "")
+    else()
+      set(anchor_flag "--${anchor_case}")
+    endif()
+    add_test(NAME official_umaa_anchor_control_${anchor_case}
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/run_anchor_control.py"
+        "$<TARGET_FILE:umaa_anchor_control_lifecycle_host>"
+        "$<TARGET_FILE:umaa_anchor_control_lifecycle_oracle>" ${anchor_flag})
+    set_tests_properties(official_umaa_anchor_control_${anchor_case} PROPERTIES TIMEOUT 55)
+  endforeach()
   foreach(probe IN ITEMS ANCHOR_SPECS_REPORT ANCHOR_CONTROL_COMMAND)
     string(TOLOWER "${probe}" probe_id)
     add_executable(umaa_${probe_id}_host src/official_reviewed_discovery_host.cpp)

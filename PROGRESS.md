@@ -174,3 +174,26 @@
   **OPEN/BLOCKED**. See [tracking issue](https://github.com/rydolabs/umaa-kit/issues/2)
   and `docs/DELIVERY_GATES.md`. The 53 reviewed typed API contracts compiling
   does **not** imply 53 real-wire service implementations.
+
+## 2026-10-27 — P3 literal service registry / Cyclone context and new Topic proof
+
+- Implemented C++ allow-list generated from 53 reviewed service names and
+  113 explicit Topic/role/type definitions. Runtime rejects wrong type/role,
+  unknown services and missing normative QoS before `dds_create_topic`.
+- Added reusable `CycloneServiceContext`, integrated into existing real-wire
+  BatteryStatus/EngineControl hosts. No hard-coded Catalog inference used.
+- Added official AnchorSpecs Report Provider and AnchorControl Command Consumer
+  opposite-role process tests with independent C Simulator, both discovery
+  and *default-valued sample* DDS `write`/`take` transport only. This **does not**
+  implement their full business semantics, Command Ack/Status/Dispose, keys or
+  required Component QoS; total independently exercised service slices remain
+  only two for protocol behavior.
+- Linux official DDS CTest **10/10**:
+  https://github.com/rydolabs/umaa-kit/actions/runs/40426885356
+- Windows official DDS CTest **9/9**:
+  https://github.com/rydolabs/umaa-kit/actions/runs/40426879585
+- Local GCC CTest **13/13**, full GCC/Clang CI-style regression PASS,
+  Clang ASan/UBSan registry+context **2/2**, Python negative registry **6/6**.
+- **P3-1 remains PARTIAL** until actual reviewed new Report/Command payload
+  fields and lifecycle are implemented and independently validated. G6 QoS,
+  G7 Collection, RTI, broader 51 services and compliance are not closed.

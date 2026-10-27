@@ -60,6 +60,8 @@ jobs:
           & 'build/real-consumer-win/Release/umaa_external_real_cyclone.exe'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Write-Host 'UMAA_EXTERNAL_REAL_CYCLONE_EXPORT_PASS'
+      - name: Check fail-closed reviewed runtime registry is exact
+        run: python tools/generate_reviewed_runtime_registry.py --check
       - name: Configure
         shell: pwsh
         run: |
@@ -104,6 +106,18 @@ jobs:
             python tools/official_idl_compile.py --root $root --out $engineOutput --idlc $idlc --generate-only --source "UMAA/EO/EngineControl/$idl.idl"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+      - name: Generate two additional official UMAA service discovery TypeSupports
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
+          $idlc = Get-ChildItem -Path "$vcpkgRoot/installed/x64-windows" -Filter idlc.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          $root = Join-Path $env:RUNNER_TEMP 'umaa-6.0-idl'
+          $output = Join-Path $env:RUNNER_TEMP 'umaa-probe-types'
+          foreach ($type in @('UMAA/EO/AnchorSpecs/AnchorSpecsReportType.idl','UMAA/EO/AnchorControl/AnchorCommandType.idl')) {
+            python tools/official_idl_compile.py --root $root --out $output --idlc $idlc --generate-only --source $type
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
       - name: Generate and compile reviewed official UMAA Handler APIs with MSVC
         shell: pwsh
         run: |
@@ -136,7 +150,7 @@ jobs:
           if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
           $root = Join-Path $env:RUNNER_TEMP 'umaa-official-generated'
           $engineRoot = Join-Path $env:RUNNER_TEMP 'umaa-engine-generated'
-          cmake -S dds/cyclone -B build/official-dds-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake" -DUMAA_OFFICIAL_GENERATED_ROOT="$root" -DUMAA_ENGINE_GENERATED_ROOT="$engineRoot"
+          cmake -S dds/cyclone -B build/official-dds-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake" -DUMAA_OFFICIAL_GENERATED_ROOT="$root" -DUMAA_ENGINE_GENERATED_ROOT="$engineRoot" -DUMAA_PROBE_GENERATED_ROOT="$env:RUNNER_TEMP/umaa-probe-types"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cmake --build build/official-dds-win --config Release --parallel 2
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

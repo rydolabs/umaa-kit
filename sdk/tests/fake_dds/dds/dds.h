@@ -19,6 +19,12 @@ extern "C" {
 #endif
 typedef struct dds_qos dds_qos_t;
 typedef struct dds_topic_descriptor dds_topic_descriptor_t;
+#ifndef DDS_DOMAIN_DEFAULT
+#define DDS_DOMAIN_DEFAULT (0u)
+#endif
+dds_entity_t dds_create_participant(uint32_t domain_id, const dds_qos_t* qos, const void* listener);
+dds_entity_t dds_create_topic(dds_entity_t participant, const dds_topic_descriptor_t* descriptor,
+                              const char* name, const dds_qos_t* qos, const void* listener);
 typedef struct dds_sample_info {
   bool valid_data;
   uint32_t instance_state;

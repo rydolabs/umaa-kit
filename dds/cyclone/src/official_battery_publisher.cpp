@@ -6,6 +6,7 @@
 #include "umaa/module_loader.hpp"
 #include "umaa/report_transport.hpp"
 #include "umaa/cyclone_report_writer.hpp"
+#include "umaa/cyclone_service_context.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -45,16 +46,17 @@ struct BatteryMapper {
 
 int main(int argc, char** argv) {
   if (argc != 2) return 2;
-  dds_entity_t participant = 0;
   try {
     umaa::ServiceModule battery(argv[1], "Demo::EO::BatteryStatus", "demo-only");
     BatteryHandler handler;
-    participant = dds_create_participant(DDS_DOMAIN_DEFAULT, nullptr, nullptr);
-    require_dds(participant, "create participant");
-    const dds_entity_t topic =
-        dds_create_topic(participant, &UMAA_EO_BatteryStatus_BatteryReportType_desc,
-                         "BatteryReportType", nullptr, nullptr);
-    require_dds(topic, "create official BatteryReportType topic");
+    // Explicit demo-only mode: this catalog has *no* normative Component QoS proof.
+    umaa::cyclone::ServiceContext context("UMAA::EO::BatteryStatus",
+        umaa::cyclone::ServiceContext::ReviewMode::ExplicitPrototypeOnly);
+    const dds_entity_t participant = context.participant();
+    const dds_entity_t topic = context.topic(
+        "UMAA::EO::BatteryStatus::BatteryReportType",
+        "UMAA::EO::BatteryStatus::BatteryReportType", umaa::reviewed::Role::Report,
+        "BatteryReportType", &UMAA_EO_BatteryStatus_BatteryReportType_desc);
     const char* required = std::getenv("UMAA_EXPECT_READERS");
     const int readers = required ? std::atoi(required) : 1;
     if (readers < 1 || readers > 2) throw std::invalid_argument("invalid reader count");
@@ -77,13 +79,11 @@ int main(int argc, char** argv) {
     provider.shutdown(3);
     if (provider.state() != umaa::BoundReportProvider<double>::State::Stopped)
       throw std::logic_error("Report provider not stopped");
-    require_dds(dds_delete(participant), "delete participant");
-    participant = 0;
+    context.close();
     std::puts("OFFICIAL_UMAA_WIRE_PUBLISHER: transport-bound Report lifecycle PASS");
     return 0;
   } catch (const std::exception& e) {
     std::fprintf(stderr, "official module/transport error: %s\n", e.what());
-    if (participant > 0) dds_delete(participant);
     return 4;
   }
 }

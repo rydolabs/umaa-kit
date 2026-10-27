@@ -1,0 +1,35 @@
+#include "umaa/reviewed_service_registry.hpp"
+#include <cassert>
+#include <exception>
+#include <string_view>
+
+using umaa::reviewed::require_topic;
+using umaa::reviewed::Role;
+
+template<class F> void rejects(F&& f) {
+  bool caught = false;
+  try { f(); } catch (const std::exception&) { caught = true; }
+  assert(caught);
+}
+int main() {
+  using namespace std::literals;
+  static_assert(umaa::reviewed::topics.size() == 113);
+  static_assert(umaa::reviewed::service_count == 53);
+  auto& b = require_topic("UMAA::EO::BatteryStatus", "UMAA::EO::BatteryStatus::BatteryReportType",
+                          "UMAA::EO::BatteryStatus::BatteryReportType", Role::Report, false);
+  assert(!b.qos_verified);
+  auto& c = require_topic("UMAA::EO::EngineControl", "UMAA::EO::EngineControl::EngineCommandType",
+                          "UMAA::EO::EngineControl::EngineCommandType", Role::Command, false);
+  assert(c.role == Role::Command);
+  auto& s = require_topic("UMAA::SO::LogReport", "UMAA::SO::LogReport::LogReportType",
+                          "UMAA::SO::LogReport::LogReportType", Role::Report, false);
+  assert(s.type == "UMAA::SO::LogReport::LogReportType"sv);
+  rejects([&]{ require_topic(b.service,b.name,b.type,Role::Command,false); });
+  rejects([&]{ require_topic(b.service,b.name,"SomeOther::Type",Role::Report,false); });
+  rejects([&]{ require_topic(b.service,b.name,b.type,Role::Report,true); });
+  rejects([&]{ require_topic("UMAA::Unknown","UMAA::Unknown::Report","UMAA::Unknown::Report",Role::Report,false); });
+  for (const auto& t:umaa::reviewed::topics) {
+    assert(!t.service.empty() && !t.name.empty() && !t.type.empty());
+    assert(!t.qos_verified); // never automatically mark per-service Component QoS as approved
+  }
+}

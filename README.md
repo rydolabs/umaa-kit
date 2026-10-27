@@ -90,3 +90,25 @@ DDS failure or exception faults the epoch and releases sample-owned data.
 Refer to [implementation notes](docs/implementation/P2_COMMAND_READER_STATUS.md).
 This remains an EngineControl ignition-only and BatteryStatus Report subset,
 not complete UMAA service coverage.
+
+## P3-reviewed service entity guard (development checkpoint)
+
+`ServiceContext` validates the logical ICD Catalog service, Topic, TypeSupport
+*identity supplied by caller*, and DDS direction before allocating Cyclone DDS
+Topics. The generated 53-service/113-Topic allow-list is checked in CI and
+**strict mode refuses all currently unreviewed per-service QoS**. Existing
+BatteryStatus/EngineControl vertical slices explicitly use `PrototypeOnly`;
+this does not confer UMAA normative QoS conformance. See
+[details](docs/implementation/P3_SERVICE_CONTEXT_STATUS.md).
+
+## P3 exact-source service-binding proof (prototype, 2026-10-27)
+
+`umaa::cyclone::ServiceContext` now checks the generated **53-service / 113-Topic**
+Catalog identity and role before allocating actual CycloneDDS Topics. It is
+fail-closed for every current unreviewed normative QoS profile. Two *additional*
+official Topic types, `AnchorSpecsReportType` and `AnchorCommandType`, passed
+independent Linux/Windows discovery and default-valued DDS message transport.
+**This is a transport/type smoke, not full service behavior**: AnchorSpecs
+semantic Report values, AnchorControl execution/Ack/Status/Dispose and required
+QoS remain unimplemented. See the [P3 evidence](docs/implementation/P3_SERVICE_CONTEXT_STATUS.md)
+and [open gates](docs/DELIVERY_GATES.md).

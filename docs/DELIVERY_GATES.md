@@ -35,3 +35,19 @@ If these gates cannot be met, the correct delivery status is *partial* rather th
 - G8 remains **PARTIAL**, G6/G7/G11 **OPEN**, G9/G10 **BLOCKED**, G12
   **PARTIAL**. No newly implemented 51-service runtime or license-backed RTI
   proof is claimed.
+
+## P3 reviewed-topic service runtime progress (2026-10-27)
+
+- 53 reviewed service names and 113 explicit Topic/type/role identities are now
+  generated as a checked installable C++ allow-list. Unknown identities and
+  unreviewed QoS are rejected **before creating a DDS Topic**.
+- `CycloneServiceContext` owns an actual DDS participant and service-bound
+  Topic creation, shared by BatteryStatus and EngineControl prototype hosts.
+- Additional official `AnchorSpecs` Report and `AnchorControl` Command endpoints
+  achieved independent real Cyclone DDS discovery and **default-valued TypeSupport
+  sample transport** on Ubuntu ([10/10](https://github.com/rydolabs/umaa-kit/actions/runs/40426885356))
+  and Windows ([9/9](https://github.com/rydolabs/umaa-kit/actions/runs/40426879585)).
+- **G1/G8 remain PARTIAL; G6 remains OPEN.** Neither new service has a semantic
+  Handler, required QoS/keys, CommandStatus/Ack/Dispose or normative payload
+  oracle. `dds_qos_verified` is false for every service and an unsubstantiated
+  flag cannot enable strict production mode. RTI and certification remain open.

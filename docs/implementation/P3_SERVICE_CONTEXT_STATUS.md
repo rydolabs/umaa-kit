@@ -14,8 +14,9 @@
 - Existing official BatteryStatus Report publisher and EngineControl Command
   host now use the common `ServiceContext` and exact Catalog Topic/Role mapping
   instead of bypassing the runtime guard.
-- Strict GCC CTest **13/13** and Python registry negative tests **5/5** pass
-  locally. Real IDL-based Linux/Windows Actions still required for G8 proof.
+- Strict GCC CTest **13/13**, Clang ASan/UBSan **2/2**, and Python
+  registry negative tests **6/6** pass locally. Real IDL-based Linux and
+  Windows verified in the exact commit runs listed below.
 
 ## What this does not do
 
@@ -60,3 +61,26 @@ DDS process. This proves serializer/transport connectivity only; zero-valued
 sample contents are **not** validated as normative UMAA application commands
 or fully-populated Reports. The check does not generate Command Ack/Status or
 Report keyed Dispose, and is not a complete new service implementation.
+
+## Exact-source CI evidence (final feature head before merge)
+
+Validation source commit `66bd148b4e66403caca7efd54066eaba97ed3a47`
+(see GitHub [PR #4](https://github.com/rydolabs/umaa-kit/pull/4)).
+
+- [Linux official UMAA, real Cyclone, independent Simulator](https://github.com/rydolabs/umaa-kit/actions/runs/40426885356):
+  official CTest **10/10**; both new Report and Command default-valued
+  TypeSupport samples independently received (`REVIEWED_SERVICE_TYPED_WIRE_*_PASS`),
+  Linux namespace/network impairment tests **15/15** including **7 impaired**
+  and **3 blackout/recovery** cases.
+- [Windows official UMAA, MSVC, real Cyclone](https://github.com/rydolabs/umaa-kit/actions/runs/40426879585):
+  official CTest **9/9** including both new default-wire tests; additional
+  109 reviewed TypeSupports generated; genuine exported Cyclone package tested
+  with an independent CMake Consumer.
+- [Linux/Windows SDK matrix](https://github.com/rydolabs/umaa-kit/actions/runs/40426885475):
+  GCC, Clang and MSVC CTest **13/13**; generated registry checked against Catalog.
+
+**Strictly limited acceptance:** these two *additional* services have only
+Topic discovery and **default-initialized sample type serialization** tested.
+Their semantic Report payloads and Command/Status/Ack/Dispose are not yet
+implemented or accepted. The total count of partially operational services
+is still **BatteryStatus + EngineControl**, not four complete services.

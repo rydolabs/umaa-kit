@@ -114,7 +114,7 @@ jobs:
           $idlc = Get-ChildItem -Path "$vcpkgRoot/installed/x64-windows" -Filter idlc.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
           $root = Join-Path $env:RUNNER_TEMP 'umaa-6.0-idl'
           $output = Join-Path $env:RUNNER_TEMP 'umaa-probe-types'
-          foreach ($type in @('UMAA/EO/AnchorSpecs/AnchorSpecsReportType.idl','UMAA/EO/AnchorControl/AnchorCommandType.idl')) {
+          foreach ($type in @('UMAA/EO/AnchorSpecs/AnchorSpecsReportType.idl','UMAA/EO/AnchorControl/AnchorCommandType.idl','UMAA/EO/AnchorControl/AnchorCommandStatusType.idl','UMAA/EO/AnchorControl/AnchorCommandAckReportType.idl')) {
             python tools/official_idl_compile.py --root $root --out $output --idlc $idlc --generate-only --source $type
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }

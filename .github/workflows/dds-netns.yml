@@ -118,7 +118,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for type in UMAA/EO/AnchorSpecs/AnchorSpecsReportType.idl UMAA/EO/AnchorControl/AnchorCommandType.idl; do
+          for type in UMAA/EO/AnchorSpecs/AnchorSpecsReportType.idl UMAA/EO/AnchorControl/AnchorCommandType.idl UMAA/EO/AnchorControl/AnchorCommandStatusType.idl UMAA/EO/AnchorControl/AnchorCommandAckReportType.idl; do
             python3 tools/official_idl_compile.py --root "$RUNNER_TEMP/umaa-6.0-idl" --out "$RUNNER_TEMP/umaa-probe-types" --source "$type"
           done
       - name: Generate TypeSupport for additional reviewed EO Topic message types

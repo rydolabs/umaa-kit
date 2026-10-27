@@ -60,6 +60,8 @@ jobs:
           & 'build/real-consumer-win/Release/umaa_external_real_cyclone.exe'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Write-Host 'UMAA_EXTERNAL_REAL_CYCLONE_EXPORT_PASS'
+      - name: Check fail-closed reviewed runtime registry is exact
+        run: python tools/generate_reviewed_runtime_registry.py --check
       - name: Configure
         shell: pwsh
         run: |

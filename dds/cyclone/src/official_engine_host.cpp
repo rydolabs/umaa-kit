@@ -8,6 +8,7 @@
 #include "UMAA/EO/EngineControl/EngineCommandAckReportType.h"
 #include "umaa/cyclone_command_transport.hpp"
 #include "umaa/cyclone_command_reader.hpp"
+#include "umaa/cyclone_service_context.hpp"
 #include "umaa/module_loader.hpp"
 #include <cstdint>
 #include <cstdlib>
@@ -127,17 +128,21 @@ int main(int argc,char** argv) {
   EngineHandler handler(module);
   uint8_t provider_id[16];fillid(provider_id,0x22);
 
-  dds_entity_t participant=dds_create_participant(DDS_DOMAIN_DEFAULT,nullptr,nullptr);
-  report(participant,"participant");
-  dds_entity_t command_topic=dds_create_topic(participant,&UMAA_EO_EngineControl_EngineCommandType_desc,
-                                           "EngineCommandType",nullptr,nullptr);
-  report(command_topic,"command topic");
-  dds_entity_t status_topic=dds_create_topic(participant,&UMAA_EO_EngineControl_EngineCommandStatusType_desc,
-                                           "EngineCommandStatusType",nullptr,nullptr);
-  report(status_topic,"status topic");
-  dds_entity_t ack_topic=dds_create_topic(participant,&UMAA_EO_EngineControl_EngineCommandAckReportType_desc,
-                                           "EngineCommandAckReportType",nullptr,nullptr);
-  report(ack_topic,"ack topic");
+  umaa::cyclone::ServiceContext context("UMAA::EO::EngineControl",
+      umaa::cyclone::ServiceContext::ReviewMode::ExplicitPrototypeOnly);
+  dds_entity_t participant=context.participant();
+  const dds_entity_t command_topic=context.topic(
+      "UMAA::EO::EngineControl::EngineCommandType", "UMAA::EO::EngineControl::EngineCommandType",
+      umaa::reviewed::Role::Command, "EngineCommandType",
+      &UMAA_EO_EngineControl_EngineCommandType_desc);
+  const dds_entity_t status_topic=context.topic(
+      "UMAA::EO::EngineControl::EngineCommandStatusType", "UMAA::EO::EngineControl::EngineCommandStatusType",
+      umaa::reviewed::Role::Status, "EngineCommandStatusType",
+      &UMAA_EO_EngineControl_EngineCommandStatusType_desc);
+  const dds_entity_t ack_topic=context.topic(
+      "UMAA::EO::EngineControl::EngineCommandAckReportType", "UMAA::EO::EngineControl::EngineCommandAckReportType",
+      umaa::reviewed::Role::Ack, "EngineCommandAckReportType",
+      &UMAA_EO_EngineControl_EngineCommandAckReportType_desc);
   auto* q=qos();
   using Reader=umaa::cyclone::CommandReader<Cmd>;
   Reader command_reader(participant,command_topic,
@@ -192,7 +197,7 @@ int main(int argc,char** argv) {
   report(dds_wait_for_acks(status_writer,DDS_SECS(3)),"status reliable acknowledgment");
   report(dds_wait_for_acks(ack_writer,DDS_SECS(3)),"ack reliable acknowledgment");
   dds_sleepfor(DDS_MSECS(1500)); // keep writers alive for reader invalid-data observation
-  report(dds_delete(participant),"participant delete");
+  context.close();
   std::puts("ENGINE_HOST: PASS official EngineControl command ack/status/dispose proof");
   return 0;
  }catch(const std::exception& e) {

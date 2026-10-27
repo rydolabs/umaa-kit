@@ -97,6 +97,8 @@ jobs:
             --out build/netns-evidence/official-icd-topic-ledger.json \
             --expect-services 53 --expect-operations 113 \
             --require-domain-topic-complete EO --require-domain-topic-complete MO --require-domain-topic-complete MM --require-domain-topic-complete SA --require-domain-topic-complete SEM --require-domain-topic-complete SO
+      - name: Check fail-closed reviewed runtime registry is exact
+        run: python3 tools/generate_reviewed_runtime_registry.py --check
       - name: Check reviewed service contracts against pinned official IDL
         shell: bash
         run: |

@@ -43,6 +43,7 @@ def main() -> int:
     prefix = ROOT / "build" / ("ci-install-" + platform.system().lower() + "-" + args.compiler)
     try:
         tasks = [
+            ("reviewed_runtime_registry", [sys.executable, "tools/generate_reviewed_runtime_registry.py", "--check"]),
             ("sdk_generator_unittests", [sys.executable, "-m", "unittest", "discover", "-s", "sdk/tests", "-p", "test_*.py", "-v"]),
             ("simulator_oracle_unittests", [sys.executable, "-m", "unittest", "discover", "-s", "simulator/tests", "-p", "test_*.py", "-v"]),
         ]

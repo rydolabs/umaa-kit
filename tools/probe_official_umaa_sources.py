@@ -78,6 +78,22 @@ def inspect(doc_id, work):
                     if (any(n.lower() in line.lower() for n in names)
                         or re.search(r"\b(provides|consumes|provided|consumed)\b", line, re.I))
                 ][:130]
+            if doc_id == "COMPONENT_DEFINITIONS_1_0":
+                section_headers = [
+                    (idx, row.strip())
+                    for idx, row in enumerate(lines)
+                    if re.match(r"^\s*3\.[1-9]\.3\b", row)
+                ]
+                out["component_service_subsections"] = [
+                    {"start_line": idx + 1,
+                     "heading": heading,
+                     "following_lines": [
+                         {"line": i + 1, "text": lines[i].strip()[:160]}
+                         for i in range(idx + 1, min(len(lines), idx + 42))
+                         if lines[i].strip()
+                     ]}
+                    for idx, heading in section_headers
+                ]
             if doc_id == "ICD_CO_6_0":
                 out["section_locator_candidates"] = [
                     {"line": i + 1, "text": line.strip()[:140]}

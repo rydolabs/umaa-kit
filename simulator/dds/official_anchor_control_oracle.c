@@ -39,8 +39,9 @@ static int matched(dds_entity_t writer,dds_entity_t status_reader,dds_entity_t a
 }
 int main(int argc,char** argv){
  const int updating=(argc==2 && strcmp(argv[1],"--update")==0);
+ const int raising=(argc==2 && strcmp(argv[1],"--raise")==0);
  const int bad_destination=(argc==2 && strcmp(argv[1],"--bad-destination")==0);
- if(argc>2 || (argc==2 && !updating && !bad_destination))return 2;
+ if(argc>2 || (argc==2 && !updating && !bad_destination && !raising))return 2;
  dds_entity_t p=dds_create_participant(DDS_DOMAIN_DEFAULT,NULL,NULL);
  if(p<0)return 2;
  dds_entity_t ct=dds_create_topic(p,&UMAA_EO_AnchorControl_AnchorCommandType_desc,"AnchorCommandType",NULL,NULL);
@@ -55,14 +56,16 @@ int main(int argc,char** argv){
  if(command_writer<0||status_reader<0||ack_reader<0)return 3;
  if(!matched(command_writer,status_reader,ack_reader)){fputs("ANCHOR_CONTROL_ORACLE: host discovery timeout\n",stderr);return 4;}
  Cmd command={0};
- command.action=UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_LOWER;
+ command.action=raising?UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_RAISE:
+  UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_LOWER;
  command.timeStamp.seconds=time(NULL);
  command.timeStamp.nanoseconds=1;
  fillid(command.source.id,0x11);
  fillid(command.destination.id,bad_destination?0x99:0x52);
  fillid(command.sessionID,0x33);
  if(dds_write(command_writer,&command)<0){fputs("ANCHOR_CONTROL_ORACLE: issue command failed\n",stderr);return 5;}
- puts("ANCHOR_CONTROL_ORACLE: issued LOWER anchor command");
+ puts(raising?"ANCHOR_CONTROL_ORACLE: issued RAISE anchor command":
+              "ANCHOR_CONTROL_ORACLE: issued LOWER anchor command");
  if(bad_destination){
    // An independently constructed wrong-destination Command must not result
    // in any Status or Ack. The supervisor separately checks that the host
@@ -141,7 +144,8 @@ int main(int argc,char** argv){
        if(got_ack >= (updating?2:1) || !same(ack.sessionID,command.sessionID) ||
           !same(ack.command.sessionID,command.sessionID) ||
           ack.command.action!=(got_ack==0?
-             UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_LOWER:
+             (raising?UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_RAISE:
+                      UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_LOWER):
              UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_STOP)){
           fputs("ANCHOR_CONTROL_ORACLE: malformed or duplicate Ack\n",stderr);return 10;
        }

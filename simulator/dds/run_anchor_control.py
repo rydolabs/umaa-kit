@@ -26,6 +26,6 @@ def run(host, oracle, option):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) not in (3, 4) or (len(sys.argv) == 4 and sys.argv[3] not in ('--update', '--bad-destination')):
+    if len(sys.argv) not in (3, 4) or (len(sys.argv) == 4 and sys.argv[3] not in ('--update', '--bad-destination', '--raise')):
         sys.exit(2)
     sys.exit(0 if run(sys.argv[1], sys.argv[2], sys.argv[3:]) else 1)

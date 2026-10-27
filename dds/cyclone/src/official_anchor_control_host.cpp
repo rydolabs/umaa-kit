@@ -194,7 +194,7 @@ int main(int argc,char** argv) {
   report(dds_wait_for_acks(ack_writer,DDS_SECS(3)),"ack reliable acknowledgment");
   dds_sleepfor(DDS_MSECS(1500)); // keep writers alive for reader invalid-data observation
   context.close();
-  std::puts("ANCHOR_CONTROL_HOST_PASS command=LOWER update=STOP ack_status_cancel_dispose=1");
+  std::puts("ANCHOR_CONTROL_HOST_PASS action=LOWER_or_RAISE update_to_STOP_supported=1 ack_status_cancel_dispose=1");
   return 0;
  }catch(const std::exception& e) {
   std::fprintf(stderr,"ANCHOR_CONTROL_HOST: failure: %s\n",e.what());return 3;

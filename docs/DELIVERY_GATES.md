@@ -51,3 +51,23 @@ If these gates cannot be met, the correct delivery status is *partial* rather th
   Handler, required QoS/keys, CommandStatus/Ack/Dispose or normative payload
   oracle. `dds_qos_verified` is false for every service and an unsubstantiated
   flag cannot enable strict production mode. RTI and certification remain open.
+
+## 2026-10-27 P4 Anchor semantic Report/Command wire evidence (scoped)
+
+- Official `AnchorSpecsReportType` emits and independently verifies actual
+  `anchorHoldingPower` 1500→1750 and `rodeLength` 35→42,
+  UUID, increasing timestamp, and keyed DDS Report Dispose.
+- Official `AnchorControl` CommandStatus/Ack types now execute virtual
+  LOWER/RAISE/STOP actions; independent DDS oracle verifies Command, UPDATE,
+  ACK, status transitions and reasons, cancel/Dispose and rejection of
+  wrong-destination without any Status/Ack.
+- [Linux P4 CI](https://github.com/rydolabs/umaa-kit/actions/runs/40450127689):
+  CTest **15/15** and network namespace **15/15**.
+  [Windows P4 CI](https://github.com/rydolabs/umaa-kit/actions/runs/40450127737):
+  CTest **14/14**, genuine Cyclone CMake export Consumer PASS.
+  Final feature commit `5ad1131`; merged `main` commit `ed4af11`.
+- P4 advances **two additional service slices**, not two fully conformant
+  services: field units, Component QoS, definitive key naming, physical
+  feedback, concurrent operation, every required behavior and vendor
+  interoperability are still unproven. G1/G8 remain **PARTIAL**,
+  G6/G7/G11 **OPEN**, G9/G10 **BLOCKED**, G12 **PARTIAL**.

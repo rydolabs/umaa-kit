@@ -112,3 +112,18 @@ independent Linux/Windows discovery and default-valued DDS message transport.
 semantic Report values, AnchorControl execution/Ack/Status/Dispose and required
 QoS remain unimplemented. See the [P3 evidence](docs/implementation/P3_SERVICE_CONTEXT_STATUS.md)
 and [open gates](docs/DELIVERY_GATES.md).
+
+## P4 — Anchor semantic DDS subset (2026-10-27)
+
+The official `AnchorSpecsReportType` publishes two distinct non-zero
+`anchorHoldingPower`/`rodeLength` samples, with verified UUID/timestamps,
+then DDS Dispose. An **independent C Simulator** checks exact values and
+sequence. `AnchorControl` uses real `AnchorCommandType`, Status and Ack
+TypeSupport with virtual LOWER, RAISE, STOP actions, later-timestamp UPDATE,
+Command Dispose cancellation, Status/Ack/Dispose and rejected Destination.
+All these tests run against pinned official original UMAA IDL in Linux and
+Windows GitHub Actions (source commit `5ad1131`; merged PR
+[#6](https://github.com/rydolabs/umaa-kit/pull/6)).
+The new field values are fixtures, **not** normative units or a real device.
+See [precise verification limits](docs/implementation/P4_ANCHOR_SEMANTIC_WIRE.md)
+and [delivery gates](docs/DELIVERY_GATES.md).

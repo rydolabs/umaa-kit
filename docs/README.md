@@ -16,6 +16,9 @@ build/SDK/Simulator entry points, start with the repository [README](../README.m
 
 ## Implementation design
 
+- [AnchorSpecs/AnchorControl P4 semantic real DDS checkpoint](implementation/P4_ANCHOR_SEMANTIC_WIRE.md) — non-default measurements, three virtual actions and independent Command/Report lifecycle oracles.
+
+
 - [K-MOSA modules](architecture/K_MOSA_DYNAMIC_MODULES.md) — module ABI prototype boundaries.
 - [Command transport](implementation/COMMAND_TRANSPORT_STATUS.md) — command integration checkpoint.
 - [Cyclone command adapter](implementation/P1_CYCLONE_ADAPTER_STATUS.md) — historical P1 implementation checkpoint and limitations.

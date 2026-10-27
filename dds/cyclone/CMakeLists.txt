@@ -143,7 +143,7 @@ if(DEFINED UMAA_PROBE_GENERATED_ROOT)
   add_executable(umaa_anchor_control_lifecycle_oracle
     "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/official_anchor_control_oracle.c")
   target_link_libraries(umaa_anchor_control_lifecycle_oracle PRIVATE umaa_probe_type_support)
-  foreach(anchor_case IN ITEMS normal update bad-destination)
+  foreach(anchor_case IN ITEMS normal update stop bad-destination)
     if(anchor_case STREQUAL "normal")
       set(anchor_flag "")
     else()

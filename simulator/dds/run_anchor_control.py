@@ -10,7 +10,7 @@ import time
 
 def main():
     if len(sys.argv) not in (3, 4):
-        print("Usage: run_anchor_control.py <host> <independent-oracle> [--update|--bad-destination]",file=sys.stderr)
+        print("Usage: run_anchor_control.py <host> <independent-oracle> [--update|--stop|--bad-destination]",file=sys.stderr)
         return 2
     host, oracle = sys.argv[1:3]
     options = sys.argv[3:]

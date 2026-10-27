@@ -14,7 +14,7 @@ fixtures; unit semantics and mandatory Component QoS remain unverified.
 
 ## Command lifecycle
 
-The AnchorControl host accepts valid LOWER, updates the same source/session to
+The AnchorControl host accepts valid LOWER and STOP inputs, updates the same source/session to
 RAISE with a later timestamp, handles DDS Command Dispose as cancellation and
 publishes keyed CommandStatus, CommandAck and terminal Dispose. The independent
 C oracle checks issued/commanded/executing/canceled transitions, UPDATED and
@@ -24,8 +24,8 @@ anchor; no actuator safety or physical state feedback is claimed.
 
 ## Validation requirements
 
-Run `official_umaa_anchor_specs_meaningful_report` plus three
-`official_umaa_anchor_control_{normal,update,bad-destination}` CTests on real
+Run `official_umaa_anchor_specs_meaningful_report` plus four
+`official_umaa_anchor_control_{normal,update,stop,bad-destination}` CTests on real
 Cyclone C TypeSupport built from the pinned original AUVSI 6.0 IDL, **both**
 Linux and Windows. Existing discovery/default-wire scenarios remain separate.
 The package must not bundle the original AUVSI IDL.

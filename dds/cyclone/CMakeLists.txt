@@ -191,3 +191,44 @@ if(DEFINED UMAA_PROBE_GENERATED_ROOT)
     endif()
   endforeach()
 endif()
+
+# Official AnchorSpecs *semantic* Report (2 distinct payloads and keyed Dispose)
+# and AnchorControl protocol (LOWER/STOP Update/Cancel/Ack/Status/Dispose).
+# These tests use the separately generated official AUVSI 6.0 TypeSupport;
+# reviewed per-service normative QoS and device hardware are not claimed.
+if(DEFINED UMAA_PROBE_GENERATED_ROOT)
+  add_executable(umaa_anchor_specs_payload_host src/official_anchor_specs_host.cpp)
+  target_compile_features(umaa_anchor_specs_payload_host PRIVATE cxx_std_17)
+  target_include_directories(umaa_anchor_specs_payload_host PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk/include")
+  target_link_libraries(umaa_anchor_specs_payload_host PRIVATE umaa_probe_type_support)
+  add_executable(umaa_anchor_specs_payload_oracle
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/official_anchor_specs_oracle.c")
+  target_link_libraries(umaa_anchor_specs_payload_oracle PRIVATE umaa_probe_type_support)
+  add_test(NAME official_umaa_anchor_specs_verified_payload
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/run_anchor_specs.py"
+      "$<TARGET_FILE:umaa_anchor_specs_payload_host>"
+      "$<TARGET_FILE:umaa_anchor_specs_payload_oracle>")
+  set_tests_properties(official_umaa_anchor_specs_verified_payload PROPERTIES TIMEOUT 45)
+
+  add_executable(umaa_anchor_control_extended_host src/official_anchor_control_extended_host.cpp)
+  target_compile_features(umaa_anchor_control_extended_host PRIVATE cxx_std_17)
+  target_include_directories(umaa_anchor_control_extended_host PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk/include")
+  target_link_libraries(umaa_anchor_control_extended_host PRIVATE umaa_probe_type_support)
+  add_executable(umaa_anchor_control_extended_oracle
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/official_anchor_control_extended_oracle.c")
+  target_link_libraries(umaa_anchor_control_extended_oracle PRIVATE umaa_probe_type_support)
+  foreach(mode IN ITEMS normal update raise bad-destination complete fail)
+    if(mode STREQUAL "normal")
+      set(extra_arg "")
+    else()
+      set(extra_arg "--${mode}")
+    endif()
+    add_test(NAME official_umaa_anchor_control_extended_${mode}
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/run_anchor_control_extended.py"
+        "$<TARGET_FILE:umaa_anchor_control_extended_host>"
+        "$<TARGET_FILE:umaa_anchor_control_extended_oracle>" ${extra_arg})
+    set_tests_properties(official_umaa_anchor_control_extended_${mode} PROPERTIES TIMEOUT 45)
+  endforeach()
+endif()

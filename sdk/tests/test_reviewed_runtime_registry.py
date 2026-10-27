@@ -38,6 +38,12 @@ class ReviewedRegistryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             entries(cat)
 
+    def test_unproven_qos_flag_cannot_unlock_production_mode(self):
+        cat = copy.deepcopy(self.catalog)
+        cat['services'][0]['dds_qos_verified'] = True
+        with self.assertRaisesRegex(ValueError, 'normative QoS'):
+            entries(cat)
+
     def test_reject_unreviewed(self):
         cat = copy.deepcopy(self.catalog)
         cat['services'][0]['icd_reviewed'] = False

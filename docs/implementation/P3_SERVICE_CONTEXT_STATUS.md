@@ -53,3 +53,10 @@ compile- and real-discovery tests on Linux/Windows once verified in CI.
 must **not** be counted as a third/fourth fully running UMAA service or
 normative Report/Command lifecycle validation. Payload fields, keys, Status/Ack,
 Dispose and QoS still need independent on-wire and Component review.
+
+Optional `--wire` variant additionally sends one **default-initialized** official
+TypeSupport sample and checks it is deserialized by the opposite independent
+DDS process. This proves serializer/transport connectivity only; zero-valued
+sample contents are **not** validated as normative UMAA application commands
+or fully-populated Reports. The check does not generate Command Ack/Status or
+Report keyed Dispose, and is not a complete new service implementation.

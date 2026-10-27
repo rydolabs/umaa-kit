@@ -4,6 +4,7 @@
 #include <dds/dds.h>
 #include "umaa/cyclone_service_context.hpp"
 #include <cstdio>
+#include <cstring>
 #include <exception>
 #include <stdexcept>
 #include <string>
@@ -14,6 +15,7 @@ static constexpr auto SERVICE = "UMAA::EO::AnchorSpecs";
 static constexpr auto TOPIC = "UMAA::EO::AnchorSpecs::AnchorSpecsReportType";
 static constexpr auto WIRE = "AnchorSpecsReportType";
 static constexpr auto DESC = &UMAA_EO_AnchorSpecs_AnchorSpecsReportType_desc;
+using Wire=UMAA_EO_AnchorSpecs_AnchorSpecsReportType;
 static constexpr auto ROLE = umaa::reviewed::Role::Report;
 static constexpr bool PROVIDER = true;
 #elif defined(UMAA_ANCHOR_CONTROL_COMMAND)
@@ -22,6 +24,7 @@ static constexpr auto SERVICE = "UMAA::EO::AnchorControl";
 static constexpr auto TOPIC = "UMAA::EO::AnchorControl::AnchorCommandType";
 static constexpr auto WIRE = "AnchorCommandType";
 static constexpr auto DESC = &UMAA_EO_AnchorControl_AnchorCommandType_desc;
+using Wire=UMAA_EO_AnchorControl_AnchorCommandType;
 static constexpr auto ROLE = umaa::reviewed::Role::Command;
 static constexpr bool PROVIDER = false;
 #else
@@ -32,7 +35,9 @@ static void check(dds_return_t result, const char* operation) {
   if (result < 0) throw std::runtime_error(std::string(operation) + ": " + dds_strretcode(-result));
 }
 
-int main() {
+int main(int argc, char** argv) {
+  const bool wire = argc == 2 && std::strcmp(argv[1], "--wire") == 0;
+  if (argc > 2 || (argc == 2 && !wire)) return 3;
   try {
     using Context = umaa::cyclone::ServiceContext;
     Context context(SERVICE, Context::ReviewMode::ExplicitPrototypeOnly);
@@ -60,8 +65,31 @@ int main() {
       dds_sleepfor(DDS_MSECS(25));
     }
     if(!matched) throw std::runtime_error("independent participant not discovered");
-    // The application-side endpoint must stay up while the independent oracle
-    // detects matching discovery. No payload is exchanged in this phase.
+    if(wire) {
+      if(PROVIDER) {
+        // A default-initialized official TypeSupport sample exercises the
+        // real serializer only. It is NOT an application-semantic Report.
+        Wire sample{};
+        check(dds_write(endpoint,&sample),"write zero-valued TypeSupport sample");
+        check(dds_wait_for_acks(endpoint,DDS_SECS(3)),"wait for sample ACK");
+      }else{
+        // Receive the independent Command publisher sample, without treating
+        // a zero/default payload as a valid executable hardware command.
+        bool got=false;
+        for(int i=0;i<250 && !got;++i){
+          Wire sample{};void* samples[1]={&sample};dds_sample_info_t info[1]{};
+          const dds_return_t count=dds_take(endpoint,samples,info,1,1);
+          check(count,"take official Command TypeSupport sample");
+          if(count>0){
+            got=info[0].valid_data;
+            dds_sample_free(&sample,DESC,DDS_FREE_CONTENTS);
+          }
+          if(!got)dds_sleepfor(DDS_MSECS(25));
+        }
+        if(!got)throw std::runtime_error("no independent typed Command sample");
+      }
+      std::puts("REVIEWED_SERVICE_TYPED_WIRE_HOST_PASS only=default_type_serialization");
+    }
     dds_sleepfor(DDS_MSECS(500));
     context.close();
     std::printf("REVIEWED_SERVICE_DISCOVERY_HOST_PASS service=%s role=%s only=discovery\n",

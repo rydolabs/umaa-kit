@@ -74,9 +74,12 @@ def entries(catalog):
                     raise ValueError("unsupported outbound command")
                 # Catalog currently lacks vetted Component Definitions QoS.
                 # Do not let generated C++ claim more than source says.
-                if svc.get("dds_qos_verified") not in (False, True):
-                    raise ValueError("missing QoS review flag")
-                result.append((name, topic, typ, ROLE[role], bool(svc["dds_qos_verified"])))
+                if svc.get("dds_qos_verified") is not False:
+                    # No normative DDS policy has yet been translated into
+                    # an applied Cyclone QoS config. A bare catalog flag must
+                    # never unlock the production DDS entity path.
+                    raise ValueError("normative QoS application/evidence missing for " + name)
+                result.append((name, topic, typ, ROLE[role], False))
     return result, len(service_names)
 
 

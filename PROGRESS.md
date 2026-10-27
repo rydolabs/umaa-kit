@@ -221,3 +221,15 @@
   remaining 49 reviewed service runtimes, RTI, conformance corpus and
   production/hardware acceptance remain **OPEN/BLOCKED**; do not release as
   a fully compliant SDK.
+
+## 2026-10-27 M2 host-owned Command timeout
+
+- PR [#12](https://github.com/rydolabs/umaa-kit/pull/12):
+  clock-injected Command deadline scheduler, stale/replay fencing,
+  safe-cancel retry, keyed disposal and DDS error fail-closed.
+- Feature official DDS Linux **23/23** and Windows **22/22**, including
+  independently checked `FAILED/TIMEOUT`, verified after official IDL
+  generation. Feature Actions **9/9 SUCCESS**.
+- Commit `dc4f5c15` merged; deeper normative QoS/recovery, RTI,
+  entire 53-service runtime and conformance remain OPEN.
+  [M2 test scope](docs/implementation/M2_COMMAND_DEADLINES.md).

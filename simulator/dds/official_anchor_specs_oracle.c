@@ -10,7 +10,7 @@ typedef UMAA_EO_AnchorSpecs_AnchorSpecsReportType Sample;
 static int near(double a,double b){return isfinite(a)&&fabs(a-b)<0.0002;}
 static int verify(const Sample* s,int phase){
  const int newer=phase==1;
- if(!s->anchorDescription || strcmp(s->anchorDescription,
+ if(strcmp(s->anchorDescription,
     newer?"Proof anchor revised":"Proof bow anchor")!=0) return 0;
  return s->source.id[0]==0x45 && s->source.id[15]==0x45 &&
     s->timeStamp.seconds>0 && s->timeStamp.nanoseconds==(newer?2000:1000) &&

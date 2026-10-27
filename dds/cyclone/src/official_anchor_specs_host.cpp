@@ -21,7 +21,8 @@ static void value(Sample& s, bool updated){
   uuid(s.source.id,0x45);
   s.timeStamp.seconds=static_cast<decltype(s.timeStamp.seconds)>(std::time(nullptr));
   s.timeStamp.nanoseconds=updated?2000:1000;
-  s.anchorDescription=const_cast<char*>(updated?"Proof anchor revised":"Proof bow anchor");
+  std::snprintf(s.anchorDescription,sizeof(s.anchorDescription),"%s",
+                updated?"Proof anchor revised":"Proof bow anchor");
   s.anchorSize=updated?175.0:125.0;
   s.anchorHoldingPower=updated?2900.0:2150.0;
   s.anchorHoldingPowerRatio=updated?16.571428:17.2;

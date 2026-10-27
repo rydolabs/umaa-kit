@@ -43,9 +43,9 @@ int main(int argc,char** argv){
  if(argc>2 || (argc==2 && !updating && !bad_destination))return 2;
  dds_entity_t p=dds_create_participant(DDS_DOMAIN_DEFAULT,NULL,NULL);
  if(p<0)return 2;
- dds_entity_t ct=dds_create_topic(p,&UMAA_EO_AnchorControl_AnchorCommandType_desc,"EngineCommandType",NULL,NULL);
- dds_entity_t st=dds_create_topic(p,&UMAA_EO_AnchorControl_AnchorCommandStatusType_desc,"EngineCommandStatusType",NULL,NULL);
- dds_entity_t at=dds_create_topic(p,&UMAA_EO_AnchorControl_AnchorCommandAckReportType_desc,"EngineCommandAckReportType",NULL,NULL);
+ dds_entity_t ct=dds_create_topic(p,&UMAA_EO_AnchorControl_AnchorCommandType_desc,"AnchorCommandType",NULL,NULL);
+ dds_entity_t st=dds_create_topic(p,&UMAA_EO_AnchorControl_AnchorCommandStatusType_desc,"AnchorCommandStatusType",NULL,NULL);
+ dds_entity_t at=dds_create_topic(p,&UMAA_EO_AnchorControl_AnchorCommandAckReportType_desc,"AnchorCommandAckReportType",NULL,NULL);
  if(ct<0||st<0||at<0){fprintf(stderr,"ANCHOR_CONTROL_ORACLE: topic failure: %d,%d,%d\n",ct,st,at);return 2;}
  dds_qos_t* q=test_qos();
  dds_entity_t command_writer=dds_create_writer(p,ct,q,NULL);

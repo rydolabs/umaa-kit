@@ -6,9 +6,11 @@
 #include "UMAA/EO/AnchorControl/AnchorCommandStatusType.h"
 #include "UMAA/EO/AnchorControl/AnchorCommandAckReportType.h"
 #include "umaa/cyclone_command_transport.hpp"
+#include "umaa/command_deadline.hpp"
 #include "umaa/cyclone_command_reader.hpp"
 #include "umaa/cyclone_service_context.hpp"
 
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
@@ -29,6 +31,7 @@ constexpr auto CANCELED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_
 constexpr auto COMPLETED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_COMPLETED;
 constexpr auto FAILED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_FAILED;
 constexpr auto OBJECTIVE_FAILED=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_OBJECTIVE_FAILED;
+constexpr auto TIMEOUT_REASON=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_TIMEOUT;
 constexpr auto SUCCEEDED=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_SUCCEEDED;
 constexpr auto CANCELED_REASON=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_CANCELED;
 constexpr auto UPDATED_REASON=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_UPDATED;
@@ -107,7 +110,8 @@ struct AnchorMapper {
     s.commandStatus=state_enum(event.detail);
     s.commandStatusReason=(event.detail=="CANCELED"?CANCELED_REASON:
       (event.reason=="OBJECTIVE_FAILED"?OBJECTIVE_FAILED:
-       (event.reason=="UPDATED"?UPDATED_REASON:SUCCEEDED)));
+       (event.reason=="TIMEOUT"?TIMEOUT_REASON:
+        (event.reason=="UPDATED"?UPDATED_REASON:SUCCEEDED))));
     return s;
   }
   Ack make_ack(const umaa::Identity& id,const AnchorPayload& payload) const {
@@ -158,8 +162,11 @@ int main(int argc,char** argv) {
   report(status_writer,"status writer");report(ack_writer,"ack writer");
   using Writer=umaa::cyclone::CommandWriter<AnchorPayload,Status,Ack,AnchorMapper>;
   Writer command_wire(status_writer,ack_writer,AnchorMapper{});
-  umaa::BoundCommandProvider<AnchorPayload> anchor(hexid(provider_id),handler,command_wire);
-  bool accepted=false,disposed=false;
+  // The 250ms window is an explicit CI-only local device policy, not
+  // normative UMAA DDS deadline QoS. The DDS host drives the monotonic clock.
+  umaa::TimedCommandProvider<AnchorPayload> anchor(
+      hexid(provider_id),handler,command_wire,std::chrono::milliseconds(250));
+  bool accepted=false,disposed=false,timeout_observed=false;
   std::string last_source,last_session;
 
   const int attempts = std::getenv("UMAA_NETEM_RECOVERY") ? 1600 : 600;
@@ -201,8 +208,15 @@ int main(int argc,char** argv) {
         disposed=true;
       }
     });
+    if(std::getenv("UMAA_ANCHOR_SIMULATE_TIMEOUT")) {
+      for(const auto& event:anchor.expire())
+        if(event.kind==umaa::Event::Kind::Status && event.detail=="FAILED" &&
+           event.reason=="TIMEOUT") timeout_observed=true;
+    }
     if (!got) dds_sleepfor(DDS_MSECS(25));
   }
+  if(std::getenv("UMAA_ANCHOR_SIMULATE_TIMEOUT") && !timeout_observed)
+    throw std::runtime_error("requested timeout not observed");
   if(!accepted || !disposed || anchor.sessions()!=0 || anchor.faulted() ||
      command_wire.published_status_instances()!=0)
     throw std::runtime_error("command lifecycle incomplete");

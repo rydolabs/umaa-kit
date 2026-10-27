@@ -15,6 +15,8 @@ def run(host, oracle, option):
             env['UMAA_ANCHOR_SIMULATE_COMPLETE']='1'
         if option == ['--fail']:
             env['UMAA_ANCHOR_SIMULATE_FAILURE']='1'
+        if option == ['--timeout']:
+            env['UMAA_ANCHOR_SIMULATE_TIMEOUT']='1'
         result = subprocess.run([host], text=True, capture_output=True, timeout=22, env=env)
         output, _ = sim.communicate(timeout=16)
         print(result.stdout, result.stderr, output, flush=True)
@@ -32,6 +34,6 @@ def run(host, oracle, option):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) not in (3, 4) or (len(sys.argv) == 4 and sys.argv[3] not in ('--update', '--bad-destination', '--raise', '--complete', '--fail')):
+    if len(sys.argv) not in (3, 4) or (len(sys.argv) == 4 and sys.argv[3] not in ('--update', '--bad-destination', '--raise', '--complete', '--fail', '--timeout')):
         sys.exit(2)
     sys.exit(0 if run(sys.argv[1], sys.argv[2], sys.argv[3:]) else 1)

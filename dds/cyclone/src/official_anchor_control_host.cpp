@@ -26,6 +26,7 @@ constexpr auto ISSUED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_IS
 constexpr auto COMMANDED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_COMMANDED;
 constexpr auto EXECUTING=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_EXECUTING;
 constexpr auto CANCELED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_CANCELED;
+constexpr auto COMPLETED=UMAA_Common_MaritimeEnumeration_CommandStatusEnumModule_COMPLETED;
 constexpr auto SUCCEEDED=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_SUCCEEDED;
 constexpr auto CANCELED_REASON=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_CANCELED;
 constexpr auto UPDATED_REASON=UMAA_Common_MaritimeEnumeration_CommandStatusReasonEnumModule_UPDATED;
@@ -80,6 +81,7 @@ auto state_enum(const std::string& state) {
   if(state=="COMMANDED")return COMMANDED;
   if(state=="EXECUTING")return EXECUTING;
   if(state=="CANCELED")return CANCELED;
+  if(state=="COMPLETED")return COMPLETED;
   throw std::runtime_error("unsupported anchor state");
 }
 // Session IDs in protocol events are hex-encoded UUID bytes, never arbitrary
@@ -176,6 +178,15 @@ int main(int argc,char** argv) {
         for(const auto& event:events) {
           if(event.kind==umaa::Event::Kind::Ignored)
             throw std::runtime_error("rejected command: "+event.detail);
+        }
+        // CI-only virtual device completion callback; no actual anchor moves.
+        // Production code must wait for device-observed achievement first.
+        if(std::getenv("UMAA_ANCHOR_SIMULATE_COMPLETE") &&
+           payload.action==UMAA_Common_MaritimeEnumeration_AnchorActionEnumModule_RAISE) {
+          const auto done=anchor.complete(id.session,true);
+          for(const auto& event:done)
+            if(event.kind==umaa::Event::Kind::Ignored)
+              throw std::runtime_error("completion refused: "+event.detail);
         }
         accepted=true;
       } else if(info.instance_state==DDS_IST_NOT_ALIVE_DISPOSED && accepted) {

@@ -1,4 +1,5 @@
 """AnchorControl independent DDS supervisor. Never imports SDK code."""
+import os
 import subprocess
 import sys
 import time
@@ -9,7 +10,10 @@ def run(host, oracle, option):
                            stderr=subprocess.STDOUT)
     try:
         time.sleep(.4)
-        result = subprocess.run([host], text=True, capture_output=True, timeout=22)
+        env=os.environ.copy()
+        if option == ['--complete']:
+            env['UMAA_ANCHOR_SIMULATE_COMPLETE']='1'
+        result = subprocess.run([host], text=True, capture_output=True, timeout=22, env=env)
         output, _ = sim.communicate(timeout=16)
         print(result.stdout, result.stderr, output, flush=True)
         if option == ['--bad-destination']:
@@ -26,6 +30,6 @@ def run(host, oracle, option):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) not in (3, 4) or (len(sys.argv) == 4 and sys.argv[3] not in ('--update', '--bad-destination', '--raise')):
+    if len(sys.argv) not in (3, 4) or (len(sys.argv) == 4 and sys.argv[3] not in ('--update', '--bad-destination', '--raise', '--complete')):
         sys.exit(2)
     sys.exit(0 if run(sys.argv[1], sys.argv[2], sys.argv[3:]) else 1)

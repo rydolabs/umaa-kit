@@ -55,6 +55,35 @@ def inspect(doc_id, work):
                                   text=True, timeout=20, check=True).stdout
             pages = re.search(r"^Pages:\s+(\d+)", info, re.MULTILINE)
             lines = extracted.splitlines()
+            # Non-authoritative draft locators only. Clause IDs cannot be
+            # inferred from a text line; independent visual/source review
+            # of the PDF is still necessary for requirement acceptance.
+            if doc_id == "COMPLIANCE_REV1":
+                out["shall_locator_candidates"] = [
+                    {"extracted_line": i + 1,
+                     "candidate_text": line.strip()[:260],
+                     "next_line": lines[i + 1].strip()[:150] if i + 1 < len(lines) else ""}
+                    for i, line in enumerate(lines)
+                    if re.search(r"\bshall\b", line, re.I)
+                ]
+            if doc_id == "COMPONENT_DEFINITIONS_1_0":
+                names = ("Autopilot", "COLREGS", "Logging", "Mission Executor",
+                         "USV Navigation", "UUV Hazard Avoidance",
+                         "UUV Navigation", "Water Environment", "Weather")
+                out["component_section_context"] = [
+                    {"line": i + 1,
+                     "text": line.strip()[:180],
+                     "next_line": lines[i + 1].strip()[:180] if i + 1 < len(lines) else ""}
+                    for i, line in enumerate(lines)
+                    if (any(n.lower() in line.lower() for n in names)
+                        or re.search(r"\b(provides|consumes|provided|consumed)\b", line, re.I))
+                ][:130]
+            if doc_id == "ICD_CO_6_0":
+                out["section_locator_candidates"] = [
+                    {"line": i + 1, "text": line.strip()[:140]}
+                    for i, line in enumerate(lines)
+                    if re.match(r"^\s*6\.(?:1|2)\.[0-9]+(?:\.[0-9]+)?\s+\S", line)
+                ][:70]
             # Candidate counts are NOT requirement counts: cross-page wrapping,
             # tables and notes must be independently reviewed in original PDF.
             out.update({"acquisition": "downloaded_metadata_only",

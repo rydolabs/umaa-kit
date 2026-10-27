@@ -129,3 +129,16 @@ If these gates cannot be met, the correct delivery status is *partial* rather th
   and obtain external review where contractually required.
 
 This source and candidate inventory is NOT a UMAA 6.0 certification.
+
+## 2026-10-27 M2 — explicit host-clock timeout (scoped evidence)
+
+- `TimedCommandProvider` only refreshes monotonic deadlines on accepted
+  Command/Update; unsafe cancellation never manufactures FAILED.
+- Official AUVSI 6.0 AnchorControl TIMEOUT Status/Ack/Dispose:
+  [Linux CTest 23/23, netns 15/15](https://github.com/rydolabs/umaa-kit/actions/runs/40487440082);
+  [Windows CTest 22/22](https://github.com/rydolabs/umaa-kit/actions/runs/40487439998).
+  PR #12 merged at `dc4f5c15` (Git tree `1c73d6345200ee9a02f39aec1d2e026478997018`).
+- Policy duration is CI-only, **not authoritative DDS Deadline QoS**.
+  G2 prototype paths improved; G6/G7/G8/G11 OPEN/PARTIAL,
+  G9/G10 BLOCKED, G12 PARTIAL. No certification or hardware claim.
+  [Detailed evidence](implementation/M2_COMMAND_DEADLINES.md).

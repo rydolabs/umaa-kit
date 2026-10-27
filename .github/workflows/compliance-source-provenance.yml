@@ -17,8 +17,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Confirm Poppler availability
-        run: command -v pdftotext && command -v pdfinfo
+      - name: Install PDF metadata extractors on GitHub runner
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          command -v pdftotext && command -v pdfinfo
       - name: Probe public official PDF access without committing/repackaging PDF bytes
         run: python3 tools/probe_official_umaa_sources.py --report build/compliance/source-provenance.json
       - name: Upload source fingerprint metadata only

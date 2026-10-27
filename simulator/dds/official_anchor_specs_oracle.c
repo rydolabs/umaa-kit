@@ -7,18 +7,18 @@
 #include <string.h>
 
 typedef UMAA_EO_AnchorSpecs_AnchorSpecsReportType Sample;
-static int near(double a,double b){return isfinite(a)&&fabs(a-b)<0.0002;}
+static int approx_equal(double a,double b){return isfinite(a)&&fabs(a-b)<0.0002;}
 static int verify(const Sample* s,int phase){
  const int newer=phase==1;
  if(strcmp(s->anchorDescription,
     newer?"Proof anchor revised":"Proof bow anchor")!=0) return 0;
  return s->source.id[0]==0x45 && s->source.id[15]==0x45 &&
     s->timeStamp.seconds>0 && s->timeStamp.nanoseconds==(newer?2000:1000) &&
-    near(s->anchorSize,newer?175:125) &&
-    near(s->anchorHoldingPower,newer?2900:2150) &&
-    near(s->anchorHoldingPowerRatio,newer?16.571428:17.2) &&
-    near(s->rodeLength,newer?115:85.5) && near(s->rodeSize,0.016) &&
-    near(s->rodeWorkingLoadLimit,newer?1600:1400);
+    approx_equal(s->anchorSize,newer?175:125) &&
+    approx_equal(s->anchorHoldingPower,newer?2900:2150) &&
+    approx_equal(s->anchorHoldingPowerRatio,newer?16.571428:17.2) &&
+    approx_equal(s->rodeLength,newer?115:85.5) && approx_equal(s->rodeSize,0.016) &&
+    approx_equal(s->rodeWorkingLoadLimit,newer?1600:1400);
 }
 int main(void){
  dds_entity_t participant=dds_create_participant(DDS_DOMAIN_DEFAULT,NULL,NULL);

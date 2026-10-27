@@ -21,9 +21,12 @@ def run(host, oracle, options):
         return (result.returncode==0 and simulator.returncode==0 and
                 'REVIEWED_SERVICE_DISCOVERY_HOST_PASS' in result.stdout and
                 'REVIEWED_SERVICE_DISCOVERY_SIM_PASS' in output and
-                (options != ['--wire'] or
+                (options not in (['--wire'], ['--semantic']) or
                  ('REVIEWED_SERVICE_TYPED_WIRE_HOST_PASS' in result.stdout and
-                  'REVIEWED_SERVICE_TYPED_WIRE_SIM_PASS' in output)))
+                  'REVIEWED_SERVICE_TYPED_WIRE_SIM_PASS' in output)) and
+                (options != ['--semantic'] or
+                 ('ANCHOR_SPECS_SEMANTIC_HOST_PASS' in result.stdout and
+                  'ANCHOR_SPECS_SEMANTIC_SIM_PASS' in output)))
     finally:
         if simulator.poll() is None:
             simulator.kill()

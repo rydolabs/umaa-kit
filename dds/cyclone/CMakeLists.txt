@@ -157,5 +157,13 @@ if(DEFINED UMAA_PROBE_GENERATED_ROOT)
               "$<TARGET_FILE:umaa_${probe_id}_host>"
               "$<TARGET_FILE:umaa_${probe_id}_oracle>" --wire)
     set_tests_properties(official_umaa_${probe_id}_default_wire PROPERTIES TIMEOUT 40)
+    if(probe STREQUAL "ANCHOR_SPECS_REPORT")
+      add_test(NAME official_umaa_anchor_specs_meaningful_report
+        COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/../../simulator/dds/run_reviewed_discovery.py"
+                "$<TARGET_FILE:umaa_${probe_id}_host>"
+                "$<TARGET_FILE:umaa_${probe_id}_oracle>" --semantic)
+      set_tests_properties(official_umaa_anchor_specs_meaningful_report PROPERTIES TIMEOUT 40)
+    endif()
   endforeach()
 endif()

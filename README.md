@@ -127,3 +127,13 @@ Windows GitHub Actions (source commit `5ad1131`; merged PR
 The new field values are fixtures, **not** normative units or a real device.
 See [precise verification limits](docs/implementation/P4_ANCHOR_SEMANTIC_WIRE.md)
 and [delivery gates](docs/DELIVERY_GATES.md).
+
+## P4.1 Anchor semantic values and virtual terminal protocol evidence
+
+Verified merged-main commit `d59612c`: [Linux real DDS 22/22](https://github.com/rydolabs/umaa-kit/actions/runs/40451709970)
+and [Windows real DDS 21/21](https://github.com/rydolabs/umaa-kit/actions/runs/40451709996).
+Includes non-default AnchorSpecs report data with update/Dispose and independently
+asserted AnchorControl Ack/Status, LOWER/RAISE/STOP Update, Cancel, COMPLETED,
+FAILED/OBJECTIVE_FAILED and terminal Dispose. COMPLETED/FAILED are explicitly
+injected **virtual-device outcomes**, not physical device proof; full normative
+ICD roles, QoS, security and RTI interoperability remain open.

@@ -1,0 +1,48 @@
+name: UMAA 6.0 conformance scope integrity (not certification)
+on:
+  pull_request:
+    paths:
+      - 'catalog/**'
+      - 'docs/specification/UMAA_6_0_CONFORMANCE_SCOPE.md'
+      - 'tools/verify_compliance_scope.py'
+      - 'tools/test_compliance_scope.py'
+      - '.github/workflows/compliance-scope.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'catalog/**'
+      - 'docs/specification/UMAA_6_0_CONFORMANCE_SCOPE.md'
+      - 'tools/verify_compliance_scope.py'
+      - 'tools/test_compliance_scope.py'
+      - '.github/workflows/compliance-scope.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fail-closed-scope-audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Negative tests and baseline checks
+        run: python3 -m unittest discover -s tools -p 'test_compliance_scope.py' -v
+      - name: Generate JSON preflight evidence
+        run: python3 tools/verify_compliance_scope.py --report build/compliance/trace-preflight.json
+      - name: Strict acceptance must reject missing normative coverage
+        shell: bash
+        run: |
+          set +e
+          python3 tools/verify_compliance_scope.py --strict > build/compliance/strict-result.json
+          code=$?
+          set -e
+          if [ "$code" -ne 3 ]; then
+            echo "::error::Expected strict conformance gate exit 3; got $code"
+            exit 1
+          fi
+          echo 'UMAA_NORMATIVE_SCOPE_STRICT_BLOCKED_AS_EXPECTED exit=3'
+      - name: Upload non-certification trace evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umaa6-conformance-preflight
+          path: build/compliance/
+          if-no-files-found: warn

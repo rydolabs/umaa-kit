@@ -34,5 +34,36 @@ jobs:
           cd studio/frontend && tsc -p .
       - name: Ensure compiled UI is reproducible
         run: git diff --exit-code -- studio/frontend/public/app.js
-# This workflow does NOT assert live PostgreSQL, real QEA, DDS communication,
-# official UMAA conformance, or production hardened worker/React dependencies.
+
+  studio-postgres-schema:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: studio_ci
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: studio_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U studio_ci -d studio_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install PostgreSQL test driver
+        run: python -m pip install 'psycopg[binary]>=3.2,<4'
+      - name: Apply PostgreSQL migration and test constraints
+        env:
+          STUDIO_TEST_DATABASE_URL: postgresql://studio_ci:ci_only_password@127.0.0.1:5432/studio_ci
+        run: python studio/tests/postgres_schema_smoke.py
+
+# PostgreSQL schema/constraints are exercised on a real service container.
+# Studio HTTP API still uses the SQLite integration test backend.
+# No real EA QEA, official UMAA conformance, or production-grade security claim.

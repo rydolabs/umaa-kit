@@ -1,5 +1,7 @@
-# Tested in isolated SQLite integration tests. Real PostgreSQL needs a driver and server.
-fastapi>=0.110,<1
+# CI-tested HTTP API test-client set; avoid incompatible future Starlette majors.
+fastapi==0.128.2
+starlette==0.50.0
+httpx==0.28.1
 uvicorn>=0.30,<1
 sqlalchemy>=2.0,<3
 python-multipart>=0.0.9,<1

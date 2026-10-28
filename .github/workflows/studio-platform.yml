@@ -64,6 +64,35 @@ jobs:
           STUDIO_TEST_DATABASE_URL: postgresql://studio_ci:ci_only_password@127.0.0.1:5432/studio_ci
         run: python studio/tests/postgres_schema_smoke.py
 
+  studio-postgres-e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: studio_m7
+          POSTGRES_PASSWORD: test_only_m7
+          POSTGRES_DB: studio_m7
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U studio_m7 -d studio_m7"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Studio API and PostgreSQL driver
+        run: python -m pip install -r studio/requirements.txt -r studio/requirements-platform.txt
+      - name: Actual PostgreSQL API / worker / recovery E2E
+        env:
+          STUDIO_TEST_DATABASE_URL: postgresql+psycopg://studio_m7:test_only_m7@127.0.0.1:5432/studio_m7
+        run: python studio/tests/postgres_api_e2e.py
+
 # PostgreSQL schema/constraints are exercised on a real service container.
 # Studio HTTP API still uses the SQLite integration test backend.
 # No real EA QEA, official UMAA conformance, or production-grade security claim.

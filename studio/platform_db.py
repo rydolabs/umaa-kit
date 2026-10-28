@@ -6,7 +6,7 @@ and generated artefacts held in a separate database / private file store.
 from datetime import datetime, timezone
 from uuid import uuid4
 from sqlalchemy import (create_engine, Column, String, DateTime, ForeignKey, Integer,
-                        UniqueConstraint, CheckConstraint, JSON, Text)
+                        UniqueConstraint, CheckConstraint, Index, JSON, Text)
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -59,11 +59,17 @@ class Job(Base):
     options = Column(J, nullable=False)
     status = Column(String(16), nullable=False, default='QUEUED')
     error = Column(Text)
+    lease_owner = Column(String(120))
+    lease_token = Column(String(36))
+    lease_expires_at = Column(DateTime(timezone=True))
+    attempts = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     finished_at = Column(DateTime(timezone=True))
     __table_args__ = (
+        CheckConstraint("attempts >= 0", name='job_attempts_nonnegative'),
         CheckConstraint("kind IN ('docx','idl')", name='job_valid_kind'),
         CheckConstraint("status IN ('QUEUED','RUNNING','PASS','FAIL')", name='job_valid_status'),
+        Index('ix_studio_jobs_claim', 'status', 'lease_expires_at', 'created_at'),
     )
 
 class Artifact(Base):

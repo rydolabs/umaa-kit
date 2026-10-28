@@ -10,9 +10,11 @@ import hashlib
 import shutil
 import tempfile
 import zipfile
+from uuid import uuid4
 from pathlib import Path
 from sqlalchemy import select
 from .platform_db import Job, ModelImport, Artifact, Audit, utcnow
+from .worker_leases import claim_job, renew_lease, finish_job, lease_heartbeat
 from .documents import generate as generate_docx, verify_document
 from .idl import draft_profile, generate_idl, verify_idl
 
@@ -35,20 +37,17 @@ def archive_files(folder):
     return buf.getvalue()
 
 
-def run_one(session_factory, store: Path):
-    """Claim at most one queued job. PostgreSQL SKIP LOCKED supports workers.
+def run_one(session_factory, store: Path, *, worker_id=None, lease_seconds=300):
+    """One leased job; stale workers cannot commit terminal status or artifacts."""
+    claim = claim_job(session_factory, worker_id=worker_id, lease_seconds=lease_seconds)
+    if claim is None:
+        return None
+    job_id, token = claim
+    with lease_heartbeat(session_factory, job_id, token, lease_seconds):
+        return _process_claim(session_factory, store, job_id, token)
 
-    SQLite local fixtures only exercise single-worker behavior.
-    """
-    with session_factory() as db:
-        with db.begin():
-            job = db.execute(select(Job).where(Job.status == 'QUEUED')
-                             .order_by(Job.created_at, Job.id)
-                             .with_for_update(skip_locked=True).limit(1)).scalar_one_or_none()
-            if job is None:
-                return None
-            job.status = 'RUNNING'
-            job_id = job.id
+
+def _process_claim(session_factory, store: Path, job_id, token):
     with session_factory() as db:
         job = db.get(Job, job_id)
         model = db.get(ModelImport, job.model_import_id)
@@ -89,29 +88,17 @@ def run_one(session_factory, store: Path):
                     if destination.exists() and sha_bytes(destination.read_bytes()) != digest:
                         raise ValueError('Existing content-addressed artifact was corrupted')
                     if not destination.exists():
-                        temporary = destination.with_name(destination.name + '.tmp-' + job.id)
+                        temporary = destination.with_name(destination.name + '.tmp-' + str(uuid4()))
                         with temporary.open('xb') as fp:
                             fp.write(payload)
                         temporary.replace(destination)
                     saved.append(Artifact(project_id=job.project_id, job_id=job.id,
                                           kind=kind, filename=filename,
                                           sha256=digest, size=len(payload)))
-                with db.no_autoflush:
-                    for artifact in saved:
-                        db.add(artifact)
-                    job.status = 'PASS'
-                    job.finished_at = utcnow()
-                    db.add(Audit(project_id=job.project_id, actor=job.created_by,
-                                 event='job.pass', subject=job.id))
-                    db.commit()
+            # Commit metadata only while this worker still owns an unexpired lease.
+            finish_job(session_factory, job_id, token, artifacts=saved)
         except Exception as exc:
-            logging.exception('Studio job failed (id=%s)', job.id)
-            # Fail closed; never publish partial artifacts or an approved claim.
-            with db.no_autoflush:
-                job.status = 'FAIL'
-                job.error = (type(exc).__name__ + ': ' + str(exc))[:1000]
-                job.finished_at = utcnow()
-                db.add(Audit(project_id=job.project_id, actor=job.created_by,
-                             event='job.fail', subject=job.id))
-                db.commit()
-        return job.id
+            logging.exception('Studio job failed (id=%s)', job_id)
+            finish_job(session_factory, job_id, token,
+                       error=(type(exc).__name__ + ': ' + str(exc)))
+    return job_id

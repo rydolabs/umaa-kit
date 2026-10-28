@@ -94,7 +94,7 @@ def create_app(*, database_url=None, storage_dir=None, identities=None, init_sch
     def serialize_job(job):
         return {'id': job.id, 'projectId': job.project_id,
                 'modelImportId': job.model_import_id, 'kind': job.kind,
-                'status': job.status, 'error': job.error,
+                'status': job.status, 'attempts': job.attempts, 'error': job.error,
                 'conformanceClaim': False, 'createdAt': job.created_at.isoformat()}
 
     @app.get('/api/v1/health')

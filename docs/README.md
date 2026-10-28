@@ -41,3 +41,5 @@ is historical P1 evidence, not the canonical repository. Official AUVSI UMAA IDL
 - [P3 service context checkpoint](implementation/P3_SERVICE_CONTEXT_STATUS.md) — 53-service literal Topic guard, fail-closed QoS, runtime entity creation.
 
 - [M2 Command timeout scope](implementation/M2_COMMAND_DEADLINES.md) — monotonic host deadlines, safe cancellation and official DDS TIMEOUT verification.
+
+- [V5 scoped Studio extension IDL implementation and remaining gates](UMAA_ROADMAP_STATUS_V5.md)

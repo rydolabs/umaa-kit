@@ -25,6 +25,13 @@ umaa-dev/
 │   ├── scenarios/       stdio scenario fixtures
 │   ├── src/             Scenario runner/verifier
 │   └── tests/           Simulator tests
+├── verifier/            Independent verification orchestrator and evidence
+│   ├── contracts/       Development-only contract mappings
+│   ├── suites/          Allow-listed stdio and scoped DDS test suites
+│   └── tests/           Verifier unit/negative tests
+├── studio/              Read-only EA QEA import/diff PoC (not Web Studio yet)
+│   ├── qea.py           Selected model extraction and stable GUID snapshots
+│   └── tests/           Synthetic EA-like repository tests
 ├── tools/               Official IDL, catalog, CI and auditing tools
 ├── smoke/               Separate native shared-module ABI smoke proof
 ├── docs/

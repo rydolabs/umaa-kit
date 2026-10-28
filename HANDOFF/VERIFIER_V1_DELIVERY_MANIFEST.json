@@ -1,0 +1,43 @@
+{
+  "createdDate": "2026-10-28",
+  "sourceHandoff": "UMAA_Kit_Handoff_Complete_2026-10-27.zip",
+  "sourceCommitIsHistorical": true,
+  "repositoryPushed": false,
+  "increment": "Verifier V1 scoped offline implementation",
+  "scopeClaim": "Development-only stdio fixture checks; NOT official UMAA compliance",
+  "tests": {
+    "verifierUnit": "28/28 PASS",
+    "simulatorOracle": "6/6 PASS",
+    "simulatorNetworkConfig": "5/5 PASS",
+    "sdkPython": "38/38 PASS",
+    "sdkCTest": "14/14 PASS",
+    "verifiedStdIoSuite": "4/4 PASS"
+  },
+  "newOrChangedFiles": {
+    ".github/workflows/verifier.yml": "fe2b293871dbfd9c68cdedbc41ffb668116e7277e76e5977624d7892e72424c5",
+    "PROGRESS.md": "bb4bc0b6f063cf7ceb65e7b73e04ccc10c0f10e5f153cc38299b5ac383606fa4",
+    "README.md": "9c05e19bcf0ce3b664f02716b37a5bb56560d86f96a8727912925206a7de55dc",
+    "docs/verifier/ACCEPTANCE_MATRIX.md": "940d3dbec810ee973e7e901df8e28558632e9bcada8a0a6af5e93a0bdc9309e6",
+    "docs/verifier/DELIVERY_REPORT.md": "b0ad5c0602c853cbe4b6a7256e4a1c114fc9a7e1b150820016f3ba8c361e32d4",
+    "docs/verifier/INITIAL_ARCHITECTURE.md": "d6eff31f70763507ab23c4910552352725a5cdb08c93f549bdf6c3f7195334ea",
+    "verifier/INTEGRATION_STATUS.md": "4b737db05cc68c295f874e41cf44d0755c03aefa03ed63f1cba6e25c1c5e690e",
+    "verifier/README.md": "84c1448badbe8c5b201552a5db6663d0a08df7d33024555dc4b266c2b5cb5f86",
+    "verifier/__init__.py": "a086e17b64f1e73e7f914859a49e0588c9816bb922a19550e83a502dcc30b59e",
+    "verifier/__main__.py": "307299fda7b77d22c64cb51430ec75e5f59d78e9c948786afb3b2544fe45e4b7",
+    "verifier/cli.py": "027dacdfeb0be36f296f0c2c3c06872ffaf87acaecc96278ed98a1b34169b4f0",
+    "verifier/contracts.py": "4d7c5a897abec87a3ac5dd857dbb28dc29e2a791b24a9e989979834466d0ae28",
+    "verifier/contracts/legacy-profiles.json": "67634894d58f6b0273b938b2d209d888284f6a8bc35cecddecbd7e7f9d1fc480",
+    "verifier/evidence.py": "e20c3363e01f18b2471ebe1f5eede96fa68e6e0e746327caf8958b3b3db8d9f4",
+    "verifier/profiles.py": "e60f42232c4f759e56fc9719cdd2b9aaae89c8505d77af450322d4001255b8d8",
+    "verifier/report.py": "642ef1c7f4159d38b72b749bfd89755cfd2e2d24d1d4307852aaaccdb47cab04",
+    "verifier/runner.py": "961b4602bffe8b55a3ff9f13da77699065724fb10fca3d5fd1b29055d8bc2f29",
+    "verifier/suite.py": "eb1ce5de3bc9f8413b831cdd754020baa808a7e0a3e4fa3f1fbf5dda2056864e",
+    "verifier/suites/stdio-regression.json": "8f6c13d941a193933a7494002ed6db1809da3c81e0f9223f0f78f50b48f655e1",
+    "verifier/tests/test_contracts_evidence.py": "c8a1c55238d75619c588298ab7258339d59cd02b5ef4eab01937fe75d21a9cf8",
+    "verifier/tests/test_verifier.py": "27ef8545010f7355f228848ecf30f6e19bb0311803f64ae224873cb87de0e01a"
+  },
+  "unchangedOriginalSourceFileCount": 147,
+  "removedOriginalFileCount": 0,
+  "realDDSExecutedThisIncrement": false,
+  "conformanceClaim": false
+}

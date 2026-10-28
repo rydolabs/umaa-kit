@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0",
+  "suiteId": "dev-stdio-regression",
+  "description": "Development-only stdio scenario regression; NOT DDS and NOT UMAA conformance",
+  "cases": [
+    {
+      "id": "normal",
+      "profileId": "stdio-fixture",
+      "scenario": "simulator/scenarios/normal.json",
+      "timeoutSec": 30
+    },
+    {
+      "id": "update_cancel",
+      "profileId": "stdio-fixture",
+      "scenario": "simulator/scenarios/update_cancel.json",
+      "timeoutSec": 30
+    },
+    {
+      "id": "invalid_payload",
+      "profileId": "stdio-fixture",
+      "scenario": "simulator/scenarios/invalid_payload.json",
+      "timeoutSec": 30
+    },
+    {
+      "id": "replay_recovery",
+      "profileId": "stdio-fixture",
+      "scenario": "simulator/scenarios/replay_recovery.json",
+      "timeoutSec": 30
+    }
+  ]
+}

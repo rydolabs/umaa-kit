@@ -233,3 +233,58 @@
 - Commit `dc4f5c15` merged; deeper normative QoS/recovery, RTI,
   entire 53-service runtime and conformance remain OPEN.
   [M2 test scope](docs/implementation/M2_COMMAND_DEADLINES.md).
+
+## 2026-10-28 — Verifier V1 offline / local delivery (no repository push)
+
+- New `verifier/` is an independently managed orchestration CLI; the original
+  `simulator/`, `sdk/`, `dds/`, and `catalog/` paths are unchanged.
+- Added development-only contract registry, four-scenario suite, scoped
+  execution evidence, input/runner/contract file hashes, consistency audit,
+  negative result semantics and a portable offline HTML evidence viewer.
+- New Verifier unittest **28/28 PASS**; existing Simulator Python tests **6/6**
+  plus DDS configuration tests **5/5**; original `tools/ci_verify.py` **PASS**
+  (SDK Python **38/38**, CTest **14/14**, process fixtures **4/4**).
+- Actual built `umaa_mock_engine_host` + independent existing simulator oracle
+  via Verifier: four development-only stdio scenarios **4/4 PASS**.
+- Added `.github/workflows/verifier.yml` but it has **not** been executed in
+  GitHub Actions. This is a local working-tree overlay derived from handoff,
+  NOT a new upstream commit. G6/G11, vendor, security and production UI remain
+  OPEN/BLOCKED as before. See `verifier/INTEGRATION_STATUS.md`.
+
+## 2026-10-28 — Verifier V2 scoped offline increment (local only)
+
+- Independently added explicit operator DDS test-network acknowledgement gate;
+  omitted acknowledgement blocks before subprocess launch. This is procedural,
+  not enforced domain/network isolation or production authorization.
+- Added SHA-256 checked, non-normative Studio JSON result exchange with schema;
+  shared case IDs, contract IDs, run IDs, verdicts and input/artifact hashes.
+- Added catalog-backed `scope-report` and release blocking
+  `scope-report --require-ready`; zero approved normative requirements, 53
+  candidate services and 26 unreviewed clause locators: status BLOCKED.
+- Restricted single stdio scenario paths to repository simulator fixtures.
+- Local tests: verifier **38/38**, Simulator Oracle **6/6**, Simulator network
+  config **5/5**, original full SDK CI **PASS** (38 Python, 14 CTest and four
+  stdio process fixtures); new Verifier actual C++ fixture suite **4/4 PASS**.
+- V2 Studio exchange and offline HTML summary generated and validated.
+- No real DDS, RTI cross-vendor, official conformance, hardened multiuser
+  server, PostgreSQL or Web UI claimed. No remote push or GitHub Actions run.
+- All existing `sdk/`, `dds/`, `simulator/`, `catalog/` source files preserved.
+
+## 2026-10-28 — Studio V4 offline documents and Verifier integration (local only)
+
+- DOCX model inventory generator and trusted Word-template subset with
+  cross-run placeholder replacement, optional model tables, no overwrite and
+  SHA-256 manifest verification added to `studio/`. Draft status is mandatory.
+- Administrative-only Studio↔Verifier result association records digests and
+  explicitly disclaims SUT/model identity equivalence and official conformance.
+- Fixed EA SQLite importer to deterministically close read-only connections.
+- New Studio tests include successful generation, tampering, malformed model,
+  unknown template tokens, truncated record fields, export-schema rejection and
+  model/result digest mismatch.
+- Studio **15/15** unit tests, prior Verifier **44/44**, Simulator **6/6** and
+  network-configuration **5/5**, existing SDK local CI **PASS** (38 Python,
+  14 CTest, 4 stdio scenarios). Built C++ Mock Host through Verifier suite:
+  **4/4 PASS**. Draft example DOCX rendered and visually inspected.
+- Official conformance scope remains BLOCKED (0 approved normative requirements);
+  no fresh real DDS / RTI test or real Sparx QEA acceptance was possible.
+- See `docs/UMAA_ROADMAP_STATUS_V4.md`. No GitHub remote push or Actions run.

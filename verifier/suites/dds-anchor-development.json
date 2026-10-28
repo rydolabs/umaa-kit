@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0",
+  "suiteId": "dds-anchor-development",
+  "description": "Development-only real Cyclone DDS suite using independent existing simulator runners. Requires prebuilt trusted official TypeSupport binaries and isolated authorized DDS test network; NOT UMAA conformance.",
+  "cases": [
+    {
+      "id": "normal",
+      "profileId": "dds-anchor",
+      "timeoutSec": 90
+    },
+    {
+      "id": "update",
+      "profileId": "dds-anchor",
+      "timeoutSec": 90,
+      "option": "--update"
+    },
+    {
+      "id": "stop",
+      "profileId": "dds-anchor",
+      "timeoutSec": 90,
+      "option": "--stop"
+    },
+    {
+      "id": "bad-destination",
+      "profileId": "dds-anchor",
+      "timeoutSec": 90,
+      "option": "--bad-destination"
+    }
+  ]
+}

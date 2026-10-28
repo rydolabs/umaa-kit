@@ -91,7 +91,7 @@ jobs:
       - name: Actual PostgreSQL API / worker / recovery E2E
         env:
           STUDIO_TEST_DATABASE_URL: postgresql+psycopg://studio_m7:test_only_m7@127.0.0.1:5432/studio_m7
-        run: python studio/tests/postgres_api_e2e.py
+        run: python -m studio.tests.postgres_api_e2e
 
 # PostgreSQL schema/constraints are exercised on a real service container.
 # Studio HTTP API still uses the SQLite integration test backend.

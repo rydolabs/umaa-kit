@@ -53,6 +53,18 @@ jobs:
           python3 sdk/tests/run_real_dds_command_request.py "$cli" "$cyclone" "$module"
           python3 sdk/tests/run_real_dds_command_request.py "$cli" "$fastdds" "$module"
           sha256sum "$cli" "$module"
+      - name: Run one typed Command client binary and Component against both backends
+        run: |
+          set -euo pipefail
+          server="$PWD/build/parity-cyclone/umaa_cyclone_command_request_cli"
+          client="$PWD/build/parity-cyclone/umaa_cyclone_typed_command_client_cli"
+          module="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_command_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_command_demo.so"
+          test -f "$server" && test -f "$client" && test -f "$module"
+          python3 sdk/tests/run_real_dds_command_request.py "$server" "$cyclone" "$module" "$client"
+          python3 sdk/tests/run_real_dds_command_request.py "$server" "$fastdds" "$module" "$client"
+          sha256sum "$server" "$client" "$module"
       - name: Evidence
         if: always()
         run: find build/parity-* \( -name CTestTestfile.cmake -o -name '*.so' \) | sort

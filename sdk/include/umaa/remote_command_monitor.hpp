@@ -104,6 +104,12 @@ public:
     auto it=sessions_.find(session);
     if(it==sessions_.end() || !it->second.status_disposed ||
        !it->second.ack_disposed)return false;
+    // Never discard an otherwise healthy Pending session just because both
+    // DDS instances disappeared: that would silently lose a device command.
+    // Faulted sessions can be explicitly quarantined and released.
+    const Entry& e=it->second;
+    if(!e.faulted && (!e.acked || !e.status || !terminal(*e.status)))
+      return false;
     sessions_.erase(it);return true;
   }
   void ambiguous_delivery(const std::string& session) {

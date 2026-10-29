@@ -97,7 +97,7 @@ int main(int argc,char** argv){
      if(provider.command_disposed("controller","17").size()!=2)return 7;
      wire.wait_for_acks(5000);
      std::this_thread::sleep_for(std::chrono::milliseconds(200));
-     std::cout<<"PASS synthetic CommandEngine host events over Cyclone DDS\n";return 0;
+     std::cout<<"PASS synthetic CommandEngine host events over selected DDS Backend\n";return 0;
    }
    if(mode=="subscriber"){
      auto plugin=std::make_shared<umaa::DdsBackendPlugin>(argv[2]);

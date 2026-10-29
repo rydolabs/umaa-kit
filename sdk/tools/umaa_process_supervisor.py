@@ -138,20 +138,40 @@ class ComponentProcessSupervisor:
             self._faulted = True
             self._kill()
             raise WorkerFault("malformed worker response") from err
-
-    def stop(self):
-        if self._proc is None:
-            return True
-        reply = self._rpc("STOP")
-        if reply == "BUSY":
-            return False  # Pending device work: never unload it implicitly.
-        if reply != "STOPPED":
+        except (JournalFault, OSError) as err:
+            # The device may have finished, but durability is unconfirmed.
+            # Never admit more operations through this supervisor instance.
             self._faulted = True
             self._kill()
-            raise WorkerFault("unknown shutdown state")
-        self._proc.wait(timeout=self.timeout)
-        self._proc = None
-        return True
+            raise WorkerFault("durable device result journal failed; quarantine") from err
+
+    def stop(self):
+        with self._lock:
+            if self._proc is None:
+                return True
+            # A durable intent is not physical proof of a terminal state.
+            # The operator must reconcile unknown outcomes before shutdown
+            # is treated as a clean device lifecycle.
+            if self._journal and self._journal.entries:
+                return False
+            reply = self._rpc_locked("STOP")
+            if reply == "BUSY":
+                return False  # Pending device work: never unload it implicitly.
+            if reply != "STOPPED":
+                self._faulted = True
+                self._kill()
+                raise WorkerFault("unknown shutdown state")
+            try:
+                code = self._proc.wait(timeout=self.timeout)
+            except subprocess.TimeoutExpired as err:
+                self._faulted = True
+                self._kill()
+                raise WorkerFault("worker did not exit after STOPPED") from err
+            if code != 0:
+                self._faulted = True
+                raise WorkerFault("worker exited unsuccessfully after STOPPED")
+            self._proc = None
+            return True
 
     @staticmethod
     def reconcile_journal(path, *, hardware_reconciled=False):
@@ -174,10 +194,11 @@ class ComponentProcessSupervisor:
         self._rpc("TEST_CRASH")
 
     def close(self):
-        if self._proc is not None:
-            self._kill()
-            self._proc = None
-            self._faulted = True
+        with self._lock:
+            if self._proc is not None:
+                self._kill()
+                self._proc = None
+                self._faulted = True
 
     def __enter__(self):
         return self

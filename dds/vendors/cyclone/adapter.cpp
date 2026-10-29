@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
 #include <new>
 #include <string>
 namespace {
@@ -121,6 +122,7 @@ int32_t poll(void* ptr,uint32_t maximum) {
      kind=UMAA_DDS_EVENT_DISPOSE;
    else if(info[0].instance_state==DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE)
      kind=UMAA_DDS_EVENT_UNREGISTER;
+   std::fprintf(stderr,"dds_take valid=%d state=%d key=%s kind=%u count=%d\n",info[0].valid_data,static_cast<int>(info[0].instance_state),key.c_str(),kind,static_cast<int>(count));
    if(kind){
      UmaaDdsSampleV1 out{bytes,length,key.c_str(),info[0].source_timestamp,kind};
      reader->callback(reader->user,&out);

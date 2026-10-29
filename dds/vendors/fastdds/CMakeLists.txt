@@ -35,3 +35,33 @@ add_test(NAME umaa_fastdds_backend_real_wire
  "$<TARGET_FILE:umaa_dds_fastdds_demo>"
  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>")
 set_tests_properties(umaa_fastdds_backend_real_wire PROPERTIES TIMEOUT 35)
+
+# Synthetic CommandStatus/Ack TypeSupport, separate plugin using same Backend ABI.
+set(COMMAND_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated-command")
+file(MAKE_DIRECTORY "${COMMAND_ROOT}")
+execute_process(COMMAND "${FASTDDSGEN}" -replace -d "${COMMAND_ROOT}"
+  "${CMAKE_CURRENT_LIST_DIR}/../../cyclone/idl/DemoCommandEvent.idl"
+  RESULT_VARIABLE COMMAND_GEN_RESULT OUTPUT_VARIABLE COMMAND_GEN_OUT
+  ERROR_VARIABLE COMMAND_GEN_ERR)
+if(NOT COMMAND_GEN_RESULT EQUAL 0)
+  message(FATAL_ERROR "Fast DDS Command generator failed: ${COMMAND_GEN_ERR} ${COMMAND_GEN_OUT}")
+endif()
+file(GLOB COMMAND_SOURCES CONFIGURE_DEPENDS "${COMMAND_ROOT}/*.cxx")
+if(NOT COMMAND_SOURCES)
+  message(FATAL_ERROR "Fast DDS Command generator produced no source")
+endif()
+add_library(umaa_dds_fastdds_command_demo MODULE command_adapter.cpp ${COMMAND_SOURCES})
+target_compile_features(umaa_dds_fastdds_command_demo PRIVATE cxx_std_17)
+target_include_directories(umaa_dds_fastdds_command_demo PRIVATE
+  "${SDK_ROOT}/include" "${COMMAND_ROOT}")
+target_link_libraries(umaa_dds_fastdds_command_demo PRIVATE fastrtps fastcdr)
+add_executable(umaa_fastdds_command_cli "${SDK_ROOT}/tests/real_dds_command_cli.cpp")
+target_compile_features(umaa_fastdds_command_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_fastdds_command_cli PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_fastdds_command_cli PRIVATE UMAA::Runtime)
+add_test(NAME umaa_fastdds_command_real_wire
+ COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_backend.py"
+ "$<TARGET_FILE:umaa_fastdds_command_cli>"
+ "$<TARGET_FILE:umaa_dds_fastdds_command_demo>"
+ "$<TARGET_FILE:umaa_fastdds_vehicle_demo>")
+set_tests_properties(umaa_fastdds_command_real_wire PROPERTIES TIMEOUT 45)

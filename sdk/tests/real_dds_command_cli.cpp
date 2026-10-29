@@ -86,6 +86,16 @@ int main(int argc,char** argv){
      runtime->load_component(argv[3]);
      auto plugin=std::make_shared<umaa::DdsBackendPlugin>(argv[2]);
      auto domain=std::shared_ptr<umaa::DdsBackendPlugin::Domain>(plugin->open_domain(44).release());
+     // Both tested vendor bindings must explicitly reject unverified
+     // GROUP coherent/ordered presentation instead of silently downgrading.
+     const UmaaDdsTopicV1 required{
+       AsyncCommand::status_topic,AsyncCommand::status_schema,
+       AsyncCommand::qos_profile,
+       UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_COHERENT_GROUP|UMAA_DDS_CAP_ORDERED_ACCESS};
+     bool rejected=false;
+     try {auto* w=domain->writer(required);domain->close_writer(w);}
+     catch(const std::runtime_error&){rejected=true;}
+     if(!rejected)return 12;
      umaa::DdsCommandEventTransport<AsyncCommand> wire(plugin,domain);
      umaa::ComponentCommandProvider<AsyncCommand> provider("vehicle",runtime,wire);
      auto events=provider.receive({"controller","vehicle","17",0},{1800});

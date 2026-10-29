@@ -274,3 +274,24 @@ session reconciliation and crash isolation across all supported platforms;
 actual Cyclone↔Fast DDS mixed-network interop; RTI Connext licensed SDK
 and independent Runner; independent formal conformance oracle. These
 are not satisfied by synthetic or mock test passes.
+
+## Vendor capability blocker: verified GROUP Presentation QoS
+
+**Fail-closed decision for Fast DDS 2.11 and the current Cyclone fixture:**
+both synthetic command adapters advertise only `RELIABLE` and
+`INSTANCE_LIFECYCLE`. No `COHERENT_GROUP` or `ORDERED_ACCESS` capability
+is advertised, and independent real DDS tests explicitly reject mandatory
+GROUP+ORDERED requests. A successful synthetic serialized batch or mock test
+**does not prove** DDS coherent presentation across multiple writers.
+
+Fast DDS official documentation states that `PresentationQosPolicy` can
+be configured but is **not implemented** in multiple 2.x versions
+([Fast DDS 2.14.6 API reference](https://fast-dds.docs.eprosima.com/en/v2.14.6/fastdds/api_reference/dds_pim/core/policy/presentationqospolicy.html)).
+The 2.11 library used in CI must therefore NOT claim GROUP coherent support
+without new vendor implementation and independent tests. Cyclone DDS exposes
+`dds_begin_coherent`/`dds_end_coherent` as described in
+[its C API](https://cyclonedds.io/docs/cyclonedds/latest/api/pub.html),
+but the current Facade does not provide a coherent transaction handshake or
+approved official UMAA collection TypeBinding. This is an actual remaining
+architecture and vendor-capability gate, not an issue that a mock test can
+close.

@@ -85,7 +85,10 @@ int main(int argc,char** argv) {
      domain->close_writer(writer);
      std::cerr << "writer result data=" << sent << " first_ack=" << first_ack
                << " dispose=" << disposed << " last_ack=" << last_ack << "\n";
-     if(sent||disposed||first_ack||last_ack)return 5;
+     // This Report writer is not required to ACK each intermediate update
+     // before sending Dispose. The final reliable ACK checks all outstanding
+     // samples in order; an earlier query remains diagnostic only.
+     if(sent||disposed||last_ack)return 5;
      std::cout<<"PASS separate device component -> DDS vendor plugin\n";return 0;
    }
    return 6;

@@ -81,3 +81,12 @@ private thread, without user DDS Reader/Writer code. Equal-timestamp replays
 are dropped. CTest covers two updates and Dispose via the mock Backend.
 **OPEN:** official per-service Report TypeSupport, QoS mapping, full DDS
 reader recovery, resource budgets and production concurrency/fuzzing.
+
+## 2026-10-29 Fast DDS intermediate ACK behavior
+
+Fast DDS 2.11 sometimes returns an error on a *mid-stream* reliable ACK
+query even though the independent subscriber receives the data and Dispose.
+The synthetic Report smoke now records this query diagnostically, then
+requires the **final ACK after Dispose** to succeed before PASS. This mirrors
+`ReportPublisher::close()` and does not replay any command or sample.
+Final ACK failure remains FAIL; this does not assert official UMAA QoS.

@@ -3,6 +3,7 @@
 #pragma once
 #include "umaa/component.hpp"
 #include "umaa/internal/component_runtime.hpp"
+#include "umaa/internal/dds_backend.h" // vendor-neutral event kinds only
 #include <cstdint>
 #include <functional>
 #include <exception>

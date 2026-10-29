@@ -23,7 +23,8 @@ int main(){
  B second{1,2,{"c",2,"a",30,""},{
    O::upsert({"a",30,300,""})}};
  assert(receiver.apply_delta(second));
- assert(std::find(receiver.snapshot()->begin(),receiver.snapshot()->end(),300)!=receiver.snapshot()->end());
+ const auto second_values=receiver.snapshot();
+ assert(second_values && std::find(second_values->begin(),second_values->end(),300)!=second_values->end());
  B gap{1,4,{"c",2,"b",40,""},{
    O::upsert({"b",40,400,""})}};
  assert(rejected([&]{receiver.apply_delta(gap);}));

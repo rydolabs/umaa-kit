@@ -70,7 +70,9 @@ class OperationJournal:
             data = json.loads(self.path.read_text(encoding="utf-8"))
         except (ValueError, UnicodeError, OSError) as exc:
             raise JournalFault("corrupt/unreadable journal, operator recovery needed") from exc
-        if not isinstance(data, dict) or data.get("version") != 1:
+        # Python bool compares equal to 1; do not accept it as a schema version.
+        if (not isinstance(data, dict) or type(data.get("version")) is not int
+                or data["version"] != 1):
             raise JournalFault("unsupported operation journal version")
         rows = data.get("unresolved")
         if not isinstance(rows, list) or len(rows) > 128:
@@ -211,7 +213,23 @@ class OperationJournal:
         obj.path = Path(path).absolute()
         obj.owner_path = obj.path.with_name(obj.path.name + ".owner")
         obj._owner_fd = None
-        if obj.owner_path.exists() or obj.owner_path.is_symlink():
-            raise JournalFault("journal owner present; stop supervisor and clear stale marker explicitly")
-        obj.entries, obj.settled = obj._load()
-        obj.resolved_all_after_reconciliation()
+        # Merely checking owner_path.exists() is a TOCTOU race: a new
+        # supervisor could claim this journal after the check and before
+        # reconciliation writes it. Claim the SAME exclusive marker used by
+        # normal supervisors for the entire read-modify-fsync transaction.
+        # A stale marker is never stolen. An existing owner's marker must
+        # never be removed by a failed reconciliation attempt.
+        try:
+            obj._owner_fd = os.open(
+                str(obj.owner_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except FileExistsError as exc:
+            raise JournalFault(
+                "journal owner present; stop supervisor and clear stale marker explicitly"
+            ) from exc
+        try:
+            os.write(obj._owner_fd, str(os.getpid()).encode("ascii"))
+            os.fsync(obj._owner_fd)
+            obj.entries, obj.settled = obj._load()
+            obj.resolved_all_after_reconciliation()
+        finally:
+            obj.release_owner()

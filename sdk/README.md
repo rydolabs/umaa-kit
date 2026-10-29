@@ -212,3 +212,17 @@ Subscriber never loads the remote Provider DLL. The parser rejects unknown
 fields, invalid domain, duplicate settings and oversized inputs. The
 ServiceTraits/Topic mapping remains synthetic and checked by the backend;
 this is not normative UMAA configuration support.
+
+### Fail-closed transport receivers (experimental)
+
+`umaa/collection_transport.hpp` stages a bounded, sequence-checked
+LargeCollection revision and only exposes an atomic snapshot after metadata
+and all elements agree. A lost DDS coherent batch faults the receiver; an
+explicit newer-generation full snapshot is required to recover. It does **not**
+implement DDS coherent/ordered QoS or official type mapping.
+
+`umaa/remote_command_monitor.hpp` correlates CommandAck and CommandStatus
+for each provider/session. It never infers success from Status alone and treats
+unknown delivery or invalid state transitions as requiring recovery. These
+classes are transport-neutral components; the actual officially mapped
+on-wire Command adapter is still unimplemented.

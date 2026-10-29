@@ -281,3 +281,13 @@ isolation, and independently approved normative conformance scope. See
 [SDK implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md) and
 [modular architecture](docs/SDK_MODULAR_ARCHITECTURE.md). PR #15 remains
 Draft and `main` is not implicitly merged.
+
+### SDK transport protocol hardening (experimental)
+
+The modular SDK now contains strict, vendor-neutral building blocks for
+coherent LargeCollection batch reconciliation and remote Command Ack/Status
+correlation. Both are covered by standalone CTest and are **not** substitutes
+for reviewed UMAA TypeBindings, DDS coherent/ordered QoS, or the missing
+on-wire Command runtime. See
+[SDK implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md) for the
+remaining completion gates.

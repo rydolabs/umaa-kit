@@ -148,3 +148,27 @@ Component**. Parser checks duplicates, input size, domain range, indentation,
 and unknown fields before loading. CTest tests valid and invalid configs.
 Official service mapping, richer YAML, security configuration and production
 supervision remain open.
+
+## 2026-10-29 collection and remote Command receiver hardening (development)
+
+The public SDK now has two independently testable **vendor-neutral** building
+blocks; neither is a completed official UMAA DDS runtime:
+
+- `collection_transport.hpp`: a strict LargeSet/LargeList coherent-batch
+  receiver. It stages changes in a private assembler and exposes only complete
+  revisions; bounds mutation counts, rejects sequence gaps, stale elements,
+  invalid metadata, cycles and ambiguous delivery. Recovery requires an
+  explicitly trusted newer-generation full snapshot. The DDS vendor adapter
+  still must provide actual coherent/ordered samples, a verified snapshot and
+  service-specific QoS; absent those capabilities, official LargeCollection
+  remains **PARTIAL / NOT READY**.
+- `remote_command_monitor.hpp`: provider/session-scoped CommandStatus and
+  CommandAck receiver. Terminal result requires both real ACK and valid,
+  timestamp-ordered terminal Status. A dropped ACK, invalid transition or
+  ambiguous delivery cannot become a fabricated success. The Component's
+  local pending-command mechanism is separate; actual DDS Command/Ack/Status
+  writer/reader TypeSupport binding remains **OPEN**.
+
+New tests: `umaa_coherent_collection_receiver_test` and
+`umaa_remote_command_monitor_test` (C++17, Linux and Windows). These exercise
+transaction/recovery and correlation only, not normative UMAA wire behavior.

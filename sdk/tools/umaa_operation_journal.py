@@ -23,11 +23,41 @@ class OperationJournal:
 
     def __init__(self, path):
         self.path = Path(path).absolute()
-        if self.path.is_dir():
-            raise JournalFault("journal path is a directory")
-        self.entries = self._load()
-        if self.entries:
-            raise JournalFault("unreconciled device operation journal; refuse startup")
+        self.owner_path = self.path.with_name(self.path.name + ".owner")
+        self._owner_fd = None
+        try:
+            if self.path.is_dir():
+                raise JournalFault("journal path is a directory")
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            # Fail closed across Python processes, not just across threads.
+            # An owner marker left by a killed supervisor is deliberately
+            # NOT silently stolen by a new worker instance.
+            self._owner_fd = os.open(
+                str(self.owner_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            os.write(self._owner_fd, str(os.getpid()).encode("ascii"))
+            os.fsync(self._owner_fd)
+            self.entries = self._load()
+            if self.entries:
+                raise JournalFault("unreconciled device operation journal; refuse startup")
+        except FileExistsError as exc:
+            raise JournalFault("operation journal already owned; no concurrent supervisors") from exc
+        except Exception:
+            self.release_owner()
+            raise
+
+    def release_owner(self):
+        fd = self._owner_fd
+        if fd is None:
+            return
+        self._owner_fd = None
+        try:
+            os.close(fd)
+        finally:
+            try:
+                self.owner_path.unlink()
+            except FileNotFoundError:
+                pass
+
 
     def _load(self):
         if self.path.is_symlink():
@@ -135,6 +165,10 @@ class OperationJournal:
         # Read and validate even when reconciliation is authorized.
         obj = cls.__new__(cls)
         obj.path = Path(path).absolute()
+        obj.owner_path = obj.path.with_name(obj.path.name + ".owner")
+        obj._owner_fd = None
+        if obj.owner_path.exists() or obj.owner_path.is_symlink():
+            raise JournalFault("journal owner present; stop supervisor and clear stale marker explicitly")
         obj.entries = obj._load()
         obj.entries.clear()
         obj._save()

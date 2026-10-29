@@ -28,7 +28,12 @@ class ComponentProcessSupervisor:
         self._faulted = False
         self._lock = threading.RLock()
         self._journal = OperationJournal(journal_path) if journal_path is not None else None
-        self._spawn()
+        try:
+            self._spawn()
+        except Exception:
+            if self._journal:
+                self._journal.release_owner()
+            raise
 
     @property
     def faulted(self):
@@ -199,6 +204,8 @@ class ComponentProcessSupervisor:
                 self._kill()
                 self._proc = None
                 self._faulted = True
+            if self._journal:
+                self._journal.release_owner()
 
     def __enter__(self):
         return self

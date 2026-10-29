@@ -126,6 +126,23 @@ class IsolatedWorkerTest(unittest.TestCase):
             with self.assertRaises(JournalFault):
                 self.make_journal(target)
 
+    def test_durable_intent_has_one_process_owner(self):
+        from umaa_operation_journal import JournalFault
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = pathlib.Path(tmp) / "owner.json"
+            with self.make_journal(journal) as host:
+                self.assertTrue(host.ping())
+                with self.assertRaises(JournalFault):
+                    self.make_journal(journal)
+                with self.assertRaises(JournalFault):
+                    ComponentProcessSupervisor.reconcile_journal(
+                        journal, hardware_reconciled=True)
+                self.assertTrue(host.stop())
+            # Close releases the owner marker; a clean new host may start.
+            with self.make_journal(journal) as fresh:
+                self.assertTrue(fresh.ping())
+                self.assertTrue(fresh.stop())
+
     def test_journal_verified_poll_clears_durable_intent(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "intent.json"

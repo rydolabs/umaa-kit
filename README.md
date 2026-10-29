@@ -210,3 +210,19 @@ calls. `CommandHandle::wait()` refuses a Pending result until an actual
 UMAA ACK/Status tracking implementation is attached. `read_local()` is not
 DDS subscription; see [scope and remaining gates](docs/SDK_FACADE_PHASE2.md).
 All official UMAA vendor, QoS, runtime and conformance gates remain open.
+
+
+### Phase 2 — typed Report consumer over an independent DDS plugin
+
+The hosted [modular Cyclone plugin real-wire test](https://github.com/rydolabs/umaa-kit/actions/workflows/sdk-dds-backend-wire.yml)
+now compiles a **separate** `libumaa_dds_cyclone_demo.so` and user component
+`libumaa_cyclone_vehicle_component.so`. A publisher process uses the device
+component's synthetic BatteryStatus Handler, while a second process uses
+`Application::consume<BatteryStatus>().poll()/latest()` with **no DDS include**
+to observe a keyed Report and subsequent Dispose.
+
+This is **synthetic demo:battery-v1**, not official UMAA TypeSupport, not a
+full multi-service Cyclone adapter, and not proven Fast DDS / RTI parity.
+The true UMAA Command ACK/Status async client, official service binding
+generation and safe device hot-swap remain open. See
+[SDK Facade Phase 2](docs/SDK_FACADE_PHASE2.md).

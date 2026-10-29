@@ -23,6 +23,10 @@ class VendorBoundaryTests(unittest.TestCase):
                 offending.append(str(file.relative_to(SDK)))
         self.assertEqual([], offending)
 
+    def test_runtime_and_application_have_no_vendor_native_imports(self):
+        for f in [SDK / "src/component_runtime.cpp", PUBLIC / "application.hpp"]:
+            self.assertNotRegex(f.read_text(encoding="utf-8"), FORBIDDEN)
+
     def test_single_vendor_backend_contract_exists(self):
         header = PUBLIC / "internal/dds_backend.h"
         content = header.read_text(encoding="utf-8")

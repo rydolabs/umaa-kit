@@ -98,3 +98,19 @@ existing real DDS adapters/tests remain unchanged and are not yet migrated
 under the new runtime's single vendor facade. Fast DDS/RTI Adapter and
 normative service bindings remain outstanding. Never infer official UMAA
 conformance from these development-only ABI tests.
+
+
+## Phase 2 — application consumer + plugin vertical slice
+
+Host-side users may call `umaa::Application::consume<Service>()`.
+For a synthetic Report schema whose reviewed contract declares
+`id`, `schema_id`, `topic_name`, `qos_profile`, `Report`, and
+`decode_report`, the consumer's `poll(1)`, `latest(out,key)`, and
+`disposed()` use the backend plugin through `ComponentRuntime`.
+For a synthetic Command schema with `is_command=true` and
+`encode_command`, `CommandHandle::wait()` currently supports **immediate
+host-local results only** and explicitly refuses `Pending`.
+
+See `dds/vendors/cyclone/` for the **synthetic BatteryStatus-only** real-wire
+adapter, and `docs/SDK_FACADE_PHASE2.md` for limitations and CI reproduction.
+These development APIs are not official UMAA conformance evidence.

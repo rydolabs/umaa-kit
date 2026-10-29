@@ -24,3 +24,17 @@ through the Cyclone plugin. The **subscriber application** uses typed
 value and a Dispose invalidation. Production implementation still needs
 approved official ServiceTraits/TypeSupport/QoS, asynchronous UMAA command
 status correlation and automatic report lifecycle scheduling.
+
+
+## Contract rejections and negative-path acceptance
+
+The real Cyclone plugin is intentionally allow-listed to
+`demo/BatteryStatus`, `demo:battery-v1`, and `demo-reliable`.
+The integration CLI verifies that an unknown official-looking schema, a
+required `COHERENT_GROUP` capability and malformed instance keys are rejected
+rather than silently mapped to the synthetic type.
+
+The same device component source is used in the hosted Linux plugin test.
+Windows/MSVC compatibility of the general SDK core is verified separately.
+Cross-vendor interoperability, official UMAA service behavior and complete
+DDS QoS remain separate acceptance gates.

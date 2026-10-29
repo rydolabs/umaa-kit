@@ -144,3 +144,17 @@ separate and continue to gate non-regression.
 
 For all milestones: CTest, Linux GCC/Clang, Windows MSVC, installed consumers,
 correct ABI rejection and DDS-source isolation must pass on GitHub Actions.
+
+
+## Phase 2 status: modular backend real-wire development slice
+
+The SDK now has a small host-side `Application::consume<Service>()` API.
+A typed Report client can use the independently loaded Cyclone
+`UmaaDdsBackendV1` module to poll keyed samples and clear its cache on Dispose.
+The consumer does not include Cyclone headers. Backend callback, domain and
+library lifetime are retained safely across the ReportSubscription lifetime.
+
+Only synthetic `demo:battery-v1` mapping is compiled into the new Cyclone
+plugin. No automatic official UMAA QoS binding, async CommandStatus correlation,
+or service-wide Report scheduling is implemented. Fast DDS and RTI adapter
+integration remains OPEN/BLOCKED as described in their vendor READMEs.

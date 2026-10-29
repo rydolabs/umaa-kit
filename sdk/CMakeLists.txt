@@ -197,3 +197,10 @@ if(UMAA_BUILD_TESTS AND UMAA_BUILD_MODULE_DEMO)
       "$<TARGET_FILE:umaa_demo_vehicle_v2>")
   set_tests_properties(umaa_component_process_supervisor_test PROPERTIES TIMEOUT 35)
 endif()
+
+# SDK LargeCollection atomic batch sender+receiver unit validation.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_collection_batch_builder_test tests/test_collection_batch_builder.cpp)
+  target_link_libraries(umaa_collection_batch_builder_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_collection_batch_builder_test COMMAND umaa_collection_batch_builder_test)
+endif()

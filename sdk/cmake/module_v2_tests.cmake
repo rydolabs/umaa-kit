@@ -43,3 +43,9 @@ add_executable(umaa_report_watch_v2_test tests/test_report_watch_v2.cpp)
 target_link_libraries(umaa_report_watch_v2_test PRIVATE UMAA::Runtime Threads::Threads)
 add_test(NAME umaa_report_watch_v2_test COMMAND umaa_report_watch_v2_test
   "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")
+
+# Automatic ReportSource sampling through a persistent DDS writer (mock only).
+add_executable(umaa_report_schedule_v2_test tests/test_report_schedule_v2.cpp)
+target_link_libraries(umaa_report_schedule_v2_test PRIVATE UMAA::Runtime Threads::Threads)
+add_test(NAME umaa_report_schedule_v2_test COMMAND umaa_report_schedule_v2_test
+  "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")

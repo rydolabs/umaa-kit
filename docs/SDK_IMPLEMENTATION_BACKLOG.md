@@ -90,3 +90,11 @@ The synthetic Report smoke now records this query diagnostically, then
 requires the **final ACK after Dispose** to succeed before PASS. This mirrors
 `ReportPublisher::close()` and does not replay any command or sample.
 Final ACK failure remains FAIL; this does not assert official UMAA QoS.
+
+## 2026-10-29 ReportProvider scheduled update
+
+A bounded, cancellable Report sampling thread supports persistent Writer
+updates from business-only `ReportSource::read()` and fail-closed async
+errors. Mock backend CTest verifies repeated updates and Dispose on teardown.
+**OPEN:** official service-specific scheduling policies, Startup/Recovery
+QoS and full multi-service performance qualification.

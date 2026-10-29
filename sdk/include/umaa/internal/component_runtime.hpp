@@ -2,6 +2,7 @@
 // Typed service-to-wire event translation is a separate, reviewed task.
 #pragma once
 #include <cstdint>
+#include <chrono>
 #include <memory>
 #include <string>
 #include <vector>
@@ -42,6 +43,9 @@ public:
   void update();
   void dispose();
   void close();
+  void start_periodic(std::chrono::milliseconds interval);
+  void stop_periodic() noexcept;
+  void rethrow_periodic_error();
   bool faulted() const noexcept;
 private:
   struct State;

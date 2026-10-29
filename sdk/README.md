@@ -155,3 +155,14 @@ callback, DDS or decode failures. Manual `poll()` while watching is rejected,
 so the Reader cannot be concurrently consumed from two threads. A Report
 Consumer must not destroy itself on its own callback thread. This is currently
 tested with the synthetic mock Backend; normative service bindings remain open.
+
+## ReportSource automatic scheduling (development scope)
+
+The host may start `ReportPublisher::start_periodic(interval)`. The SDK
+invokes the user's `ReportSource::read()`, publishes each update through the
+persistent backend Writer, and stops the thread with `stop_periodic()`.
+`close()` joins the scheduler before final ACK/Writer shutdown;
+`rethrow_periodic_error()` surfaces asynchronous failures. The device
+module never sees a DDS Writer or emits Report lifecycle events itself.
+This schedule is a generic development policy, **not** a reviewed UMAA
+service-specific publication interval or automatic official QoS mapping.

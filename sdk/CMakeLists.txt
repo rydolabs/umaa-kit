@@ -162,7 +162,8 @@ add_library(umaa_sdk_runtime SHARED src/component_runtime.cpp)
 add_library(UMAA::Runtime ALIAS umaa_sdk_runtime)
 set_target_properties(umaa_sdk_runtime PROPERTIES EXPORT_NAME Runtime)
 target_compile_definitions(umaa_sdk_runtime PRIVATE UMAA_RUNTIME_BUILD)
-target_link_libraries(umaa_sdk_runtime PUBLIC UMAA::Core PRIVATE ${CMAKE_DL_LIBS})
+find_package(Threads REQUIRED)
+target_link_libraries(umaa_sdk_runtime PUBLIC UMAA::Core PRIVATE ${CMAKE_DL_LIBS} Threads::Threads)
 target_compile_features(umaa_sdk_runtime PUBLIC cxx_std_17)
 install(TARGETS umaa_sdk_runtime EXPORT UMAASDKTargets
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

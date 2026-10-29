@@ -8,6 +8,9 @@
 #include <cstdint>
 #include <chrono>
 #include <atomic>
+#include <thread>
+#include <condition_variable>
+#include <exception>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -168,7 +171,14 @@ struct ReportPublisher::State {
   std::shared_ptr<umaa::ComponentModule> module;
   void* writer{nullptr};
   std::string service,key;
-  bool active{true},is_faulted{false};
+  mutable std::mutex writer_mutex;
+  std::mutex timer_mutex;
+  std::condition_variable timer_wake;
+  std::thread periodic;
+  bool stop_timer{false};
+  std::exception_ptr timer_error;
+  bool active{true};
+  std::atomic<bool> is_faulted{false};
   State(std::shared_ptr<umaa::DdsBackendPlugin> b,
         std::shared_ptr<umaa::DdsBackendPlugin::Domain> d,
         std::shared_ptr<umaa::ComponentModule> m,void* w,
@@ -177,9 +187,10 @@ struct ReportPublisher::State {
   ~State(){if(writer)domain->close_writer(writer);}
 };
 ReportPublisher::ReportPublisher(std::unique_ptr<State> state):state_(std::move(state)){}
-ReportPublisher::~ReportPublisher()=default;
-bool ReportPublisher::faulted() const noexcept{return state_->is_faulted;}
+ReportPublisher::~ReportPublisher(){stop_periodic();}
+bool ReportPublisher::faulted() const noexcept{return state_->is_faulted.load();}
 void ReportPublisher::update(){
+  std::lock_guard<std::mutex> lock(state_->writer_mutex);
   if(!state_->active||state_->is_faulted)throw std::logic_error("report publisher not active");
   std::vector<uint8_t> in,out;int32_t business=-1;
   if(state_->module->call(state_->service,UMAA_COMPONENT_REPORT,in,out,business)!=UMAA_COMPONENT_OK ||
@@ -192,6 +203,7 @@ void ReportPublisher::update(){
   }
 }
 void ReportPublisher::dispose(){
+  std::lock_guard<std::mutex> lock(state_->writer_mutex);
   if(!state_->active||state_->is_faulted)throw std::logic_error("report publisher not active");
   const UmaaDdsSampleV1 sample{nullptr,0,state_->key.c_str(),next_report_timestamp(),UMAA_DDS_EVENT_DISPOSE};
   if(state_->domain->dispose(state_->writer,sample)!=UMAA_DDS_OK){
@@ -199,12 +211,62 @@ void ReportPublisher::dispose(){
   }
 }
 void ReportPublisher::close(){
+  stop_periodic();
+  std::lock_guard<std::mutex> lock(state_->writer_mutex);
   if(!state_->active)return;
   state_->active=false;
   if(!state_->is_faulted && state_->domain->wait_for_acks(state_->writer,5000)!=UMAA_DDS_OK){
     state_->is_faulted=true;throw std::runtime_error("report delivery ack timeout");
   }
   state_->domain->close_writer(state_->writer);state_->writer=nullptr;
+}
+void ReportPublisher::start_periodic(std::chrono::milliseconds interval){
+  if(interval.count()<=0 || interval>std::chrono::hours(24))
+    throw std::invalid_argument("invalid Report publish period");
+  {
+    std::lock_guard<std::mutex> writer_lock(state_->writer_mutex);
+    if(!state_->active || state_->is_faulted.load())
+      throw std::logic_error("Report publisher not active");
+  }
+  std::lock_guard<std::mutex> lock(state_->timer_mutex);
+  if(state_->periodic.joinable())
+    throw std::logic_error("Report schedule already active");
+  state_->stop_timer=false;
+  state_->timer_error=nullptr;
+  state_->periodic=std::thread([this,interval]{
+    try{
+      for(;;){
+        {
+          std::lock_guard<std::mutex> timer_lock(state_->timer_mutex);
+          if(state_->stop_timer)break;
+        }
+        update(); // the device ReportSource, then checked vendor write
+        std::unique_lock<std::mutex> timer_lock(state_->timer_mutex);
+        if(state_->timer_wake.wait_for(timer_lock,interval,
+             [this]{return state_->stop_timer;}))break;
+      }
+    }catch(...){
+      std::lock_guard<std::mutex> timer_lock(state_->timer_mutex);
+      state_->is_faulted=true;
+      state_->timer_error=std::current_exception();
+      state_->stop_timer=true;
+    }
+  });
+}
+void ReportPublisher::stop_periodic() noexcept {
+  {
+    std::lock_guard<std::mutex> lock(state_->timer_mutex);
+    state_->stop_timer=true;
+  }
+  state_->timer_wake.notify_all();
+  if(state_->periodic.joinable() &&
+      state_->periodic.get_id()!=std::this_thread::get_id())
+    state_->periodic.join();
+}
+void ReportPublisher::rethrow_periodic_error(){
+  stop_periodic();
+  std::lock_guard<std::mutex> lock(state_->timer_mutex);
+  if(state_->timer_error)std::rethrow_exception(state_->timer_error);
 }
 std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
     const std::string& service_id,const std::string& topic_name,

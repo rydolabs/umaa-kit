@@ -3,6 +3,7 @@
 #pragma once
 #include "umaa/component.hpp"
 #include "umaa/remote_command_client.hpp"
+#include "umaa/dds_command_request_server.hpp"
 #include "umaa/internal/component_runtime.hpp"
 #include "umaa/internal/dds_backend.h"
 #include "umaa/internal/runtime_config.hpp" // vendor-neutral event kinds only
@@ -262,6 +263,17 @@ public:
     static_assert(Service::is_command,"remote Command consumer requires a Command service");
     if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return RemoteCommandClient<Service>(backend_path_,domain_id_,source,destination);
+  }
+  // Typed remote Command provider: SDK owns DDS Request reader and
+  // status/ack FSM. Device-specific business code is only provide<Service>().
+  template<class Service>
+  std::unique_ptr<DdsCommandRequestServer<Service>> serve_remote(
+      const std::string& source,const std::string& provider,
+      std::chrono::milliseconds retirement_delay={}) const {
+    static_assert(Service::is_command,"serve_remote requires Command service");
+    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
+    return std::make_unique<DdsCommandRequestServer<Service>>(
+        backend_path_,domain_id_,host_,source,provider,retirement_delay);
   }
   // One-step typed asynchronous Command Handle. DDS channel lifetime belongs
   // to the Handle, not to this Application's ComponentRuntime.

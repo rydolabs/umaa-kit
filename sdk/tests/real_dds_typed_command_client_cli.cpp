@@ -1,6 +1,7 @@
 // Minimal typed remote Command client, no DDS Reader/Writer or vendor headers.
 // Uses synthetic Command IDL for independent-process acceptance only.
 #include "umaa/application.hpp"
+#include "fixtures/synthetic_async_engine_binding.hpp"
 #include <chrono>
 #include <cstdint>
 #include <cstring>
@@ -10,36 +11,7 @@
 #include <string>
 #include <thread>
 #include <vector>
-struct AsyncEngine {
-  static constexpr bool is_command=true;
-  static constexpr const char* id="Demo::EO::AsyncEngineControl";
-  static constexpr const char* command_topic="demo/AsyncEngineCommand";
-  static constexpr const char* command_schema="demo:async-command-v1";
-  static constexpr const char* status_topic="demo/AsyncEngineStatus";
-  static constexpr const char* status_schema="demo:async-status-v1";
-  static constexpr const char* ack_topic="demo/AsyncEngineAck";
-  static constexpr const char* ack_schema="demo:async-ack-v1";
-  static constexpr const char* qos_profile="demo-reliable";
-  struct Command{std::int32_t rpm{};};
-  static std::vector<std::uint8_t> encode_command(const Command& c) {
-    std::vector<std::uint8_t> bytes(sizeof(c.rpm));
-    std::memcpy(bytes.data(),&c.rpm,bytes.size());return bytes;
-  }
-  static std::optional<umaa::State> decode_status(const std::uint8_t* p,std::size_t n) {
-    if(!p||n!=sizeof(std::int32_t))return std::nullopt;
-    std::int32_t code=0;std::memcpy(&code,p,sizeof(code));
-    if(code<0||code>5)return std::nullopt;
-    const umaa::State states[]={umaa::State::ISSUED,umaa::State::COMMANDED,
-      umaa::State::EXECUTING,umaa::State::COMPLETED,umaa::State::FAILED,
-      umaa::State::CANCELED};
-    return states[code];
-  }
-  static bool ack_matches(const std::uint8_t* p,std::size_t n,const Command& c){
-    if(!p||n!=sizeof(std::int32_t))return false;
-    std::int32_t value=0;std::memcpy(&value,p,sizeof(value));
-    return value==c.rpm;
-  }
-};
+
 int main(int argc,char** argv){
   if(argc!=4 || (std::string(argv[1])!="client" &&
                  std::string(argv[1])!="client-cancel" &&

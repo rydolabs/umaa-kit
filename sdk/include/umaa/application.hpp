@@ -4,6 +4,9 @@
 #include "umaa/component.hpp"
 #include "umaa/internal/component_runtime.hpp"
 #include <cstdint>
+#include <functional>
+#include <exception>
+#include <thread>
 #include <atomic>
 #include <algorithm>
 #include <chrono>
@@ -91,10 +94,69 @@ private:
 };
 
 template<class Service> class ReportConsumer final {
+  using ReportCallback=std::function<void(const typename Service::Report&,const std::string&)>;
+  using DisposeCallback=std::function<void(const std::string&)>;
+
 public:
   explicit ReportConsumer(std::shared_ptr<internal::ComponentRuntime> host):host_(std::move(host)){}
+  ~ReportConsumer(){stop_watch();}
+  ReportConsumer(const ReportConsumer&)=delete;
+  ReportConsumer& operator=(const ReportConsumer&)=delete;
+  ReportConsumer(ReportConsumer&&)=delete;
+  ReportConsumer& operator=(ReportConsumer&&)=delete;
+  // Subscribe once and dispatch each new keyed Report / lifecycle event from
+  // a private bounded polling thread. User callbacks contain business logic
+  // only; never call a DDS vendor function. This is a synthetic v2 API slice.
+  void on_change(ReportCallback on_report, DisposeCallback on_dispose={},
+                 std::chrono::milliseconds interval=std::chrono::milliseconds(25)){
+    if(!on_report||interval.count()<=0||interval>std::chrono::seconds(5))
+      throw std::invalid_argument("invalid Report callback or polling interval");
+    if(watcher_.joinable())throw std::logic_error("Report watch already started");
+    if(!subscription_)subscription_=host_->subscribe_report_fixture(
+       Service::id,Service::topic_name,Service::schema_id,Service::qos_profile);
+    watch_stop_.store(false);
+    watch_error_=nullptr;
+    watcher_=std::thread([this,callback=std::move(on_report),
+                          disposed=std::move(on_dispose),interval]{
+      try {
+        while(!watch_stop_.load()){
+          const auto result=subscription_->poll(1);
+          if(result<0)throw std::runtime_error("DDS Report subscription poll failed");
+          if(result>0){
+            std::vector<uint8_t> payload;
+            std::string key;
+            uint32_t kind=0;
+            if(subscription_->last_event(payload,key,kind)){
+              if(kind==UMAA_DDS_EVENT_DATA){
+                typename Service::Report data{};
+                if(!Service::decode_report(payload.data(),payload.size(),data))
+                  throw std::runtime_error("DDS Report schema decoding failed");
+                callback(data,key);
+              }else if(disposed&&(kind==UMAA_DDS_EVENT_DISPOSE ||
+                                   kind==UMAA_DDS_EVENT_UNREGISTER))
+                disposed(key);
+            }
+          }else std::this_thread::sleep_for(interval);
+        }
+      }catch(...){watch_error_=std::current_exception();watch_stop_.store(true);}
+    });
+  }
+  void stop_watch() noexcept {
+    watch_stop_.store(true);
+    if(watcher_.joinable()){
+      // Self-destruction from a callback is unsupported; callback may request
+      // shutdown, but owning thread must perform the final join.
+      if(watcher_.get_id()!=std::this_thread::get_id())watcher_.join();
+    }
+  }
+  void rethrow_watch_error(){
+    stop_watch();
+    if(watch_error_)std::rethrow_exception(watch_error_);
+  }
+
   // Lazy backend Reader. Service metadata is generated/reviewed, never guessed.
   int32_t poll(uint32_t max_samples=1){
+    if(watcher_.joinable())throw std::logic_error("manual poll while Report watcher owns Reader");
     if(!subscription_)subscription_=host_->subscribe_report_fixture(
        Service::id,Service::topic_name,Service::schema_id,Service::qos_profile);
     return subscription_->poll(max_samples);
@@ -121,6 +183,9 @@ public:
 private:
   std::shared_ptr<internal::ComponentRuntime> host_;
   std::unique_ptr<internal::ReportSubscription> subscription_;
+  std::atomic<bool> watch_stop_{true};
+  std::thread watcher_;
+  std::exception_ptr watch_error_;
 };
 class Application final {
 public:

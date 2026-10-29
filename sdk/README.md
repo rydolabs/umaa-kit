@@ -144,3 +144,14 @@ retention remains fail-closed; OS process isolation is still an open item.
 duplicate replay fencing, poll-to-terminal, cancel and post-stop rejection.
 This is a device-module ABI safety gate, not a claim that UMAA wire
 CommandStatus/Ack integration is complete.
+
+## Minimal Report Consumer callback API (development scope)
+
+`auto report = app.consume<BatteryStatus>();` supports
+`report.on_change(on_report, on_dispose)`. An internal Reader polling thread
+delivers each keyed data/Dispose event to business callbacks without exposing
+DDS APIs. `stop_watch()` drains the thread; `rethrow_watch_error()` reports
+callback, DDS or decode failures. Manual `poll()` while watching is rejected,
+so the Reader cannot be concurrently consumed from two threads. A Report
+Consumer must not destroy itself on its own callback thread. This is currently
+tested with the synthetic mock Backend; normative service bindings remain open.

@@ -26,6 +26,8 @@ struct ReportSubscription::State {
   struct Instance {std::vector<uint8_t> bytes; int64_t timestamp{INT64_MIN}; bool present{false}; bool disposed{false};};
   std::unordered_map<std::string,Instance> instances;
   std::string last_key;
+  std::vector<uint8_t> last_event_payload;
+  uint32_t last_event_kind{0};
   bool was_disposed{false};
   State(std::shared_ptr<umaa::DdsBackendPlugin> b,
         std::shared_ptr<umaa::DdsBackendPlugin::Domain> d)
@@ -39,7 +41,7 @@ struct ReportSubscription::State {
       std::lock_guard<std::mutex> guard(self->mutex);
       const std::string key=sample->instance_key;
       auto& instance=self->instances[key];
-      if(sample->source_timestamp_ns<instance.timestamp)return;
+      if(sample->source_timestamp_ns<=instance.timestamp)return; // same-time replay is not newer
       if(sample->event_kind==UMAA_DDS_EVENT_DATA){
         std::vector<uint8_t> bytes;
         if(sample->payload_size)bytes.assign(sample->payload,sample->payload+sample->payload_size);
@@ -54,6 +56,8 @@ struct ReportSubscription::State {
         instance.disposed=sample->event_kind==UMAA_DDS_EVENT_DISPOSE;
       } else return;
       self->last_key=key;
+      self->last_event_kind=sample->event_kind;
+      self->last_event_payload=instance.present?instance.bytes:std::vector<uint8_t>{};
       self->was_disposed=instance.disposed;
     }catch(...){ /* Never throw across the vendor ABI. */ }
   }
@@ -83,6 +87,15 @@ bool ReportSubscription::disposed_for(const std::string& key) const {
   std::lock_guard<std::mutex> guard(state_->mutex);
   const auto it=state_->instances.find(key);
   return it!=state_->instances.end() && it->second.disposed;
+}
+bool ReportSubscription::last_event(std::vector<uint8_t>& payload,
+ std::string& key,uint32_t& kind) const {
+  std::lock_guard<std::mutex> lock(state_->mutex);
+  if(!state_->last_event_kind)return false;
+  payload=state_->last_event_payload;
+  key=state_->last_key;
+  kind=state_->last_event_kind;
+  return true;
 }
 bool ReportSubscription::disposed() const {
   std::lock_guard<std::mutex> guard(state_->mutex);

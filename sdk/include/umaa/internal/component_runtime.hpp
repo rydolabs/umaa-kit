@@ -23,6 +23,8 @@ public:
   int32_t poll(uint32_t max_samples=32);
   bool latest(std::vector<uint8_t>& data,std::string& key) const;
   bool disposed() const;
+  // Snapshot of most recently delivered event, including its Dispose key.
+  bool last_event(std::vector<uint8_t>& payload,std::string& key,uint32_t& kind) const;
   bool latest_for(const std::string& key,std::vector<uint8_t>& out) const;
   std::vector<std::string> keys() const;
   bool disposed_for(const std::string& key) const;

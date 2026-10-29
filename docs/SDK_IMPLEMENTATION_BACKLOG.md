@@ -72,3 +72,12 @@ A `Pending` command still blocks unload, but a *reserved in-flight* command
 is first allowed to finish before determining whether it remains Pending.
 Local Linux validation passed; GitHub Linux/Windows CTest is the acceptance
 gate. In-process crashing-module isolation remains OPEN.
+
+## 2026-10-29 callback-style Report consumer
+
+Added callback-based `ReportConsumer::on_change(on_report,on_dispose)`
+and `stop_watch()` lifecycle. Events are keyed and delivered serially on a
+private thread, without user DDS Reader/Writer code. Equal-timestamp replays
+are dropped. CTest covers two updates and Dispose via the mock Backend.
+**OPEN:** official per-service Report TypeSupport, QoS mapping, full DDS
+reader recovery, resource budgets and production concurrency/fuzzing.

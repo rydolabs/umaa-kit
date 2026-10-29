@@ -37,3 +37,9 @@ add_executable(umaa_module_inflight_v2_test tests/test_module_inflight_v2.cpp)
 target_link_libraries(umaa_module_inflight_v2_test PRIVATE UMAA::Core Threads::Threads ${CMAKE_DL_LIBS})
 add_test(NAME umaa_module_inflight_v2_test COMMAND umaa_module_inflight_v2_test
   "$<TARGET_FILE:umaa_slow_stop_v2_fixture>")
+
+# Event-driven Report consumer facade (mock backend, no official IDL claim).
+add_executable(umaa_report_watch_v2_test tests/test_report_watch_v2.cpp)
+target_link_libraries(umaa_report_watch_v2_test PRIVATE UMAA::Runtime Threads::Threads)
+add_test(NAME umaa_report_watch_v2_test COMMAND umaa_report_watch_v2_test
+  "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")

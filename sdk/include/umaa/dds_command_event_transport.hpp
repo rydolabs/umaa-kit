@@ -42,6 +42,12 @@ public:
   void publish_ack(const Identity& id,const Command& cmd) override {
     submit(ack_writer_,id,Service::encode_ack(id,cmd),false);
   }
+  // Flush terminal Status and ACK before retiring either instance.
+  // Otherwise some DDS readers may observe the lifecycle transition without
+  // having consumed the corresponding terminal business result.
+  void before_dispose(const Identity&) override {
+    wait_for_acks(5000);
+  }
   void dispose_status(const Identity& id) override {
     submit(status_writer_,id,{},true);
   }

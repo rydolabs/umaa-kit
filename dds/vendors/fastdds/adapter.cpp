@@ -177,16 +177,32 @@ int32_t poll(void* handle,uint32_t max_samples){
 }
 int32_t wait_for_acks(void* ptr,uint32_t ms){
  if(!ptr)return UMAA_DDS_INVALID;
- const eprosima::fastrtps::Duration_t duration(static_cast<int32_t>(ms/1000),
-                                                static_cast<uint32_t>((ms%1000)*1000000));
- const auto rc=static_cast<Writer*>(ptr)->writer->wait_for_acknowledgments(duration);
- if(rc!=ReturnCode_t::RETCODE_OK)
-   std::fprintf(stderr,"Fast DDS writer ACK wait: %s\\n",
-      rc==ReturnCode_t::RETCODE_TIMEOUT?"TIMEOUT":
-      rc==ReturnCode_t::RETCODE_PRECONDITION_NOT_MET?"PRECONDITION_NOT_MET":
-      rc==ReturnCode_t::RETCODE_UNSUPPORTED?"UNSUPPORTED":
-      rc==ReturnCode_t::RETCODE_NOT_ENABLED?"NOT_ENABLED":"OTHER");
- return rc==ReturnCode_t::RETCODE_OK?UMAA_DDS_OK:UMAA_DDS_IO_ERROR;
+ // Fast DDS 2.11 can return RETCODE_ERROR transiently while reliable
+ // matched-reader state is settling. Recheck acknowledgment status without
+ // replaying data or commands; never convert an unconfirmed ACK into success.
+ auto* writer=static_cast<Writer*>(ptr)->writer;
+ using Clock=std::chrono::steady_clock;
+ const auto deadline=Clock::now()+std::chrono::milliseconds(ms);
+ ReturnCode_t rc=ReturnCode_t::RETCODE_ERROR;
+ unsigned tries=0;
+ do {
+   const auto left=std::chrono::duration_cast<std::chrono::milliseconds>(
+      deadline-Clock::now()).count();
+   const uint32_t slice=left<=0?0u:static_cast<uint32_t>(
+      left>400?400:left);
+   const eprosima::fastrtps::Duration_t duration(
+      static_cast<int32_t>(slice/1000),
+      static_cast<uint32_t>((slice%1000)*1000000));
+   rc=writer->wait_for_acknowledgments(duration);
+   ++tries;
+   if(rc==ReturnCode_t::RETCODE_OK)return UMAA_DDS_OK;
+   if(rc!=ReturnCode_t::RETCODE_TIMEOUT && rc!=ReturnCode_t::RETCODE_ERROR)break;
+   if(Clock::now()>=deadline)break;
+   std::this_thread::sleep_for(std::chrono::milliseconds(20));
+ }while(true);
+ std::fprintf(stderr,"Fast DDS writer ACK wait unconfirmed: rc=%d attempts=%u\\n",
+              static_cast<int>(rc),tries);
+ return UMAA_DDS_IO_ERROR;
 }
 void close_writer(void* handle){
  auto* w=static_cast<Writer*>(handle);if(!w)return;

@@ -119,6 +119,7 @@ public:
     watcher_=std::thread([this,callback=std::move(on_report),
                           disposed=std::move(on_dispose),interval]{
       try {
+        uint64_t delivered_revision=0;
         while(!watch_stop_.load()){
           const auto result=subscription_->poll(1);
           if(result<0)throw std::runtime_error("DDS Report subscription poll failed");
@@ -126,7 +127,10 @@ public:
             std::vector<uint8_t> payload;
             std::string key;
             uint32_t kind=0;
-            if(subscription_->last_event(payload,key,kind)){
+            uint64_t revision=0;
+            if(subscription_->last_event(payload,key,kind,revision) &&
+               revision!=delivered_revision){
+              delivered_revision=revision;
               if(kind==UMAA_DDS_EVENT_DATA){
                 typename Service::Report data{};
                 if(!Service::decode_report(payload.data(),payload.size(),data))

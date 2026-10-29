@@ -45,5 +45,21 @@ int main(int argc,char** argv){
   consumer.stop_watch();
   consumer.rethrow_watch_error();
   assert(data.load()==2&&disposes.load()==1);
+  // Exception inside application code is captured and rethrown on join.
+  umaa::ReportConsumer<BatteryStatus> bad(host);
+  std::atomic<int> called{0};
+  bad.on_change([&](const BatteryStatus::Report&,const std::string&){
+    called.fetch_add(1);
+    throw std::runtime_error("injected device application failure");
+  },{},std::chrono::milliseconds(5));
+  auto another=host->open_report_fixture(
+    "Demo::EO::BatteryStatus","demo/BatteryStatus","demo:battery-v1","18");
+  another->update();another->close();
+  const auto limit2=std::chrono::steady_clock::now()+std::chrono::seconds(3);
+  while(called.load()==0&&std::chrono::steady_clock::now()<limit2)
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  bool faulted=false;
+  try{bad.rethrow_watch_error();}catch(const std::runtime_error&){faulted=true;}
+  assert(faulted&&called.load()==1);
   std::cout<<"PASS automatic Report callbacks, Dispose and exclusive Reader polling\n";
 }

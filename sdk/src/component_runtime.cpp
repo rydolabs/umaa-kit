@@ -28,6 +28,7 @@ struct ReportSubscription::State {
   std::string last_key;
   std::vector<uint8_t> last_event_payload;
   uint32_t last_event_kind{0};
+  uint64_t last_event_revision{0};
   bool was_disposed{false};
   State(std::shared_ptr<umaa::DdsBackendPlugin> b,
         std::shared_ptr<umaa::DdsBackendPlugin::Domain> d)
@@ -57,6 +58,7 @@ struct ReportSubscription::State {
       } else return;
       self->last_key=key;
       self->last_event_kind=sample->event_kind;
+      ++self->last_event_revision;
       self->last_event_payload=instance.present?instance.bytes:std::vector<uint8_t>{};
       self->was_disposed=instance.disposed;
     }catch(...){ /* Never throw across the vendor ABI. */ }
@@ -89,12 +91,13 @@ bool ReportSubscription::disposed_for(const std::string& key) const {
   return it!=state_->instances.end() && it->second.disposed;
 }
 bool ReportSubscription::last_event(std::vector<uint8_t>& payload,
- std::string& key,uint32_t& kind) const {
+ std::string& key,uint32_t& kind,uint64_t& revision) const {
   std::lock_guard<std::mutex> lock(state_->mutex);
   if(!state_->last_event_kind)return false;
   payload=state_->last_event_payload;
   key=state_->last_key;
   kind=state_->last_event_kind;
+  revision=state_->last_event_revision;
   return true;
 }
 bool ReportSubscription::disposed() const {

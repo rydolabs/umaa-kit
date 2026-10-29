@@ -73,3 +73,9 @@ add_executable(umaa_runtime_config_v2_test tests/test_runtime_config_v2.cpp)
 target_link_libraries(umaa_runtime_config_v2_test PRIVATE UMAA::Runtime)
 add_test(NAME umaa_runtime_config_v2_test COMMAND umaa_runtime_config_v2_test
   "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")
+
+# Host business Command -> protocol FSM -> outbound abstract event sink.
+add_executable(umaa_component_command_provider_test tests/test_component_command_provider.cpp)
+target_link_libraries(umaa_component_command_provider_test PRIVATE UMAA::Runtime)
+add_test(NAME umaa_component_command_provider_test COMMAND umaa_component_command_provider_test
+  "$<TARGET_FILE:umaa_demo_vehicle_v2>")

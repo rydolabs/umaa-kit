@@ -1,5 +1,5 @@
 // Incremental host-local typed consumer facade for Component ABI v2.
-// This slice does NOT claim DDS CommandStatus/Ack or queryless Report semantics.
+// Report poll/latest uses the backend Reader; CommandClient is host-local only.
 #pragma once
 #include "umaa/component.hpp"
 #include "umaa/internal/component_runtime.hpp"
@@ -44,6 +44,19 @@ private:
 template<class Service> class ReportConsumer final {
 public:
   explicit ReportConsumer(std::shared_ptr<internal::ComponentRuntime> host):host_(std::move(host)){}
+  // Lazy backend Reader. Service metadata is generated/reviewed, never guessed.
+  int32_t poll(uint32_t max_samples=1){
+    if(!subscription_)subscription_=host_->subscribe_report_fixture(
+       Service::id,Service::topic_name,Service::schema_id,Service::qos_profile);
+    return subscription_->poll(max_samples);
+  }
+  bool latest(typename Service::Report& out,std::string& key) const {
+    if(!subscription_)return false;
+    std::vector<uint8_t> bytes;
+    if(!subscription_->latest(bytes,key))return false;
+    return Service::decode_report(bytes.data(),bytes.size(),out);
+  }
+  bool disposed() const {return subscription_&&subscription_->disposed();}
   // Development-only local read, not DDS subscription.
   typename Service::Report read_local() {
     std::vector<uint8_t> empty,out;
@@ -58,6 +71,7 @@ public:
   }
 private:
   std::shared_ptr<internal::ComponentRuntime> host_;
+  std::unique_ptr<internal::ReportSubscription> subscription_;
 };
 class Application final {
 public:

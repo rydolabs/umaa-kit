@@ -130,6 +130,51 @@ inline constexpr std::array<Topic, 113> topics{{
 }};
 inline constexpr std::size_t service_count = 53;
 
+struct CommandFamily {
+  std::string_view service, family, command_topic, ack_topic, status_topic;
+  bool qos_verified;
+};
+inline constexpr std::array<CommandFamily, 24> command_families{{
+  CommandFamily{"UMAA::EO::AnchorControl", "AnchorControl", "UMAA::EO::AnchorControl::AnchorCommandType", "UMAA::EO::AnchorControl::AnchorCommandAckReportType", "UMAA::EO::AnchorControl::AnchorCommandStatusType", false},
+  CommandFamily{"UMAA::EO::EngineControl", "EngineControl", "UMAA::EO::EngineControl::EngineCommandType", "UMAA::EO::EngineControl::EngineCommandAckReportType", "UMAA::EO::EngineControl::EngineCommandStatusType", false},
+  CommandFamily{"UMAA::EO::MastControl", "MastControl", "UMAA::EO::MastControl::MastCommandType", "UMAA::EO::MastControl::MastCommandAckReportType", "UMAA::EO::MastControl::MastCommandStatusType", false},
+  CommandFamily{"UMAA::MM::ActiveConstraintsControl", "ActiveConstraints", "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandType", "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandAckReportType", "UMAA::MM::ActiveConstraintsControl::ActiveConstraintsCommandStatusType", false},
+  CommandFamily{"UMAA::MM::ConditionalControl", "ConditionalAdd", "UMAA::MM::ConditionalControl::ConditionalAddCommandType", "UMAA::MM::ConditionalControl::ConditionalAddCommandAckReportType", "UMAA::MM::ConditionalControl::ConditionalAddCommandStatusType", false},
+  CommandFamily{"UMAA::MM::ConditionalControl", "ConditionalDelete", "UMAA::MM::ConditionalControl::ConditionalDeleteCommandType", "UMAA::MM::ConditionalControl::ConditionalDeleteCommandAckReportType", "UMAA::MM::ConditionalControl::ConditionalDeleteCommandStatusType", false},
+  CommandFamily{"UMAA::MM::MissionPlanConstraintControl", "MissionPlanConstraintAdd", "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandType", "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandAckReportType", "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintAddCommandStatusType", false},
+  CommandFamily{"UMAA::MM::MissionPlanConstraintControl", "MissionPlanConstraintDelete", "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandType", "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandAckReportType", "UMAA::MM::MissionPlanConstraintControl::MissionPlanConstraintDeleteCommandStatusType", false},
+  CommandFamily{"UMAA::MM::MissionPlanExecutionControl", "MissionPlanExecution", "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandType", "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandAckReportType", "UMAA::MM::MissionPlanExecutionControl::MissionPlanExecutionCommandStatusType", false},
+  CommandFamily{"UMAA::MM::MissionPlanMissionControl", "MissionPlanMissionAdd", "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandType", "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandAckReportType", "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionAddCommandStatusType", false},
+  CommandFamily{"UMAA::MM::MissionPlanMissionControl", "MissionPlanMissionClear", "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandType", "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandAckReportType", "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionClearCommandStatusType", false},
+  CommandFamily{"UMAA::MM::MissionPlanMissionControl", "MissionPlanMissionDelete", "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandType", "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandAckReportType", "UMAA::MM::MissionPlanMissionControl::MissionPlanMissionDeleteCommandStatusType", false},
+  CommandFamily{"UMAA::MM::MissionPlanObjectiveControl", "MissionPlanObjectiveAdd", "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandType", "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandAckReportType", "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveAddCommandStatusType", false},
+  CommandFamily{"UMAA::MM::MissionPlanObjectiveControl", "MissionPlanObjectiveDelete", "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandType", "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandAckReportType", "UMAA::MM::MissionPlanObjectiveControl::MissionPlanObjectiveDeleteCommandStatusType", false},
+  CommandFamily{"UMAA::MM::MissionPlanTaskControl", "MissionPlanTaskAdd", "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandType", "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandAckReportType", "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskAddCommandStatusType", false},
+  CommandFamily{"UMAA::MM::MissionPlanTaskControl", "MissionPlanTaskDelete", "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandType", "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandAckReportType", "UMAA::MM::MissionPlanTaskControl::MissionPlanTaskDeleteCommandStatusType", false},
+  CommandFamily{"UMAA::MM::ObjectiveExecutionControl", "ObjectiveExecution", "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandType", "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandAckReportType", "UMAA::MM::ObjectiveExecutionControl::ObjectiveExecutionCommandStatusType", false},
+  CommandFamily{"UMAA::MM::TaskPlanExecutionControl", "TaskPlanExecution", "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType", "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType", "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType", false},
+  CommandFamily{"UMAA::MO::GlobalDriftControl", "GlobalDrift", "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType", "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType", "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType", false},
+  CommandFamily{"UMAA::MO::GlobalHoverControl", "GlobalHover", "UMAA::MO::GlobalHoverControl::GlobalHoverCommandType", "UMAA::MO::GlobalHoverControl::GlobalHoverCommandAckReportType", "UMAA::MO::GlobalHoverControl::GlobalHoverCommandStatusType", false},
+  CommandFamily{"UMAA::MO::GlobalVectorControl", "GlobalVector", "UMAA::MO::GlobalVectorControl::GlobalVectorCommandType", "UMAA::MO::GlobalVectorControl::GlobalVectorCommandAckReportType", "UMAA::MO::GlobalVectorControl::GlobalVectorCommandStatusType", false},
+  CommandFamily{"UMAA::MO::GlobalWaypointControl", "GlobalWaypoint", "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandType", "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandAckReportType", "UMAA::MO::GlobalWaypointControl::GlobalWaypointCommandStatusType", false},
+  CommandFamily{"UMAA::MO::PrimitiveDriverControl", "PrimitiveDriver", "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandType", "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandAckReportType", "UMAA::MO::PrimitiveDriverControl::PrimitiveDriverCommandStatusType", false},
+  CommandFamily{"UMAA::SEM::InertialSensorControl", "InertialSensor", "UMAA::SEM::InertialSensorControl::InertialSensorCommandType", "UMAA::SEM::InertialSensorControl::InertialSensorCommandAckReportType", "UMAA::SEM::InertialSensorControl::InertialSensorCommandStatusType", false},
+}};
+// Only catalog-reviewed identities: never a substitute for a DDS Topic/Key
+// binding or Component Definition QoS evidence.
+inline const CommandFamily& require_command_family(
+    std::string_view service, std::string_view command_topic,
+    bool require_normative_qos = true) {
+  for (const auto& f : command_families) {
+    if (f.service == service && f.command_topic == command_topic) {
+      if (require_normative_qos && !f.qos_verified)
+        throw std::logic_error("UMAA Command family QoS not yet reviewed");
+      return f;
+    }
+  }
+  throw std::invalid_argument("Command family missing from reviewed ICD catalog");
+}
+
 inline const Topic& require_topic(std::string_view service,
      std::string_view topic, std::string_view type, Role role,
      bool require_normative_qos = true) {

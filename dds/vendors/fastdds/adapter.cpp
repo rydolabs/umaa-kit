@@ -126,7 +126,12 @@ int32_t send(void* handle,const UmaaDdsSampleV1* sample,uint32_t kind){
  if(kind==UMAA_DDS_EVENT_DATA)rc=writer->write(&wire);
  else if(kind==UMAA_DDS_EVENT_DISPOSE)rc=writer->dispose(&wire,eprosima::fastdds::dds::HANDLE_NIL);
  else if(kind==UMAA_DDS_EVENT_UNREGISTER)rc=writer->unregister_instance(&wire,eprosima::fastdds::dds::HANDLE_NIL);
- if(rc!=ReturnCode_t::RETCODE_OK)std::fprintf(stderr,"Fast DDS sample event=%u key=%d return=%d\\n",kind,key,static_cast<int>(rc));
+ if(rc!=ReturnCode_t::RETCODE_OK)std::fprintf(stderr,"Fast DDS sample event=%u key=%d status=%s\\n",kind,key,
+   rc==ReturnCode_t::RETCODE_BAD_PARAMETER?"BAD_PARAMETER":
+   rc==ReturnCode_t::RETCODE_PRECONDITION_NOT_MET?"PRECONDITION_NOT_MET":
+   rc==ReturnCode_t::RETCODE_NOT_ENABLED?"NOT_ENABLED":
+   rc==ReturnCode_t::RETCODE_OUT_OF_RESOURCES?"OUT_OF_RESOURCES":
+   rc==ReturnCode_t::RETCODE_TIMEOUT?"TIMEOUT":"OTHER");
  return rc==ReturnCode_t::RETCODE_OK?UMAA_DDS_OK:UMAA_DDS_UNKNOWN_DELIVERY;
 }
 int32_t write(void* p,const UmaaDdsSampleV1* s){return send(p,s,UMAA_DDS_EVENT_DATA);}

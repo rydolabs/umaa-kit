@@ -4,6 +4,7 @@
 #include "umaa/component.hpp"
 #include "umaa/remote_command_client.hpp"
 #include "umaa/dds_command_request_server.hpp"
+#include "umaa/dds_collection_endpoint.hpp"
 #include "umaa/internal/component_runtime.hpp"
 #include "umaa/internal/dds_backend.h"
 #include "umaa/internal/runtime_config.hpp" // vendor-neutral event kinds only
@@ -263,6 +264,22 @@ public:
     static_assert(Service::is_command,"remote Command consumer requires a Command service");
     if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return RemoteCommandClient<Service>(backend_path_,domain_id_,source,destination);
+  }
+  // Bounded Set/List sample-atomic development transport. No vendor objects
+  // or manual DDS QoS in application code. NOT native DDS GROUP presentation.
+  template<class Service>
+  std::unique_ptr<DdsCollectionPublisher<Service>> publish_collection(
+      const std::string& instance_key,std::size_t maximum=1024) const {
+    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
+    return std::make_unique<DdsCollectionPublisher<Service>>(
+       backend_path_,domain_id_,instance_key,maximum);
+  }
+  template<class Service>
+  std::unique_ptr<DdsCollectionConsumer<Service>> consume_collection(
+      const std::string& instance_key,std::size_t maximum=1024) const {
+    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
+    return std::make_unique<DdsCollectionConsumer<Service>>(
+       backend_path_,domain_id_,instance_key,maximum);
   }
   // Typed remote Command provider: SDK owns DDS Request reader and
   // status/ack FSM. Device-specific business code is only provide<Service>().

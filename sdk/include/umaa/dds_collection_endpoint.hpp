@@ -40,12 +40,17 @@ public:
  void snapshot(std::uint64_t generation,
                const std::vector<CollectionElement<Value>>& elements){
    require_active();
-   transmit(builder_.snapshot(generation,elements));
+   // The builder advances generation/sequence before returning the frame.
+   // A rejected encode or unknown DDS result MUST fence further revisions;
+   // otherwise a later sample could skip an unseen collection generation.
+   try{transmit(builder_.snapshot(generation,elements));}
+   catch(...){faulted_=true;throw;}
  }
  void revise(const std::vector<Operation>& operations,
              const std::string& list_start=""){
    require_active();
-   transmit(builder_.revise(operations,list_start));
+   try{transmit(builder_.revise(operations,list_start));}
+   catch(...){faulted_=true;throw;}
  }
  void finish(std::uint32_t timeout_ms=5000){
    require_active();

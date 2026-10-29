@@ -86,3 +86,10 @@ add_executable(umaa_command_dds_event_transport_test tests/test_command_dds_even
 target_link_libraries(umaa_command_dds_event_transport_test PRIVATE UMAA::Runtime)
 add_test(NAME umaa_command_dds_event_transport_test COMMAND umaa_command_dds_event_transport_test
   "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")
+
+# A failed Collection builder/codec/write must fence the publisher to avoid
+# resending ambiguous hardware/network revisions after generation advances.
+add_executable(umaa_collection_publisher_fail_closed_test tests/test_collection_publisher_fail_closed.cpp)
+target_link_libraries(umaa_collection_publisher_fail_closed_test PRIVATE UMAA::Core ${CMAKE_DL_LIBS})
+add_test(NAME umaa_collection_publisher_fail_closed_test
+  COMMAND umaa_collection_publisher_fail_closed_test "$<TARGET_FILE:umaa_mock_dds_backend>")

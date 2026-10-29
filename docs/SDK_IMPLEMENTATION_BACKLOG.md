@@ -354,3 +354,64 @@ the final reliable ACK so late RTPS lifecycle repair remains possible;
 it never synthesizes Report data/Dispose or bypasses the independent
 subscriber's exact 3/3 event check. This is demo scheduling policy,
 not official UMAA QoS/recovery certification.
+
+## 2026-10-30 scoped completion hardening (mixed DDS and RTI deferred)
+
+**Current requested scope:** standalone Cyclone DDS and standalone Fast DDS
+runtime use, identical vendor-neutral business module binaries, reviewed
+service metadata generation, bounded single-frame Collection and safe
+isolated worker supervision. Cross-vendor mixed-network communication is
+intentionally **out of scope**. RTI Connext implementation is **deferred
+until its licensed SDK and independent CI Runner are available**; neither
+is counted as a failing development acceptance gate in this phase.
+
+### Implemented and tested changes
+
+- The reviewed literal registry generator now emits **24 explicit
+  Command/Ack/Status families across 18 Command services**, along with
+  the previously catalogued 53 services and 113 Topics. Missing families,
+  wrong roles, duplicate labels and incomplete multi-command services
+  are rejected in Python tests. C++ tests check every generated family
+  against the independently generated Topic role allow-list.
+  **Normative DDS QoS remains unverified and default access still fails
+  closed.** This is structure mapping, NOT reviewed runtime TypeSupport.
+- `DdsCollectionPublisher` now irrevocably faults after a failed
+  snapshot/revision builder, frame codec or DDS write. Because the
+  Collection builder can advance a generation before send confirmation,
+  the publisher must not silently retry or emit a later revision.
+  A dedicated CTest checks invalid generation/revision, no replay and
+  normal terminal disposal. The existing single-frame synthetic transport
+  does not claim native DDS GROUP Presentation/Ordered semantics.
+- Optional `ComponentProcessSupervisor(..., journal_path=...)`
+  records every hardware-affecting Command/CANCEL intent *before* IPC
+  and synchronously fsyncs a bounded, atomically replaced local JSON
+  journal. Unknown results survive a supervisor or worker crash and
+  prevent unattended restart. Confirmed terminal commands and explicitly
+  reconciled sessions remain in a bounded **durable deduplication ledger**
+  that prevents reusing their session IDs after a new process starts.
+  Reused session IDs, corrupted journals, journal symlinks and concurrent
+  journal owners are rejected. A live supervisor serializes requests,
+  cleanup and process lifecycle; disk write errors quarantine the worker.
+
+### Operator restart contract
+
+The journal is deliberately single-owner and **not authenticated**:
+it assumes a trusted local filesystem and a single administratively
+managed worker. A leftover `<journal>.owner` file after supervisor
+process death is never stolen automatically. Confirm that the old
+supervisor/worker has stopped and that device hardware is reconciled;
+remove the *stale* owner marker under operator control; then invoke
+`ComponentProcessSupervisor.reconcile_journal(path,
+hardware_reconciled=True)`. The boolean is an external attestation,
+not proof that the SDK inspected physical actuators. A live Supervisor
+may use `restart(hardware_reconciled=True)` after a quarantined child.
+Never reuse a previously issued session number. A journal ledger at
+capacity requires an explicit archival/reconciliation policy; it is
+not silently truncated.
+
+**Still OPEN:** official UMAA per-service IDL TypeSupport/Key/QoS approval
+and applied normative QoS, true native GROUP coherent/ordered multi-writer
+guarantees where the vendor supports them, a cryptographically
+authenticated production IPC/provisioning model, long-running
+durability/chaos tests and independent formal conformance validation.
+The RTI and mixed-network gates remain deferred by scope, not PASS.

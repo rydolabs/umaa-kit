@@ -396,3 +396,40 @@ to matching remote Status AND Ack; timeout returns Pending rather than
 falsifying completion. Cancellation, update and disposal cannot be
 automatically replayed after unknown delivery. Service-specific codecs,
 normative transport profile and state recovery are independent gates.
+
+### Durable isolated-worker command ledger (optional)
+
+```python
+from umaa_process_supervisor import ComponentProcessSupervisor
+
+with ComponentProcessSupervisor(worker, module,
+        journal_path="/trusted/local/umaa-command-intents.json") as host:
+    # Trackable nonzero session ID is mandatory when journaling is enabled.
+    status, result, payload = host.call(
+        "Demo::EO::EngineControl", 1, encoded_command, session=741)
+```
+
+For `journal_path` the supervisor uses a local write-ahead intent ledger
+with fsync before CALL, bounded durable completed-session deduplication
+and an exclusive `.owner` file. Command operations with untrackable
+session 0 are rejected. A crash/unknown outcome blocks unreviewed
+restart; physical state must be explicitly reconciled. The boolean
+`hardware_reconciled=True` is a caller attestation, not automatic
+hardware inspection. After a supervisor process crash the operator
+must ensure the previous worker has stopped before removing a stale
+owner marker and calling `reconcile_journal()`.
+
+The supervisor is still **development-grade** IPC; it does not provide
+authenticated messages, malicious-module containment, tamper-proof
+storage, distributed single-owner leases or unattended physical
+recovery. Never reuse a command session identifier after terminal
+completion or reconciliation.
+
+### Official service command family catalogue (structural only)
+
+`umaa/reviewed_service_registry.hpp` now offers
+`reviewed::require_command_family(service, command_topic, false)`
+for explicit reviewed ICD Command→ACK→Status names across 24 families.
+The default `require_normative_qos=true` continues to reject all
+unapproved DDS entity configurations. No runtime TypeSupport or QoS
+profile may be inferred merely from these names.

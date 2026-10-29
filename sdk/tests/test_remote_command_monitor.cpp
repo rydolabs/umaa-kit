@@ -42,5 +42,24 @@ int main(){
  assert(tracker.needs_recovery("s3"));
  tracker.ambiguous_delivery("s2");
  assert(tracker.result("s2")==umaa::RemoteCommandResult::Pending);
+
+ umaa::RemoteCommandMonitor revised;
+ revised.issue({"controller","vehicle","rev",1});
+ bool denied=false;
+ try{revised.begin_update("rev");}catch(const std::logic_error&){denied=true;}
+ assert(denied);
+ assert(revised.status("rev","vehicle",umaa::State::ISSUED,2));
+ assert(revised.ack("rev","vehicle",3));
+ assert(revised.status("rev","vehicle",umaa::State::COMMANDED,4));
+ assert(revised.status("rev","vehicle",umaa::State::EXECUTING,5));
+ assert(revised.ready_for_update("rev"));
+ revised.begin_update("rev");
+ assert(!revised.acknowledged("rev"));
+ assert(revised.status("rev","vehicle",umaa::State::ISSUED,6));
+ assert(revised.ack("rev","vehicle",7));
+ assert(revised.status("rev","vehicle",umaa::State::COMMANDED,8));
+ assert(revised.status("rev","vehicle",umaa::State::EXECUTING,9));
+ assert(revised.status("rev","vehicle",umaa::State::COMPLETED,10));
+ assert(revised.result("rev")==umaa::RemoteCommandResult::Completed);
  std::cout<<"PASS correlated ACK/status, ordering, unknown delivery, bounded sessions\n";
 }

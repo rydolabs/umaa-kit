@@ -33,7 +33,11 @@ public:
     Entry& e=it->second;
     if(e.faulted || e.status_disposed || source_timestamp<=e.last_status_time ||
        source_timestamp<e.id.timestamp)return false;
-    if(!valid(e.status,next)){
+    if(e.awaiting_update && next==State::ISSUED) {
+      e.status=State::ISSUED;e.awaiting_update=false;
+      e.last_status_time=source_timestamp;return true;
+    }
+    if(e.awaiting_update || !valid(e.status,next)){
       e.faulted=true;return false;
     }
     e.status=next;
@@ -50,6 +54,20 @@ public:
     if(e.faulted||e.ack_disposed||e.acked ||
        source_timestamp<e.id.timestamp)return false;
     e.acked=true;return true;
+  }
+
+  bool ready_for_update(const std::string& session) const {
+    const auto it=sessions_.find(session);
+    if(it==sessions_.end())throw std::out_of_range("unknown Command session");
+    const auto& e=it->second;
+    return !e.faulted && !e.awaiting_update && e.acked && e.status &&
+           *e.status==State::EXECUTING && !e.status_disposed && !e.ack_disposed;
+  }
+  void begin_update(const std::string& session) {
+    if(!ready_for_update(session))
+      throw std::logic_error("previous revision not acknowledged and executing");
+    auto& e=sessions_.at(session);
+    e.awaiting_update=true;e.acked=false;
   }
   bool acknowledged(const std::string& session) const {
     const auto it=sessions_.find(session);
@@ -113,7 +131,7 @@ private:
   }
   struct Entry {
     Identity id;
-    bool acked{false},faulted{false};
+    bool acked{false},faulted{false},awaiting_update{false};
     bool status_disposed{false},ack_disposed{false};
     std::optional<State> status;
     std::int64_t last_status_time{INT64_MIN};

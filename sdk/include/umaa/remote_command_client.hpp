@@ -48,6 +48,32 @@ public:
  }
  RemoteCommandClient(const RemoteCommandClient&)=delete;
  RemoteCommandClient& operator=(const RemoteCommandClient&)=delete;
+
+ // Do not replay side effects: a new revision requires the previous
+ // EXECUTING Status and matching Ack, and is never retried on delivery error.
+ void update(const Command& command,const std::string& session){
+   require_active();
+   if(disposed_.count(session)||!commands_.count(session)||
+      !monitor_.ready_for_update(session))
+     throw std::logic_error("Command not ready for safe revision");
+   const auto bytes=Service::encode_command(command);
+   if(bytes.empty()||bytes.size()>UINT32_MAX)
+     throw std::length_error("invalid Command update payload");
+   if(next_request_timestamp_==INT64_MAX) {
+     faulted_=true;throw std::overflow_error("Command timestamp exhausted");
+   }
+   monitor_.begin_update(session);
+   commands_.at(session)=command;
+   UmaaDdsSampleV1 sample{bytes.data(),static_cast<std::uint32_t>(bytes.size()),
+     session.c_str(),++next_request_timestamp_,UMAA_DDS_EVENT_DATA};
+   if(domain_->write(command_writer_,sample)!=UMAA_DDS_OK){
+     faulted_=true;monitor_.ambiguous_delivery(session);
+     throw std::runtime_error("ambiguous Command update delivery; no retry");
+   }
+ }
+ bool ready_for_update(const std::string& session) const {
+   require_active();return monitor_.ready_for_update(session);
+ }
  void send(const Command& command,const std::string& session){
    require_active();
    if(session.empty())throw std::invalid_argument("Command session required");
@@ -189,5 +215,6 @@ private:
  CallbackContext status_context_,ack_context_;
  void* status_reader_{},*ack_reader_{},*command_writer_{};
  bool faulted_{false};
+ std::int64_t next_request_timestamp_{1};
 };
 } // namespace umaa

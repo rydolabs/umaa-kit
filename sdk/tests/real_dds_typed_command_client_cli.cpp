@@ -41,19 +41,34 @@ struct AsyncEngine {
   }
 };
 int main(int argc,char** argv){
-  if(argc!=4 || std::string(argv[1])!="client")return 2;
+  if(argc!=4 || (std::string(argv[1])!="client" &&
+                 std::string(argv[1])!="client-cancel"))return 2;
   try{
     umaa::Application app;
     app.use_backend(argv[2],44);
     auto client=app.consume_remote<AsyncEngine>("controller","vehicle");
     client.send({1800},"17");
-    const auto outcome=client.wait_for("17",std::chrono::seconds(10));
-    if(outcome!=umaa::RemoteCommandResult::Completed){
-      std::cerr<<"Remote Command not completed\n";return 3;
+    const bool cancel_mode=std::string(argv[1])=="client-cancel";
+    if(cancel_mode) {
+      const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(8);
+      while(!client.acknowledged("17") && std::chrono::steady_clock::now()<deadline) {
+        client.poll();
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+      }
+      if(!client.acknowledged("17") ||
+         client.result("17")!=umaa::RemoteCommandResult::Pending) return 5;
+      client.request_cancel("17",std::chrono::seconds(5));
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    const auto outcome=client.wait_for("17",std::chrono::seconds(10));
+    const auto expected=cancel_mode?umaa::RemoteCommandResult::Canceled:
+                                    umaa::RemoteCommandResult::Completed;
+    if(outcome!=expected){
+      std::cerr<<"Remote Command did not reach expected terminal Status\n";return 3;
+    }
+    if(!cancel_mode)std::this_thread::sleep_for(std::chrono::milliseconds(150));
     client.finish("17",std::chrono::seconds(10));
-    std::cout<<"PASS typed remote Command send/wait/finish over selected DDS backend\n";
+    std::cout<<"PASS typed remote Command "<<(cancel_mode?"cancellation":"completion")
+             <<" after real Status/Ack and Dispose\n";
     return 0;
   }catch(const std::exception& e){
     std::cerr<<"Typed Command failure: "<<e.what()<<"\n";return 4;

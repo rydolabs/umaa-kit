@@ -12,6 +12,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/topic/TypeSupport.hpp>
 #include <cstdlib>
+#include <cstdio>
 #include <cerrno>
 #include <climits>
 #include <cstdint>
@@ -125,6 +126,7 @@ int32_t send(void* handle,const UmaaDdsSampleV1* sample,uint32_t kind){
  if(kind==UMAA_DDS_EVENT_DATA)rc=writer->write(&wire);
  else if(kind==UMAA_DDS_EVENT_DISPOSE)rc=writer->dispose(&wire,eprosima::fastdds::dds::HANDLE_NIL);
  else if(kind==UMAA_DDS_EVENT_UNREGISTER)rc=writer->unregister_instance(&wire,eprosima::fastdds::dds::HANDLE_NIL);
+ if(rc!=ReturnCode_t::RETCODE_OK)std::fprintf(stderr,"Fast DDS sample event=%u key=%d return=%d\\n",kind,key,static_cast<int>(rc));
  return rc==ReturnCode_t::RETCODE_OK?UMAA_DDS_OK:UMAA_DDS_UNKNOWN_DELIVERY;
 }
 int32_t write(void* p,const UmaaDdsSampleV1* s){return send(p,s,UMAA_DDS_EVENT_DATA);}

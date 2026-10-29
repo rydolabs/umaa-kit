@@ -47,37 +47,36 @@ int main(int argc,char** argv){
   try{
     umaa::Application app;
     app.use_backend(argv[2],44);
-    auto client=app.consume_remote<AsyncEngine>("controller","vehicle");
-    client.send({1800},"17");
+    auto cmd=app.issue_remote<AsyncEngine>({1800},"17","controller","vehicle");
     const bool cancel_mode=std::string(argv[1])=="client-cancel";
     const bool update_mode=std::string(argv[1])=="client-update";
     if(update_mode) {
       const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(8);
-      while(!client.ready_for_update("17")&&std::chrono::steady_clock::now()<deadline){
-        client.poll();
+      while(!cmd.ready_for_update()&&std::chrono::steady_clock::now()<deadline){
+        cmd.poll();
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
       }
-      if(!client.ready_for_update("17"))return 6;
-      client.update({1900},"17");
+      if(!cmd.ready_for_update())return 6;
+      cmd.update({1900});
     }
     if(cancel_mode) {
       const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(8);
-      while(!client.acknowledged("17") && std::chrono::steady_clock::now()<deadline) {
-        client.poll();
+      while(!cmd.acknowledged() && std::chrono::steady_clock::now()<deadline) {
+        cmd.poll();
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
       }
-      if(!client.acknowledged("17") ||
-         client.result("17")!=umaa::RemoteCommandResult::Pending) return 5;
-      client.request_cancel("17",std::chrono::seconds(5));
+      if(!cmd.acknowledged() ||
+         cmd.state()!=umaa::RemoteCommandResult::Pending) return 5;
+      cmd.request_cancel(std::chrono::seconds(5));
     }
-    const auto outcome=client.wait_for("17",std::chrono::seconds(10));
+    const auto outcome=cmd.wait_for(std::chrono::seconds(10));
     const auto expected=cancel_mode?umaa::RemoteCommandResult::Canceled:
                                     umaa::RemoteCommandResult::Completed;
     if(outcome!=expected){
       std::cerr<<"Remote Command did not reach expected terminal Status\n";return 3;
     }
     if(!cancel_mode)std::this_thread::sleep_for(std::chrono::milliseconds(150));
-    client.finish("17",std::chrono::seconds(10));
+    cmd.finish(std::chrono::seconds(10));
     std::cout<<"PASS typed remote Command "
              <<(cancel_mode?"cancellation":update_mode?"revision update":"completion")
              <<" after real Status/Ack and Dispose\n";

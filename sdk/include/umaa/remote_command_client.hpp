@@ -217,4 +217,60 @@ private:
  bool faulted_{false};
  std::int64_t next_request_timestamp_{1};
 };
+// One operation's typed asynchronous lifecycle. The owning backend and
+// DDS readers remain alive even if its Application facade is destroyed.
+// There is deliberately no automatic command retry or auto-dispose in ~Handle.
+template<class Service> class RemoteCommandHandle final {
+public:
+ using Command=typename Service::Command;
+ RemoteCommandHandle(std::shared_ptr<RemoteCommandClient<Service>> client,
+                     std::string session)
+   :client_(std::move(client)),session_(std::move(session)) {
+   if(!client_||session_.empty())throw std::invalid_argument("invalid Command handle");
+ }
+ RemoteCommandHandle(const RemoteCommandHandle&)=delete;
+ RemoteCommandHandle& operator=(const RemoteCommandHandle&)=delete;
+ RemoteCommandHandle(RemoteCommandHandle&&)=default;
+ RemoteCommandHandle& operator=(RemoteCommandHandle&&)=default;
+ const std::string& session_id() const noexcept{return session_;}
+ RemoteCommandResult state() const {
+   return finished_?terminal_result_:client_->result(session_);
+ }
+ bool terminal() const {return state()!=RemoteCommandResult::Pending;}
+ RemoteCommandResult poll() {
+   if(finished_)return terminal_result_;
+   client_->poll();return client_->result(session_);
+ }
+ bool acknowledged() const {
+   return !finished_&&client_->acknowledged(session_);
+ }
+ bool ready_for_update() const {
+   return !finished_&&client_->ready_for_update(session_);
+ }
+ void update(const Command& next) {
+   if(finished_)throw std::logic_error("Command already finished");
+   client_->update(next,session_);
+ }
+ void request_cancel(std::chrono::milliseconds timeout) {
+   if(finished_)throw std::logic_error("Command already finished");
+   client_->request_cancel(session_,timeout);
+ }
+ RemoteCommandResult wait_for(std::chrono::milliseconds timeout){
+   if(finished_)return terminal_result_;
+   return client_->wait_for(session_,timeout);
+ }
+ void finish(std::chrono::milliseconds timeout) {
+   if(finished_)throw std::logic_error("Command already finished");
+   const auto outcome=client_->result(session_);
+   if(outcome==RemoteCommandResult::Pending)
+     throw std::logic_error("unconfirmed Command is not terminal");
+   client_->finish(session_,timeout);
+   terminal_result_=outcome;finished_=true;
+ }
+private:
+ std::shared_ptr<RemoteCommandClient<Service>> client_;
+ std::string session_;
+ RemoteCommandResult terminal_result_{RemoteCommandResult::Pending};
+ bool finished_{false};
+};
 } // namespace umaa

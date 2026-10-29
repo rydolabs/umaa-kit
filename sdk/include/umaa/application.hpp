@@ -263,6 +263,19 @@ public:
     if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return RemoteCommandClient<Service>(backend_path_,domain_id_,source,destination);
   }
+  // One-step typed asynchronous Command Handle. DDS channel lifetime belongs
+  // to the Handle, not to this Application's ComponentRuntime.
+  template<class Service>
+  RemoteCommandHandle<Service> issue_remote(
+      const typename Service::Command& command,const std::string& session,
+      const std::string& source,const std::string& destination) const {
+    static_assert(Service::is_command,"issue_remote requires Command service");
+    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
+    auto client=std::make_shared<RemoteCommandClient<Service>>(
+      backend_path_,domain_id_,source,destination);
+    client->send(command,session);
+    return RemoteCommandHandle<Service>(std::move(client),session);
+  }
   template<class Service> auto consume() {
     if constexpr(Service::is_command)return CommandClient<Service>(host_);
     else return ReportConsumer<Service>(host_);

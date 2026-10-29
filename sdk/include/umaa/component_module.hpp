@@ -76,7 +76,7 @@ public:
     // must never be replayed after an ambiguous delivery outcome.
     {
       std::lock_guard<std::mutex> lock(gate_);
-      if (!started_ || closing_ || !instance_)
+      if (!started_ || closing_ || failed_stop_ || !instance_)
         throw std::runtime_error("component stopping or not active");
       if (action == UMAA_COMPONENT_COMMAND && session != 0) {
         PendingSession id{service,session};
@@ -85,6 +85,8 @@ public:
         // Reserve before invoking hardware; even an exception is ambiguous.
         pending_.insert(std::move(id));
       }
+      if (action == UMAA_COMPONENT_COMMAND && session == 0)
+        untracked_pending_ = true;
       ++in_flight_;
     }
     auto leave = [this]() noexcept {
@@ -106,6 +108,10 @@ public:
         if (response.size > output.size()) throw std::runtime_error("component buffer overrun");
         output.resize(response.size);
         business_result = response.business_result;
+        if (action == UMAA_COMPONENT_COMMAND && session == 0 && business_result != 2) {
+          std::lock_guard<std::mutex> lock(gate_);
+          untracked_pending_ = false;
+        }
         if (session != 0 && (action == UMAA_COMPONENT_COMMAND ||
             action == UMAA_COMPONENT_COMMAND_POLL || action == UMAA_COMPONENT_CANCEL)) {
           std::lock_guard<std::mutex> lock(gate_);
@@ -132,11 +138,11 @@ public:
     std::unique_lock<std::mutex> lock(gate_);
     drained_.wait(lock, [this] { return !stopping_; });
     if (!instance_) return true;
-    if (!pending_.empty()) return false;
+    if (failed_stop_ || untracked_pending_ || !pending_.empty()) return false;
     stopping_ = true;
     closing_ = true;
     drained_.wait(lock, [this] { return in_flight_ == 0; });
-    if (!pending_.empty()) {
+    if (untracked_pending_ || !pending_.empty()) {
       // A previously admitted call became Pending while stop was draining.
       closing_ = false;
       stopping_ = false;
@@ -156,6 +162,8 @@ public:
     if (result == UMAA_COMPONENT_OK) {
       instance_ = nullptr;
       started_ = false;
+    } else {
+      failed_stop_ = true;
     }
     // Failed stop is irreversible. Never re-enter unknown device state.
     stopping_ = false;
@@ -194,6 +202,8 @@ private:
   std::size_t in_flight_{0};
   bool closing_{false};
   bool stopping_{false};
+  bool failed_stop_{false};
+  bool untracked_pending_{false};
   std::vector<Service> services_;
 };
 } // namespace umaa

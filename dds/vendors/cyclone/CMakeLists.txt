@@ -88,3 +88,33 @@ add_test(NAME umaa_cyclone_typed_command_update_real_wire
  "$<TARGET_FILE:umaa_cyclone_vehicle_component>"
  "$<TARGET_FILE:umaa_cyclone_typed_command_client_cli>" update)
 set_tests_properties(umaa_cyclone_typed_command_update_real_wire PROPERTIES TIMEOUT 55)
+
+# Fully SDK-owned Request Reader + Handler FSM, using a typed service trait.
+add_executable(umaa_cyclone_typed_command_server_cli
+  "${SDK_ROOT}/tests/real_dds_typed_command_server_cli.cpp")
+target_compile_features(umaa_cyclone_typed_command_server_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_cyclone_typed_command_server_cli PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_cyclone_typed_command_server_cli PRIVATE UMAA::Runtime "${CMAKE_DL_LIBS}")
+foreach(mode IN ITEMS normal cancel update)
+  set(cmd_mode "client")
+  if(NOT mode STREQUAL "normal")
+    set(cmd_mode "${mode}")
+  endif()
+  if(mode STREQUAL "normal")
+    add_test(NAME umaa_cyclone_typed_server_real_wire
+      COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_command_request.py"
+      "$<TARGET_FILE:umaa_cyclone_typed_command_server_cli>"
+      "$<TARGET_FILE:umaa_dds_cyclone_command_demo>"
+      "$<TARGET_FILE:umaa_cyclone_vehicle_component>"
+      "$<TARGET_FILE:umaa_cyclone_typed_command_client_cli>")
+    set_tests_properties(umaa_cyclone_typed_server_real_wire PROPERTIES TIMEOUT 55)
+  else()
+    add_test(NAME "umaa_cyclone_typed_server_${mode}_real_wire"
+      COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_command_request.py"
+      "$<TARGET_FILE:umaa_cyclone_typed_command_server_cli>"
+      "$<TARGET_FILE:umaa_dds_cyclone_command_demo>"
+      "$<TARGET_FILE:umaa_cyclone_vehicle_component>"
+      "$<TARGET_FILE:umaa_cyclone_typed_command_client_cli>" "${mode}")
+    set_tests_properties("umaa_cyclone_typed_server_${mode}_real_wire" PROPERTIES TIMEOUT 55)
+  endif()
+endforeach()

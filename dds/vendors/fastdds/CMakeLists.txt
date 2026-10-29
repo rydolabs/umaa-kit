@@ -106,3 +106,28 @@ add_test(NAME umaa_fastdds_typed_command_update_real_wire
  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>"
  "$<TARGET_FILE:umaa_fastdds_typed_command_client_cli>" update)
 set_tests_properties(umaa_fastdds_typed_command_update_real_wire PROPERTIES TIMEOUT 55)
+
+add_executable(umaa_fastdds_typed_command_server_cli
+  "${SDK_ROOT}/tests/real_dds_typed_command_server_cli.cpp")
+target_compile_features(umaa_fastdds_typed_command_server_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_fastdds_typed_command_server_cli PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_fastdds_typed_command_server_cli PRIVATE UMAA::Runtime)
+foreach(mode IN ITEMS normal cancel update)
+  if(mode STREQUAL "normal")
+    add_test(NAME umaa_fastdds_typed_server_real_wire
+      COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_command_request.py"
+      "$<TARGET_FILE:umaa_fastdds_typed_command_server_cli>"
+      "$<TARGET_FILE:umaa_dds_fastdds_command_demo>"
+      "$<TARGET_FILE:umaa_fastdds_vehicle_demo>"
+      "$<TARGET_FILE:umaa_fastdds_typed_command_client_cli>")
+    set_tests_properties(umaa_fastdds_typed_server_real_wire PROPERTIES TIMEOUT 55)
+  else()
+    add_test(NAME "umaa_fastdds_typed_server_${mode}_real_wire"
+      COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_command_request.py"
+      "$<TARGET_FILE:umaa_fastdds_typed_command_server_cli>"
+      "$<TARGET_FILE:umaa_dds_fastdds_command_demo>"
+      "$<TARGET_FILE:umaa_fastdds_vehicle_demo>"
+      "$<TARGET_FILE:umaa_fastdds_typed_command_client_cli>" "${mode}")
+    set_tests_properties("umaa_fastdds_typed_server_${mode}_real_wire" PROPERTIES TIMEOUT 55)
+  endif()
+endforeach()

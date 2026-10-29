@@ -31,7 +31,17 @@ jobs:
           python3 sdk/tests/run_real_dds_backend.py "$cli" "$cyclone" "$module"
           python3 sdk/tests/run_real_dds_backend.py "$cli" "$fastdds" "$module"
           sha256sum "$cli" "$module"
+      - name: Verify bidirectional Cyclone/Fast DDS mixed-vendor interoperability
+        run: |
+          set -euo pipefail
+          cli="$PWD/build/parity-cyclone/umaa_cyclone_backend_cli"
+          module="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_demo.so"
+          # 4th parameter selects the publisher backend; subscriber is 2nd.
+          python3 sdk/tests/run_real_dds_backend.py "$cli" "$cyclone" "$module" "$fastdds"
+          python3 sdk/tests/run_real_dds_backend.py "$cli" "$fastdds" "$module" "$cyclone"
       - name: Evidence
         if: always()
         run: find build/parity-* \( -name CTestTestfile.cmake -o -name '*.so' \) | sort
-# Genuine DDS middleware; synthetic IDL only, NOT official UMAA conformance.
+# Genuine middleware and mixed-vendor processes; synthetic IDL only, NOT official UMAA conformance.

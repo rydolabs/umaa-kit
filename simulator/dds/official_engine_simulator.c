@@ -173,6 +173,18 @@ int main(int argc,char** argv){
      nstate,got_ack,sent_cancel,disposed_status,disposed_ack);
    return 13;
  }
+ // Command Dispose is a reliable lifecycle event that the host MUST take
+ // before removing its session. A remote Status/Ack response does not prove
+ // that the issuing Command Writer's own Dispose was ACKed by the host.
+ // Require actual middleware ACK before deleting the initiating Writer.
+ if(dds_wait_for_acks(command_writer,DDS_SECS(5))<0){
+   fputs("ENGINE_SIM: final initiating Command Writer ACK unconfirmed\n",stderr);
+   return 21;
+ }
+ // Additional test-only retention across netem delay/jitter/loss, allowing
+ // late RTPS repair; never synthesizes host Command Dispose or success.
+ if(getenv("UMAA_NETEM_RETAIN_FINAL"))
+   dds_sleepfor(DDS_MSECS(1000));
  if(dds_delete(p)<0)return 14;
  puts(updating?"ENGINE_SIM: PASS official UMAA EngineControl UPDATE/Ack/Status/Cancel/Dispose":"ENGINE_SIM: PASS official UMAA EngineControl Command/Ack/Status/Cancel/Dispose");
  return 0;

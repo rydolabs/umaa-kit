@@ -31,6 +31,9 @@ template<class S> int subscriber(const char* backend){
      }
      std::this_thread::sleep_for(25ms);
    }
+   // A reliable writer can still be awaiting the Reader's ACK for
+   // Dispose. Keep this Reader alive briefly before shutting the process.
+   if(disposed)std::this_thread::sleep_for(900ms);
    const bool ok=first&&delta&&disposed&&!consumer->faulted();
    std::cout<<"COLLECTION_SUB first="<<first<<" delta="<<delta
             <<" disposed="<<disposed<<"\n";

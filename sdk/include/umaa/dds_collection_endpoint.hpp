@@ -99,7 +99,7 @@ public:
  // This call is also the only way out of a corrupted/gapped transaction.
  void expect_snapshot(std::uint64_t generation){
    assembler_.expect_snapshot(generation);
-   faulted_=false;disposed_=false;
+   faulted_=false;disposed_=false;last_error_.clear();
  }
  int poll(std::uint32_t max_samples=1){
    if(faulted_)throw std::logic_error("Collection stream needs trusted resync");
@@ -108,7 +108,8 @@ public:
    if(received<0||faulted_){
      assembler_.fail_unknown_delivery();
      faulted_=true;
-     throw std::runtime_error("Collection frame invalid, gap or DDS reader failure");
+     throw std::runtime_error("Collection frame/reader failure: "+
+       (last_error_.empty()?std::string("DDS Reader IO_ERROR"):last_error_));
    }
    return received;
  }
@@ -137,8 +138,13 @@ private:
        self->disposed_=true;
        self->assembler_.fail_unknown_delivery();
      }else throw std::runtime_error("unrecognized Collection lifecycle");
+   }catch(const std::exception& e){
+     self->faulted_=true;
+     self->last_error_=e.what();
+     self->assembler_.fail_unknown_delivery();
    }catch(...){
      self->faulted_=true;
+     self->last_error_="unrecognized callback exception";
      self->assembler_.fail_unknown_delivery();
    }
  }
@@ -147,6 +153,7 @@ private:
  std::string key_;
  CoherentCollectionReceiver<Value> assembler_;
  void* reader_{};
+ std::string last_error_;
  bool faulted_{false},disposed_{false};
 };
 } // namespace umaa

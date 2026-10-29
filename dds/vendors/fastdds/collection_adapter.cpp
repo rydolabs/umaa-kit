@@ -162,11 +162,18 @@ int32_t poll(void* handle,uint32_t max_samples){
      r->instance_keys.insert_or_assign(handle_bytes,key);
    }else{
      const auto known=r->instance_keys.find(handle_bytes);
-     if(known==r->instance_keys.end())return UMAA_DDS_IO_ERROR;
+     if(known==r->instance_keys.end()) {
+       std::fprintf(stderr,"Fast DDS Collection missing lifecycle key handle; key_field=%d mapped=%zu\\n",
+                    wire.collection_id(),r->instance_keys.size());
+       return UMAA_DDS_IO_ERROR;
+     }
      key=known->second;
    }
    const auto& value=wire.frame();
-   if(info.valid_data&&(value.empty()||value.size()>65536))return UMAA_DDS_IO_ERROR;
+   if(info.valid_data&&(value.empty()||value.size()>65536)){
+     std::fprintf(stderr,"Fast DDS Collection invalid payload length=%zu\\n",value.size());
+     return UMAA_DDS_IO_ERROR;
+   }
    int64_t timestamp=info.source_timestamp.to_ns();
    UmaaDdsSampleV1 sample{
      kind==UMAA_DDS_EVENT_DATA?value.data():nullptr,

@@ -179,8 +179,14 @@ int32_t wait_for_acks(void* ptr,uint32_t ms){
  if(!ptr)return UMAA_DDS_INVALID;
  const eprosima::fastrtps::Duration_t duration(static_cast<int32_t>(ms/1000),
                                                 static_cast<uint32_t>((ms%1000)*1000000));
- return static_cast<Writer*>(ptr)->writer->wait_for_acknowledgments(duration)==ReturnCode_t::RETCODE_OK?
-  UMAA_DDS_OK:UMAA_DDS_IO_ERROR;
+ const auto rc=static_cast<Writer*>(ptr)->writer->wait_for_acknowledgments(duration);
+ if(rc!=ReturnCode_t::RETCODE_OK)
+   std::fprintf(stderr,"Fast DDS writer ACK wait: %s\\n",
+      rc==ReturnCode_t::RETCODE_TIMEOUT?"TIMEOUT":
+      rc==ReturnCode_t::RETCODE_PRECONDITION_NOT_MET?"PRECONDITION_NOT_MET":
+      rc==ReturnCode_t::RETCODE_UNSUPPORTED?"UNSUPPORTED":
+      rc==ReturnCode_t::RETCODE_NOT_ENABLED?"NOT_ENABLED":"OTHER");
+ return rc==ReturnCode_t::RETCODE_OK?UMAA_DDS_OK:UMAA_DDS_IO_ERROR;
 }
 void close_writer(void* handle){
  auto* w=static_cast<Writer*>(handle);if(!w)return;

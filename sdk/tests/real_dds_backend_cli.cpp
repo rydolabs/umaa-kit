@@ -42,7 +42,7 @@ int main(int argc,char** argv) {
        std::this_thread::sleep_for(std::chrono::milliseconds(25));
      }
      if(!seen_data||!seen_dispose)return 3;
-     std::cout<<"PASS typed consume<BatteryStatus>() over real Cyclone DDS + Dispose\n";
+     std::cout<<"PASS typed consume<BatteryStatus>() over real DDS vendor + Dispose\n";
      return 0;
    }
    const UmaaDdsTopicV1 topic{"demo/BatteryStatus","demo:battery-v1",

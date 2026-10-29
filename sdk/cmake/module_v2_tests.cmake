@@ -79,3 +79,10 @@ add_executable(umaa_component_command_provider_test tests/test_component_command
 target_link_libraries(umaa_component_command_provider_test PRIVATE UMAA::Runtime)
 add_test(NAME umaa_component_command_provider_test COMMAND umaa_component_command_provider_test
   "$<TARGET_FILE:umaa_demo_vehicle_v2>")
+
+# End-to-end HOST CommandEngine -> Backend ABI event writer -> mock DDS reader.
+# No real vendor QoS/TypeSupport or official UMAA protocol conformance claim.
+add_executable(umaa_command_dds_event_transport_test tests/test_command_dds_event_transport.cpp)
+target_link_libraries(umaa_command_dds_event_transport_test PRIVATE UMAA::Runtime)
+add_test(NAME umaa_command_dds_event_transport_test COMMAND umaa_command_dds_event_transport_test
+  "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")

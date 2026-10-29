@@ -138,7 +138,7 @@ public:
     std::unique_lock<std::mutex> lock(gate_);
     drained_.wait(lock, [this] { return !stopping_; });
     if (!instance_) return true;
-    if (failed_stop_ || untracked_pending_ || !pending_.empty()) return false;
+    if (failed_stop_) return false;
     stopping_ = true;
     closing_ = true;
     drained_.wait(lock, [this] { return in_flight_ == 0; });

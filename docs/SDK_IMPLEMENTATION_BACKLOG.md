@@ -61,3 +61,14 @@ reservation (fail closed). New CTest verifies the scoped safety behavior.
 
 **Still OPEN:** true out-of-process crash isolation, supervisor restart,
 active DDS CommandStatus/Ack sessions and formal UMAA conformance.
+
+## 2026-10-29 in-flight ABI lifetime test
+
+An independent native DLL/SO fixture holds a device callback for 180ms and
+signals when the callback is actually inside module code. The host's stop
+must block until this invocation finishes. The fixture also injects a failing
+stop and checks one-shot quarantine (no second stop, no new invocation).
+A `Pending` command still blocks unload, but a *reserved in-flight* command
+is first allowed to finish before determining whether it remains Pending.
+Local Linux validation passed; GitHub Linux/Windows CTest is the acceptance
+gate. In-process crashing-module isolation remains OPEN.

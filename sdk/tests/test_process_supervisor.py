@@ -106,6 +106,26 @@ class IsolatedWorkerTest(unittest.TestCase):
                               struct.pack("=i", 1500), 601)
                 self.assertTrue(host.faulted)
 
+    def test_journal_rejects_symlink_and_forged_boolean_action(self):
+        import json
+        from umaa_operation_journal import JournalFault
+        with tempfile.TemporaryDirectory() as tmp:
+            target = pathlib.Path(tmp) / "real.json"
+            target.write_text('{"version":1,"unresolved":[]}', encoding="utf-8")
+            alias = pathlib.Path(tmp) / "alias.json"
+            try:
+                alias.symlink_to(target)
+            except (OSError, NotImplementedError):
+                self.skipTest("test runner cannot create a symlink")
+            with self.assertRaises(JournalFault):
+                self.make_journal(alias)
+            alias.unlink()
+            target.write_text(json.dumps({"version": 1, "unresolved": [{
+                "service": "Demo::EO::EngineControl", "session": 9, "action": True}]}),
+                encoding="utf-8")
+            with self.assertRaises(JournalFault):
+                self.make_journal(target)
+
     def test_journal_verified_poll_clears_durable_intent(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "intent.json"

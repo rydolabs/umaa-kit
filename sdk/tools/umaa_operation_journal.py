@@ -30,10 +30,10 @@ class OperationJournal:
             raise JournalFault("unreconciled device operation journal; refuse startup")
 
     def _load(self):
-        if not self.path.exists():
-            return []
         if self.path.is_symlink():
             raise JournalFault("refuse symlink journal")
+        if not self.path.exists():
+            return []
         try:
             if self.path.stat().st_size > self.LIMIT:
                 raise JournalFault("oversized operation journal")
@@ -52,7 +52,8 @@ class OperationJournal:
             service, session, action = row["service"], row["session"], row["action"]
             if (not isinstance(service, str) or not service or len(service) > 256
                     or not isinstance(session, int) or isinstance(session, bool)
-                    or not (0 < session < 2**64) or action not in (1, 2)):
+                    or not (0 < session < 2**64) or type(action) is not int
+                    or action not in (1, 2)):
                 raise JournalFault("invalid operation journal identity")
             key = (service, session, action)
             if key in seen:
@@ -95,7 +96,7 @@ class OperationJournal:
     def begin(self, service: str, session: int, action: int):
         if not service or len(service) > 256 or any(c in service for c in "\r\n\t"):
             raise ValueError("invalid durable command service")
-        if not 0 < session < 2**64 or action not in (1, 2):
+        if type(session) is not int or type(action) is not int or not 0 < session < 2**64 or action not in (1, 2):
             raise ValueError("durable Command requires trackable nonzero session")
         entry = {"service": service, "session": session, "action": action}
         if entry in self.entries:

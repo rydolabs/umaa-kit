@@ -5,6 +5,8 @@
 #include "umaa/command_transport.hpp"
 #include "umaa/dds_backend_loader.hpp"
 #include <atomic>
+#include <chrono>
+#include <thread>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
@@ -17,8 +19,12 @@ template<class Service> class DdsCommandEventTransport final:
   using Command=typename Service::Command;
 public:
   DdsCommandEventTransport(std::shared_ptr<DdsBackendPlugin> backend,
-                           std::shared_ptr<DdsBackendPlugin::Domain> domain)
-      :backend_(std::move(backend)),domain_(std::move(domain)) {
+                           std::shared_ptr<DdsBackendPlugin::Domain> domain,
+                           std::chrono::milliseconds retirement_delay={})
+      :backend_(std::move(backend)),domain_(std::move(domain)),
+       retirement_delay_(retirement_delay) {
+    if(retirement_delay_.count()<0 || retirement_delay_>std::chrono::seconds(5))
+      throw std::invalid_argument("invalid DDS retirement delay");
     if(!backend_||!domain_)throw std::invalid_argument("missing command DDS backend");
     const UmaaDdsTopicV1 status{Service::status_topic,Service::status_schema,
                                 Service::qos_profile,UMAA_DDS_CAP_RELIABLE|
@@ -47,6 +53,9 @@ public:
   // having consumed the corresponding terminal business result.
   void before_dispose(const Identity&) override {
     wait_for_acks(5000);
+    // Test/contract-configured sample retention window. DDS ACK confirms
+    // reader cache arrival, NOT that the application has consumed Status.
+    if(retirement_delay_.count()>0)std::this_thread::sleep_for(retirement_delay_);
   }
   void dispose_status(const Identity& id) override {
     submit(status_writer_,id,{},true);
@@ -85,6 +94,7 @@ private:
       faulted_=true;throw std::runtime_error("ambiguous command DDS delivery; no retry");
     }
   }
+  std::chrono::milliseconds retirement_delay_{};
   std::shared_ptr<DdsBackendPlugin> backend_;
   std::shared_ptr<DdsBackendPlugin::Domain> domain_;
   void* status_writer_{};

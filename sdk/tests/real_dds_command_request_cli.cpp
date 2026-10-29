@@ -111,7 +111,10 @@ int main(int argc,char** argv){
    if(mode=="server"||mode=="server-cancel"){
      auto runtime=std::make_shared<umaa::internal::ComponentRuntime>();
      runtime->load_component(argv[3]);
-     umaa::DdsCommandEventTransport<Service> wire(plugin,domain);
+     // Synthetic fixture's consumer polls; keep terminal data available
+     // briefly before Dispose rather than assuming reliable ACK means read().
+     umaa::DdsCommandEventTransport<Service> wire(
+       plugin,domain,std::chrono::milliseconds(180));
      umaa::ComponentCommandProvider<Service> provider("vehicle",runtime,wire);
      ProviderReceiver receiver{&provider};
      receiver.cancel_mode=(mode=="server-cancel");

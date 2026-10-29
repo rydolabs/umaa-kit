@@ -10,14 +10,14 @@ required acceptance gates, never a conformance certificate.
 | Report Provider lifecycle | PASS (synthetic development scope) | persistent writer, multiple updates, dispose, acknowledgment, fault fencing; no official all-service policy |
 | Per-key Report cache | PASS (mock development scope) | independent keys, per-key timestamp and tombstone; vendor lifecycle proof separately required |
 | Cyclone DDS backend facade | PARTIAL | synthetic BatteryStatus real-wire; official services remain legacy DDS hosts |
-| Fast DDS backend facade | PARTIAL / CHECK CI | Fast DDS 2.x synthetic BatteryStatus, real-wire and parity Actions are acceptance gates, not evidence until SUCCESS |
-| Identical client and module binaries across vendors | CHECK CI | `sdk-dds-vendor-parity.yml` must run both on one exact set of binaries |
+| Fast DDS backend facade | PASS (synthetic Report only) | Ubuntu Fast DDS 2.11 independent-process [wire run 40810503339](https://github.com/rydolabs/umaa-kit/actions/runs/40810503339) SUCCESS; official UMAA mappings not complete |
+| Identical client and module binaries across vendors | PASS (synthetic Report only) | [parity run 40810503302](https://github.com/rydolabs/umaa-kit/actions/runs/40810503302) SUCCESS: same Consumer executable + same device .so, separate Cyclone/Fast DDS backends |
 | LargeSet / LargeList | PARTIAL | CollectionAssembler core only; group coherent/ordered DDS plus recovery not verified |
 | Official UMAA 6.0 TypeBindings | BLOCKED ON CONTRACT REVIEW | source IDLs compiled previously; no approved all-service roles, keys and QoS |
 | Cross-vendor mixed-network operation | NOT PROVEN | same-binary parity is not Cyclone-to-Fast DDS mixed-network interoperability |
 | RTI Connext backend | BLOCKED | licensed SDK, runner, TypeSupport and policy verification required |
 | Safe module stop/reload | PARTIAL | in-process ABI checks and failed-stop mapping retention; pending-session draining and crash isolation still absent |
-| Linux/Windows regressions | PASS as of [Actions run 40810011629](https://github.com/rydolabs/umaa-kit/actions/runs/40810011629) | test suite and source commit scoped; subsequent heads require rerun |
+| Linux/Windows regressions | PASS [Actions run 40810503199](https://github.com/rydolabs/umaa-kit/actions/runs/40810503199) | GCC/Clang/MSVC success on `afa5b269`; final docs-only commit recheck required |
 | Formal UMAA compliance | BLOCKED | reviewer-approved profile, normative SHALL traceability, independent oracle and acceptance |
 
 ## Source of truth for extension
@@ -39,3 +39,13 @@ CommandStatus. All in-process module termination is cooperative; a crashing
 device module can crash its host.
 
 **Do not call this SDK fully UMAA conformant or production-ready.**
+
+## 2026-10-29 verified multi-vendor development slice
+
+Commit `afa5b26960f7a0353d172a40355ef87d6d4f5311` completed all six
+GitHub-hosted workflows: Linux/Windows SDK, Verifier, legacy synthetic
+Cyclone DDS, new Cyclone plugin, new Fast DDS plugin, and same-binary
+vendor-parity test. The suite covers **only synthetic DemoBattery** in the
+new plugin. It does not cover official UMAA ServiceTraits, COMMAND wire,
+LargeCollection coherent DDS, mixed Cyclone/Fast network interoperability,
+physical equipment or RTI Connext. No formal conformance approval is implied.

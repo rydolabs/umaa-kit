@@ -1,6 +1,6 @@
 // Minimal typed remote Command client, no DDS Reader/Writer or vendor headers.
 // Uses synthetic Command IDL for independent-process acceptance only.
-#include "umaa/remote_command_client.hpp"
+#include "umaa/application.hpp"
 #include <chrono>
 #include <cstdint>
 #include <cstring>
@@ -11,6 +11,7 @@
 #include <thread>
 #include <vector>
 struct AsyncEngine {
+  static constexpr bool is_command=true;
   static constexpr const char* id="Demo::EO::AsyncEngineControl";
   static constexpr const char* command_topic="demo/AsyncEngineCommand";
   static constexpr const char* command_schema="demo:async-command-v1";
@@ -42,7 +43,9 @@ struct AsyncEngine {
 int main(int argc,char** argv){
   if(argc!=4 || std::string(argv[1])!="client")return 2;
   try{
-    umaa::RemoteCommandClient<AsyncEngine> client(argv[2],44,"controller","vehicle");
+    umaa::Application app;
+    app.use_backend(argv[2],44);
+    auto client=app.consume_remote<AsyncEngine>("controller","vehicle");
     client.send({1800},"17");
     const auto outcome=client.wait_for("17",std::chrono::seconds(10));
     if(outcome!=umaa::RemoteCommandResult::Completed){

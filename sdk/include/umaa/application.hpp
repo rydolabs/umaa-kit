@@ -2,6 +2,7 @@
 // Report poll/latest uses the backend Reader; CommandClient is host-local only.
 #pragma once
 #include "umaa/component.hpp"
+#include "umaa/remote_command_client.hpp"
 #include "umaa/internal/component_runtime.hpp"
 #include "umaa/internal/dds_backend.h"
 #include "umaa/internal/runtime_config.hpp" // vendor-neutral event kinds only
@@ -249,12 +250,26 @@ public:
       Service::id,Service::topic_name,Service::schema_id,instance_key));
   }
 
-  void use_backend(const std::string& path,uint32_t domain){host_->load_backend(path,domain);}
+  void use_backend(const std::string& path,uint32_t domain){
+    host_->load_backend(path,domain);
+    backend_path_=path;domain_id_=domain;
+  }
+  // Device-independent remote Command client. Binding codecs remain Service-owned.
+  // Existing consume<Service>() retains its original host-local semantics.
+  template<class Service>
+  RemoteCommandClient<Service> consume_remote(const std::string& source,
+                                              const std::string& destination) const {
+    static_assert(Service::is_command,"remote Command consumer requires a Command service");
+    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
+    return RemoteCommandClient<Service>(backend_path_,domain_id_,source,destination);
+  }
   template<class Service> auto consume() {
     if constexpr(Service::is_command)return CommandClient<Service>(host_);
     else return ReportConsumer<Service>(host_);
   }
 private:
   std::shared_ptr<internal::ComponentRuntime> host_;
+  std::string backend_path_;
+  uint32_t domain_id_{0};
 };
 } // namespace umaa

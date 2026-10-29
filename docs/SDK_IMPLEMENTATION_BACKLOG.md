@@ -111,3 +111,12 @@ CTest covers negative pending/publisher gates, unload and reload.
 **Limit:** this is a cooperative in-process reload, not automatic hot-upgrade
 with zero downtime, process crash isolation or supervisor-controlled IPC.
 The module administrative API must be serialized by the host orchestrator.
+
+## 2026-10-29 typed Application Report publishing
+
+Added public `Application::publish<Service>(key)` and
+`Application::unload_component(id)`, avoiding internal Runtime APIs and
+manual Topic strings for user-level Report publishing and cooperative reload.
+CTest covers background publish to typed consume and refuses to unload an
+active module publisher. **Scope:** synthetic `demo:battery-v1` only; no
+normative UMAA service mapping or lifecycle claim.

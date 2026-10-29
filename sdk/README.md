@@ -167,3 +167,16 @@ persistent backend Writer, and stops the thread with `stop_periodic()`.
 module never sees a DDS Writer or emits Report lifecycle events itself.
 This schedule is a generic development policy, **not** a reviewed UMAA
 service-specific publication interval or automatic official QoS mapping.
+
+## Typed Application Report publishing and component reload
+
+The host application can now use `auto pub=app.publish<BatteryStatus>("17");`
+and `pub.start_periodic(10ms)`, `pub.dispose()`, `pub.close()`. Topic,
+schema and backend Writer come from the service descriptor, **not** explicit
+DDS parameters or vendor calls in application code. A separate component
+module supplies only `ReportSource::read()`. This is a synthetic demo
+vertical slice; official UMAA bindings are not generated yet.
+
+`app.unload_component("vehicle-component")` returns false if a module has
+Pending commands or any retained ReportPublisher; it succeeds once those
+resources drain. This supports *cooperative*, not crash-safe, replacement.

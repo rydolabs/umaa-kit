@@ -192,10 +192,42 @@ private:
   std::thread watcher_;
   std::exception_ptr watch_error_;
 };
+// Minimal typed Report publishing handle for an already registered device
+// ReportSource. No DDS names or middleware objects appear in user code.
+// A generated Service descriptor supplies a reviewed binding in production;
+// today's runtimes only accept the explicit demo schema.
+template<class Service> class ReportPublisherHandle final {
+public:
+  explicit ReportPublisherHandle(std::unique_ptr<internal::ReportPublisher> endpoint)
+    :endpoint_(std::move(endpoint)){}
+  ReportPublisherHandle(ReportPublisherHandle&&)=default;
+  ReportPublisherHandle& operator=(ReportPublisherHandle&&)=default;
+  ReportPublisherHandle(const ReportPublisherHandle&)=delete;
+  ReportPublisherHandle& operator=(const ReportPublisherHandle&)=delete;
+  void update(){endpoint_->update();}
+  void dispose(){endpoint_->dispose();}
+  void close(){endpoint_->close();}
+  bool faulted() const noexcept{return endpoint_->faulted();}
+  void start_periodic(std::chrono::milliseconds period){endpoint_->start_periodic(period);}
+  void stop_periodic() noexcept{endpoint_->stop_periodic();}
+  void rethrow_periodic_error(){endpoint_->rethrow_periodic_error();}
+private:
+  std::unique_ptr<internal::ReportPublisher> endpoint_;
+};
 class Application final {
 public:
   Application():host_(std::make_shared<internal::ComponentRuntime>()){}
   void load_component(const std::string& path){host_->load_component(path);}
+  // Cooperative in-process reload; not a crash-safe hot-upgrade.
+  bool unload_component(const std::string& id){return host_->unload_component(id);}
+  template<class Service>
+  ReportPublisherHandle<Service> publish(const std::string& instance_key) {
+    static_assert(!Service::is_command,"publish<Service>() requires a Report contract");
+    if(instance_key.empty())throw std::invalid_argument("Report instance key required");
+    return ReportPublisherHandle<Service>(host_->open_report_fixture(
+      Service::id,Service::topic_name,Service::schema_id,instance_key));
+  }
+
   void use_backend(const std::string& path,uint32_t domain){host_->load_backend(path,domain);}
   template<class Service> auto consume() {
     if constexpr(Service::is_command)return CommandClient<Service>(host_);

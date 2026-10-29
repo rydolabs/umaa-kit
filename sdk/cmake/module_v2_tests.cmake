@@ -55,3 +55,9 @@ add_executable(umaa_runtime_reload_v2_test tests/test_runtime_reload_v2.cpp)
 target_link_libraries(umaa_runtime_reload_v2_test PRIVATE UMAA::Runtime)
 add_test(NAME umaa_runtime_reload_v2_test COMMAND umaa_runtime_reload_v2_test
   "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")
+
+# Public typed application Report producer/consumer; mock DDS ABI backend.
+add_executable(umaa_typed_report_application_v2_test tests/test_typed_report_application_v2.cpp)
+target_link_libraries(umaa_typed_report_application_v2_test PRIVATE UMAA::Runtime Threads::Threads)
+add_test(NAME umaa_typed_report_application_v2_test COMMAND umaa_typed_report_application_v2_test
+  "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")

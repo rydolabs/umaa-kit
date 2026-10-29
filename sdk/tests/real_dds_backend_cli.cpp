@@ -11,6 +11,7 @@
 #include <vector>
 struct Received {bool data{};bool disposed{};int32_t level{};};
 void receive(void* context,const UmaaDdsSampleV1* sample) {
+ if(sample && sample->instance_key) std::cerr << "callback kind=" << sample->event_kind << " key=" << sample->instance_key << " size=" << sample->payload_size << "\n";
  if(!context||!sample||!sample->instance_key||
     std::string(sample->instance_key)!="17")return;
  auto& out=*static_cast<Received*>(context);
@@ -35,6 +36,7 @@ int main(int argc,char** argv) {
        std::this_thread::sleep_for(std::chrono::milliseconds(25));
      }
      domain->close_reader(reader);
+     std::cerr << "final received data=" << observed.data << " disposed=" << observed.disposed << " level=" << observed.level << "\n";
      if(!observed.data || !observed.disposed || observed.level!=80)return 3;
      std::cout<<"PASS real Cyclone DDS data=80 + keyed Dispose\n";return 0;
    }

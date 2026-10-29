@@ -77,3 +77,16 @@ add_test(NAME umaa_fastdds_command_request_real_wire
  "$<TARGET_FILE:umaa_dds_fastdds_command_demo>"
  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>")
 set_tests_properties(umaa_fastdds_command_request_real_wire PROPERTIES TIMEOUT 55)
+
+# Typed user-level Command client, no vendor APIs in application code.
+add_executable(umaa_fastdds_typed_command_client_cli "${SDK_ROOT}/tests/real_dds_typed_command_client_cli.cpp")
+target_compile_features(umaa_fastdds_typed_command_client_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_fastdds_typed_command_client_cli PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_fastdds_typed_command_client_cli PRIVATE UMAA::Core)
+add_test(NAME umaa_fastdds_typed_command_client_real_wire
+ COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_command_request.py"
+ "$<TARGET_FILE:umaa_fastdds_command_request_cli>"
+ "$<TARGET_FILE:umaa_dds_fastdds_command_demo>"
+ "$<TARGET_FILE:umaa_fastdds_vehicle_demo>"
+ "$<TARGET_FILE:umaa_fastdds_typed_command_client_cli>")
+set_tests_properties(umaa_fastdds_typed_command_client_real_wire PROPERTIES TIMEOUT 55)

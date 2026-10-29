@@ -1,8 +1,9 @@
 """Fail-closed optional process-isolated module supervisor.
 
 The worker executes one Component DLL/SO in a child process. This is bounded
-development IPC, not an authenticated production protocol, durable recovery
-system, or a claim of hardware state reconciliation.
+development IPC, not an authenticated production protocol or a claim of
+hardware state reconciliation. Optional durable intent journaling fences
+unknown outcomes but does NOT reconcile physical hardware automatically.
 """
 from __future__ import annotations
 import queue
@@ -15,7 +16,8 @@ class WorkerFault(RuntimeError):
     pass
 
 class ComponentProcessSupervisor:
-    def __init__(self, worker: str, module: str, timeout: float = 5.0,\n                 journal_path=None):
+    def __init__(self, worker: str, module: str, timeout: float = 5.0,
+                 journal_path=None):
         self.worker = str(Path(worker))
         self.module = str(Path(module))
         if timeout <= 0 or timeout > 30:
@@ -109,7 +111,12 @@ class ComponentProcessSupervisor:
             raise ValueError("payload too large")
         with self._lock:
             if self._journal and action in (1, 2):
-                self._journal.begin(service, session, action)
+                try:
+                    self._journal.begin(service, session, action)
+                except (JournalFault, OSError):
+                    self._faulted = True
+                    self._kill()
+                    raise
             reply = self._rpc_locked(f"CALL\t{service}\t{action}\t{session}\t{payload.hex()}")
             return self._interpret_call(service, action, session, reply)
 

@@ -194,7 +194,9 @@ if(UMAA_BUILD_PROCESS_WORKER)
   target_link_libraries(umaa_component_worker PRIVATE UMAA::Core ${CMAKE_DL_LIBS})
   target_compile_features(umaa_component_worker PRIVATE cxx_std_17)
   install(TARGETS umaa_component_worker RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/tools/umaa_process_supervisor.py"
+  install(FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/tools/umaa_process_supervisor.py"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tools/umaa_operation_journal.py"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/umaa/tools")
 endif()
 

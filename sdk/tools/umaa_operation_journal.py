@@ -22,7 +22,7 @@ class OperationJournal:
     LIMIT = 65536
 
     def __init__(self, path):
-        self.path = Path(path).resolve(strict=False)
+        self.path = Path(path).absolute()
         if self.path.is_dir():
             raise JournalFault("journal path is a directory")
         self.entries = self._load()
@@ -133,7 +133,7 @@ class OperationJournal:
             raise JournalFault("explicit hardware reconciliation required")
         # Read and validate even when reconciliation is authorized.
         obj = cls.__new__(cls)
-        obj.path = Path(path).resolve(strict=False)
+        obj.path = Path(path).absolute()
         obj.entries = obj._load()
         obj.entries.clear()
         obj._save()

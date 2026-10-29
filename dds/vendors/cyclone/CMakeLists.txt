@@ -45,3 +45,15 @@ add_test(NAME umaa_command_backend_real_wire
  "$<TARGET_FILE:umaa_dds_cyclone_command_demo>"
  "$<TARGET_FILE:umaa_cyclone_vehicle_component>")
 set_tests_properties(umaa_command_backend_real_wire PROPERTIES TIMEOUT 45)
+
+# Independent remote Request -> Component -> Status/Ack -> Dispose test.
+add_executable(umaa_cyclone_command_request_cli "${SDK_ROOT}/tests/real_dds_command_request_cli.cpp")
+target_compile_features(umaa_cyclone_command_request_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_cyclone_command_request_cli PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_cyclone_command_request_cli PRIVATE UMAA::Runtime "${CMAKE_DL_LIBS}")
+add_test(NAME umaa_command_request_roundtrip_real_wire
+ COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_command_request.py"
+ "$<TARGET_FILE:umaa_cyclone_command_request_cli>"
+ "$<TARGET_FILE:umaa_dds_cyclone_command_demo>"
+ "$<TARGET_FILE:umaa_cyclone_vehicle_component>")
+set_tests_properties(umaa_command_request_roundtrip_real_wire PROPERTIES TIMEOUT 55)

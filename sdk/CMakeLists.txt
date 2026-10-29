@@ -184,3 +184,16 @@ if(UMAA_BUILD_TESTS)
   add_test(NAME umaa_runtime_v2_test COMMAND umaa_runtime_v2_test
     "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")
 endif()
+
+# Optional child-process Component isolation experiment. Device DLL/SO
+# loads ONLY inside the subprocess; supervisor never auto-replays Commands.
+if(UMAA_BUILD_TESTS AND UMAA_BUILD_MODULE_DEMO)
+  add_executable(umaa_component_ipc_worker tools/umaa_component_worker.cpp)
+  target_link_libraries(umaa_component_ipc_worker PRIVATE UMAA::Core ${CMAKE_DL_LIBS})
+  target_compile_definitions(umaa_component_ipc_worker PRIVATE UMAA_WORKER_TEST_FAULT_INJECTION)
+  add_test(NAME umaa_component_process_supervisor_test
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_process_supervisor.py"
+      "$<TARGET_FILE:umaa_component_ipc_worker>"
+      "$<TARGET_FILE:umaa_demo_vehicle_v2>")
+  set_tests_properties(umaa_component_process_supervisor_test PROPERTIES TIMEOUT 35)
+endif()

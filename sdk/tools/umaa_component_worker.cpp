@@ -54,6 +54,7 @@ std::uint64_t number(const std::string& text){
 }
 int main(int argc,char** argv){
  if(argc!=2)return 2;
+ std::cout.setf(std::ios::unitbuf); // IPC replies must not wait in stdio buffer.
  try{
   umaa::ComponentModule module(argv[1]);
   std::cout<<"READY\n"<<std::flush;

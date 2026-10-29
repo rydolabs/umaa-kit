@@ -76,9 +76,18 @@ ReportSubscription::~ReportSubscription()=default;
 int32_t ReportSubscription::poll(uint32_t n) {return state_->domain->poll(state_->reader,n);}
 bool ReportSubscription::latest(std::vector<uint8_t>& out,std::string& key) const {
   std::lock_guard<std::mutex> guard(state_->mutex);
-  const auto it=state_->instances.find(state_->last_key);
-  if(it==state_->instances.end() || !it->second.present)return false;
-  out=it->second.bytes;key=it->first;return true;
+  // The last EVENT may be a Dispose of one instance while others are alive.
+  // Select the newest still-present instance; tie-break consistently by key.
+  auto best=state_->instances.end();
+  for(auto it=state_->instances.begin();it!=state_->instances.end();++it){
+    if(!it->second.present)continue;
+    if(best==state_->instances.end() ||
+       it->second.timestamp>best->second.timestamp ||
+       (it->second.timestamp==best->second.timestamp && it->first<best->first))
+      best=it;
+  }
+  if(best==state_->instances.end())return false;
+  out=best->second.bytes;key=best->first;return true;
 }
 bool ReportSubscription::latest_for(const std::string& key,std::vector<uint8_t>& out) const {
   std::lock_guard<std::mutex> guard(state_->mutex);

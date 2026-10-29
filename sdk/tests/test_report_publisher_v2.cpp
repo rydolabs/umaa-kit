@@ -28,6 +28,9 @@ int main(int argc,char** argv) {
   assert(sub->disposed_for("17"));
   assert(!sub->latest_for("17",payload));
   assert(sub->latest_for("18",payload));
+  // A Dispose event for instance 17 must not hide still-live instance 18.
+  std::string latest_key;
+  assert(sub->latest(payload,latest_key) && latest_key=="18");
   assert(sub->keys().size()==1);
   bool refused=false;try{a->update();}catch(const std::logic_error&){refused=true;}
   assert(refused);b->close();

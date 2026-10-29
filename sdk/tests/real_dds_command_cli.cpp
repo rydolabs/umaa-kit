@@ -36,29 +36,39 @@ struct AsyncCommand {
                                           const Command& c){return encode_command(c);}
 };
 struct Receiver {
- umaa::RemoteCommandMonitor sessions;
+ umaa::RemoteCommandMonitor* sessions;
  int statuses{0},acks{0},disposed{0};
  bool bad{false};
  bool ack_topic{false};
- explicit Receiver(bool is_ack):ack_topic(is_ack) {
-   sessions.issue({"controller","vehicle","17",0});
- }
+ Receiver(bool is_ack,umaa::RemoteCommandMonitor& monitor)
+   :sessions(&monitor),ack_topic(is_ack) {}
+
  static void receive(void* context,const UmaaDdsSampleV1* sample){
    auto& self=*static_cast<Receiver*>(context);
    if(!sample||!sample->instance_key||std::string(sample->instance_key)!="17"){
      self.bad=true;return;
    }
    if(sample->event_kind==UMAA_DDS_EVENT_DISPOSE){
+     const bool accepted=self.ack_topic
+       ?self.sessions->disposed_ack("17","vehicle")
+       :self.sessions->disposed_status("17","vehicle");
+     if(!accepted)self.bad=true;
      ++self.disposed;return;
    }
    if(sample->event_kind!=UMAA_DDS_EVENT_DATA||!sample->payload||
       sample->payload_size!=sizeof(int32_t)){self.bad=true;return;}
    int32_t code=0;std::memcpy(&code,sample->payload,sizeof(code));
    if(self.ack_topic){
-     if(code!=1800)self.bad=true;
+     if(code!=1800 || !self.sessions->ack("17","vehicle",sample->source_timestamp_ns))
+       self.bad=true;
      ++self.acks;
    }else{
      if(code<0||code>3){self.bad=true;return;}
+     const umaa::State states[]={
+       umaa::State::ISSUED,umaa::State::COMMANDED,
+       umaa::State::EXECUTING,umaa::State::COMPLETED};
+     if(!self.sessions->status("17","vehicle",states[code],sample->source_timestamp_ns))
+       self.bad=true;
      ++self.statuses;
    }
  }
@@ -87,7 +97,9 @@ int main(int argc,char** argv){
    if(mode=="subscriber"){
      auto plugin=std::make_shared<umaa::DdsBackendPlugin>(argv[2]);
      auto domain=std::shared_ptr<umaa::DdsBackendPlugin::Domain>(plugin->open_domain(44).release());
-     Receiver status(false),ack(true);
+     umaa::RemoteCommandMonitor monitor;
+     monitor.issue({"controller","vehicle","17",0});
+     Receiver status(false,monitor),ack(true,monitor);
      const UmaaDdsTopicV1 st{AsyncCommand::status_topic,AsyncCommand::status_schema,
        AsyncCommand::qos_profile,UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
      const UmaaDdsTopicV1 ak{AsyncCommand::ack_topic,AsyncCommand::ack_schema,
@@ -99,7 +111,9 @@ int main(int argc,char** argv){
        std::this_thread::sleep_for(std::chrono::milliseconds(25));
      }
      bool success=!status.bad&&!ack.bad&&status.statuses==4&&ack.acks==1&&
-                  status.disposed==1&&ack.disposed==1;
+                  status.disposed==1&&ack.disposed==1&&
+                  monitor.result("17")==umaa::RemoteCommandResult::Completed &&
+                  monitor.release("17");
      std::this_thread::sleep_for(std::chrono::milliseconds(300));
      domain->close_reader(r1);domain->close_reader(r2);
      std::cout<<"SUBSCRIBER synthetic command statuses="<<status.statuses

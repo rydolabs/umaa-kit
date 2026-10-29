@@ -62,7 +62,7 @@ set_tests_properties(umaa_command_request_roundtrip_real_wire PROPERTIES TIMEOUT
 add_executable(umaa_cyclone_typed_command_client_cli "${SDK_ROOT}/tests/real_dds_typed_command_client_cli.cpp")
 target_compile_features(umaa_cyclone_typed_command_client_cli PRIVATE cxx_std_17)
 target_include_directories(umaa_cyclone_typed_command_client_cli PRIVATE "${SDK_ROOT}/include")
-target_link_libraries(umaa_cyclone_typed_command_client_cli PRIVATE UMAA::Core "${CMAKE_DL_LIBS}")
+target_link_libraries(umaa_cyclone_typed_command_client_cli PRIVATE UMAA::Runtime "${CMAKE_DL_LIBS}")
 add_test(NAME umaa_cyclone_typed_command_client_real_wire
  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_command_request.py"
  "$<TARGET_FILE:umaa_cyclone_command_request_cli>"

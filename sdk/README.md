@@ -261,3 +261,23 @@ one user Component `.so` for both vendor plugins. Real vendor traffic
 is tested, but the schema and QoS are explicitly synthetic. A complete
 official Command consumer, Request writer, reviewed UMAA TypeBindings,
 cancellation/update/recovery and production-grade DDS QoS remain open.
+
+### Remote typed Command usage (synthetic-only service binding)
+
+```cpp
+umaa::RemoteCommandClient<EngineControl> command(
+    "/path/to/umaa-dds-backend.so", 44, "controller", "vehicle");
+command.send(EngineControl::Command{1800}, "session-17");
+const auto status = command.wait_for("session-17", std::chrono::seconds(10));
+if (status == umaa::RemoteCommandResult::Completed)
+    command.finish("session-17", std::chrono::seconds(10));
+```
+
+The `EngineControl` above must be a reviewed or explicitly synthetic
+Service trait including Command/Status/Ack topic, schema, QoS, encode/decode
+and identity contracts. The sample binaries in `sdk/tests/` use
+`DemoCommandEvent.idl`, never official wire types. `wait_for()` never
+turns absent ACK into success, and `finish()` refuses nonterminal sessions.
+Writer delivery ambiguity permanently faults the client instead of replay.
+Full asynchronous cancel, update, recovery and official UMAA QoS semantics
+remain OPEN.

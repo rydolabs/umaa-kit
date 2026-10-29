@@ -213,3 +213,21 @@ client-issued Command Writer, validated status/ack IDL and QoS, correlation
 across update/cancel/recovery, full service registry TypeBindings, and
 mixed-vendor network interoperability. Do not upgrade the full
 CommandClient status beyond PARTIAL based on this fixture.
+
+## 2026-10-29 minimal remote typed Command client (synthetic)
+
+Added `RemoteCommandClient<Service>` with `send`, `poll`,
+`wait_for`, `result`, and `finish`. It opens the Command Writer and
+Status/Ack Readers inside the SDK, checks decoded Ack against the sent
+Command, correlates provider/session/timestamps, requires terminal Ack+Status
+before disposal, and waits for the two response disposals. Invalid
+samples, transport failures and ambiguous delivery fault the channel.
+
+The independent **real DDS** Cyclone and Fast DDS command fixtures test a
+remote client with no vendor DDS imports. A separate same-binary test swaps
+the vendor backend without recompiling the typed client or Component.
+
+**Scope and missing work:** synthetic IDL only; the original
+`Application::consume<Service>()` Command API is still local. Official
+service descriptor mapping, request update/cancel/recovery, mature process
+supervision, QoS and all-service conformance are not implemented or certified.

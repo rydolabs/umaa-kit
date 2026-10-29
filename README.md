@@ -315,3 +315,15 @@ against each vendor backend without rebuilding user code. This is a
 **synthetic Command example only**: it is not the full official UMAA
 Command topic/client/session implementation. See the
 [SDK implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md).
+
+### Typed remote Command client (synthetic real-DDS acceptance)
+
+`sdk/include/umaa/remote_command_client.hpp` exposes a typed
+`RemoteCommandClient<Service>` to send a Command and await a correlated
+Status+Ack without application DDS Reader/Writer code. The client explicitly
+disposes the initiating Command after terminal confirmation and waits for
+provider response cleanup. Independent-process Cyclone and Fast DDS tests
+exercise this flow using `DemoCommandEvent.idl`; the parity workflow uses
+the **same executable** and device Component against either vendor plugin.
+This is a non-normative demo contract only; the official UMAA TypeBinding
+and QoS acceptance gates remain unresolved.

@@ -185,6 +185,19 @@ if(UMAA_BUILD_TESTS)
     "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")
 endif()
 
+# Build a separate deployable Worker without fault injection. This is an
+# optional development process-isolation executable, not an authenticated
+# hardened production RPC. Tests build a second fault-injection-only binary.
+option(UMAA_BUILD_PROCESS_WORKER "Build and install isolated Component worker" ON)
+if(UMAA_BUILD_PROCESS_WORKER)
+  add_executable(umaa_component_worker tools/umaa_component_worker.cpp)
+  target_link_libraries(umaa_component_worker PRIVATE UMAA::Core ${CMAKE_DL_LIBS})
+  target_compile_features(umaa_component_worker PRIVATE cxx_std_17)
+  install(TARGETS umaa_component_worker RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/tools/umaa_process_supervisor.py"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/umaa/tools")
+endif()
+
 # Optional child-process Component isolation experiment. Device DLL/SO
 # loads ONLY inside the subprocess; supervisor never auto-replays Commands.
 if(UMAA_BUILD_TESTS AND UMAA_BUILD_MODULE_DEMO)

@@ -61,5 +61,23 @@ int main(){
  assert(revised.status("rev","vehicle",umaa::State::EXECUTING,9));
  assert(revised.status("rev","vehicle",umaa::State::COMPLETED,10));
  assert(revised.result("rev")==umaa::RemoteCommandResult::Completed);
+ // A peer disposing Status and Ack is not evidence that a device finished.
+ umaa::RemoteCommandMonitor lost;
+ lost.issue({"controller","vehicle","lost",1});
+ assert(lost.status("lost","vehicle",umaa::State::ISSUED,2));
+ assert(lost.disposed_status("lost","vehicle"));
+ assert(lost.disposed_ack("lost","vehicle"));
+ assert(!lost.release("lost"));
+ assert(lost.size()==1);
+ lost.ambiguous_delivery("lost");
+ assert(lost.release("lost")); // explicit fault quarantine
+ assert(lost.size()==0);
+ umaa::RemoteCommandMonitor incomplete;
+ incomplete.issue({"controller","vehicle","pending",1});
+ assert(incomplete.status("pending","vehicle",umaa::State::ISSUED,2));
+ assert(incomplete.ack("pending","vehicle",3));
+ assert(incomplete.disposed_status("pending","vehicle"));
+ assert(incomplete.disposed_ack("pending","vehicle"));
+ assert(!incomplete.release("pending")); // Ack is not terminal Status
  std::cout<<"PASS correlated ACK/status, ordering, unknown delivery, bounded sessions\n";
 }

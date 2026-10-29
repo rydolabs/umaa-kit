@@ -9,12 +9,13 @@ import queue
 import subprocess
 import threading
 from pathlib import Path
+from umaa_operation_journal import OperationJournal, JournalFault
 
 class WorkerFault(RuntimeError):
     pass
 
 class ComponentProcessSupervisor:
-    def __init__(self, worker: str, module: str, timeout: float = 5.0):
+    def __init__(self, worker: str, module: str, timeout: float = 5.0,\n                 journal_path=None):
         self.worker = str(Path(worker))
         self.module = str(Path(module))
         if timeout <= 0 or timeout > 30:
@@ -23,6 +24,8 @@ class ComponentProcessSupervisor:
         self._proc = None
         self._queue = None
         self._faulted = False
+        self._lock = threading.RLock()
+        self._journal = OperationJournal(journal_path) if journal_path is not None else None
         self._spawn()
 
     @property
@@ -33,7 +36,7 @@ class ComponentProcessSupervisor:
         self._queue = queue.Queue()
         self._proc = subprocess.Popen(
             [self.worker, self.module], stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
             text=True, bufsize=1)
         q, p = self._queue, self._proc
 
@@ -71,6 +74,10 @@ class ComponentProcessSupervisor:
         return item
 
     def _rpc(self, request):
+        with self._lock:
+            return self._rpc_locked(request)
+
+    def _rpc_locked(self, request):
         if self._faulted or self._proc is None:
             raise WorkerFault("worker quarantined")
         if len(request) > 1048576 or "\n" in request or "\r" in request:
@@ -100,14 +107,26 @@ class ComponentProcessSupervisor:
             raise ValueError("invalid action or session")
         if len(payload) > 262144:
             raise ValueError("payload too large")
-        reply = self._rpc(f"CALL\t{service}\t{action}\t{session}\t{payload.hex()}")
+        with self._lock:
+            if self._journal and action in (1, 2):
+                self._journal.begin(service, session, action)
+            reply = self._rpc_locked(f"CALL\t{service}\t{action}\t{session}\t{payload.hex()}")
+            return self._interpret_call(service, action, session, reply)
+
+    def _interpret_call(self, service, action, session, reply):
         parts = reply.split("\t")
         if len(parts) != 4 or parts[0] != "RESULT":
             self._faulted = True
             self._kill()
             raise WorkerFault("invalid worker response")
         try:
-            return int(parts[1]), int(parts[2]), bytes.fromhex(parts[3])
+            status, result, data = int(parts[1]), int(parts[2]), bytes.fromhex(parts[3])
+            if self._journal and status == 0:
+                if action == 1 and result != 2:
+                    self._journal.resolved(service, session, action=1)
+                elif action == 4 and result != 2:
+                    self._journal.resolved(service, session)
+            return status, result, data
         except (ValueError, OverflowError) as err:
             self._faulted = True
             self._kill()
@@ -127,6 +146,10 @@ class ComponentProcessSupervisor:
         self._proc = None
         return True
 
+    @staticmethod
+    def reconcile_journal(path, *, hardware_reconciled=False):
+        OperationJournal.reconcile(path, hardware_reconciled=hardware_reconciled)
+
     def restart(self, *, hardware_reconciled: bool = False):
         # Never restart a crashed module without operator/hardware policy.
         # In particular, never repeat the last Command.
@@ -134,8 +157,11 @@ class ComponentProcessSupervisor:
             raise WorkerFault("explicit hardware reconciliation required")
         if self._proc is not None and not self._faulted:
             raise WorkerFault("cannot restart a running worker")
-        self._kill()
-        self._spawn()
+        with self._lock:
+            self._kill()
+            if self._journal:
+                self._journal.resolved_all_after_reconciliation()
+            self._spawn()
 
     def test_crash(self):
         self._rpc("TEST_CRASH")

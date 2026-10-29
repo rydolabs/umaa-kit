@@ -281,3 +281,44 @@ turns absent ACK into success, and `finish()` refuses nonterminal sessions.
 Writer delivery ambiguity permanently faults the client instead of replay.
 Full asynchronous cancel, update, recovery and official UMAA QoS semantics
 remain OPEN.
+
+### Remote Command cancel/update (non-normative real DDS fixture)
+
+```cpp
+umaa::Application app;
+app.use_backend(backend_path, domain);
+auto cmd=app.consume_remote<EngineControl>("controller","vehicle");
+cmd.send({1500}, "17");
+// After cmd.ready_for_update("17"), cmd.update({1900},"17")
+// Or cmd.request_cancel("17", std::chrono::seconds(5))
+auto outcome=cmd.wait_for("17",std::chrono::seconds(10));
+if(outcome!=umaa::RemoteCommandResult::Pending)
+  cmd.finish("17",std::chrono::seconds(10));
+```
+
+A cancellation request never synthesizes `Canceled`: the Provider must
+confirm that the device actually stopped, and the remote client must receive
+a terminal Status and ACK. Update requires the previous Command's
+`EXECUTING` Status and ACK; unknown delivery faults the transport rather
+than replaying the Command. Actual Cyclone/Fast DDS synthetic tests run
+successfully on GitHub-hosted Runners. This does **not** cover official UMAA
+session keys, timeouts or normative QoS.
+
+### Optional Component process isolation (development)
+
+`tools/umaa_component_worker.cpp` isolates the loaded user DLL/SO in a
+child process. `tools/umaa_process_supervisor.py` limits IPC frames,
+detects process crash and unknown delivery, quarantines the worker, and
+requires explicit `restart(hardware_reconciled=True)`. A Pending Command
+blocks cooperative unload. Neither a crash nor an IPC timeout triggers
+automatic device-command replay. The line-framed IPC is not authenticated,
+not a production service supervisor, and offers no guarantee that physical
+hardware recovered after a crash.
+
+### LargeSet/LargeList partial completion
+
+`CollectionBatchBuilder<T>` composes bounded snapshots and updates;
+`CoherentCollectionReceiver<T>` commits only complete revisions. The
+final-keyed-Dispose empty collection case is handled, including resync after
+an unknown delivery. Native GROUP coherent/ordered DDS policies and
+official UMAA metadata/element TypeSupport remain OPEN.

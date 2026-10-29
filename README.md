@@ -327,3 +327,20 @@ exercise this flow using `DemoCommandEvent.idl`; the parity workflow uses
 the **same executable** and device Component against either vendor plugin.
 This is a non-normative demo contract only; the official UMAA TypeBinding
 and QoS acceptance gates remain unresolved.
+
+### SDK Command cancellation, revision and crash isolation development update
+
+The modular SDK includes a **typed remote Command** path with confirmed
+device cancel, status/ack correlation, and guarded in-flight Command update.
+[Real Cyclone DDS synthetic Command tests](https://github.com/rydolabs/umaa-kit/actions/runs/40872063613)
+and [Fast DDS synthetic Command tests](https://github.com/rydolabs/umaa-kit/actions/runs/40872063639)
+exercise the same `send → update/cancel → wait_for → finish` concepts in
+separate processes. Both use non-normative `DemoCommandEvent.idl`.
+
+An optional, explicitly supervised out-of-process Component Worker has also
+been added for crash fault containment and **no automatic Command replay**.
+The sender/receiver pair for LargeSet/LargeList now supports deterministic
+bounded collection batches, final-element Dispose and generation recovery.
+Neither the child-process experiment nor the collection transaction API
+is a formal UMAA 6.0 conformance result. See the
+[implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md).

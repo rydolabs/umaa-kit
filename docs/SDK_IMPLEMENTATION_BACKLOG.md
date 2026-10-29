@@ -231,3 +231,46 @@ the vendor backend without recompiling the typed client or Component.
 `Application::consume<Service>()` Command API is still local. Official
 service descriptor mapping, request update/cancel/recovery, mature process
 supervision, QoS and all-service conformance are not implemented or certified.
+
+## 2026-10-29 residual work implementation: cancel, update, isolation, collections
+
+**Real synthetic DDS Command cancellation / update:** added
+`RemoteCommandClient::request_cancel`, `acknowledged`, `ready_for_update`,
+and `update`. Cancellation requires a **real** device-stop outcome,
+terminal `CANCELED` Status and original Ack; no success is inferred
+from Command Dispose alone. A new Command revision is admitted only after
+the prior `EXECUTING` Status and ACK. The provider's handler receives
+session identity and confirms hardware cancellation before updating work.
+Each vendor's separate-process Command suite now covers completion,
+early cancellation and in-flight revision. Evidence:
+[Cyclone](https://github.com/rydolabs/umaa-kit/actions/runs/40872063613),
+[Fast DDS](https://github.com/rydolabs/umaa-kit/actions/runs/40872063639).
+This is synthetic IDL, **not official UMAA conformance**.
+
+**Module process isolation (optional development):**
+`umaa_component_ipc_worker` runs a C ABI v2 device module in a child
+process; `umaa_process_supervisor.py` validates bounded IPC replies,
+quarantines crashes/unknown outcomes, never replays a pending Command, and
+requires explicit hardware reconciliation before restart. Tests exercise
+ordinary calls, pending-session unload rejection, intentional child crash,
+and fresh instance startup. The worker IPC is not authenticated or hardened
+for hostile participants, and exact hardware state reconciliation is an
+**external operational requirement**. Not yet production-grade hot reload.
+
+**LargeCollection:** `CollectionBatchBuilder<T>` constructs bounded
+Set/List snapshots, keyed disposals, ordered revisions, and resync
+generations; `CoherentCollectionReceiver<T>` rejects incomplete
+revisions and sequence gaps. The core now commits an empty collection
+after the last keyed element's Dispose. This is an atomic **SDK-side
+transaction model**, not implementation of DDS GROUP coherent/ordered
+presentation or official LargeSet/LargeList wire metadata. That gate
+remains PARTIAL.
+
+**Remaining uncompromised gates:** official UMAA service-specific
+TypeSupport/Key/QoS and reviewed normative profile; real vendor-backed
+GROUP coherent/ordered DDS transactions and restart recovery; production
+process supervisor with authentication, request deduplication, persistent
+session reconciliation and crash isolation across all supported platforms;
+actual Cyclone↔Fast DDS mixed-network interop; RTI Connext licensed SDK
+and independent Runner; independent formal conformance oracle. These
+are not satisfied by synthetic or mock test passes.

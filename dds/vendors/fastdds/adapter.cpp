@@ -123,7 +123,7 @@ int32_t send(void* handle,const UmaaDdsSampleV1* sample,uint32_t kind){
  wire.level_percent(level);
  auto* writer=static_cast<Writer*>(handle)->writer;
  ReturnCode_t rc=ReturnCode_t::RETCODE_BAD_PARAMETER;
- if(kind==UMAA_DDS_EVENT_DATA)rc=writer->write(&wire);
+ if(kind==UMAA_DDS_EVENT_DATA)rc=writer->write(&wire,eprosima::fastdds::dds::HANDLE_NIL);
  else if(kind==UMAA_DDS_EVENT_DISPOSE)rc=writer->dispose(&wire,eprosima::fastdds::dds::HANDLE_NIL);
  else if(kind==UMAA_DDS_EVENT_UNREGISTER)rc=writer->unregister_instance(&wire,eprosima::fastdds::dds::HANDLE_NIL);
  if(rc!=ReturnCode_t::RETCODE_OK)std::fprintf(stderr,"Fast DDS sample event=%u key=%d status=%s\\n",kind,key,

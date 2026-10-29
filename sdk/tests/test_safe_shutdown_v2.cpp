@@ -40,7 +40,8 @@ int main(int argc,char** argv) {
   assert(!n.stop());
   assert(n.call("Demo::EO::AsyncEngineControl",UMAA_COMPONENT_CANCEL,
                 {},out,business,7402)==UMAA_COMPONENT_OK);
-  assert(business==3);
+  // Confirmed hardware cancellation is Completed, not an ambiguous Failed.
+  assert(business==0);
   assert(n.stop());
   std::cout<<"PASS device session drain, duplicate-replay fence, safe reload gate\n";
 }

@@ -11,6 +11,11 @@ class IsolatedWorkerTest(unittest.TestCase):
     worker = None
     module = None
 
+    @classmethod
+    def setUpClass(cls):
+        if cls.worker is None or cls.module is None:
+            raise unittest.SkipTest("standalone subprocess CTest supplies worker and DLL/SO")
+
     def make(self):
         return ComponentProcessSupervisor(self.worker, self.module, timeout=5)
 

@@ -295,3 +295,15 @@ but the current Facade does not provide a coherent transaction handshake or
 approved official UMAA collection TypeBinding. This is an actual remaining
 architecture and vendor-capability gate, not an issue that a mock test can
 close.
+
+## 2026-10-29 async Handle ownership acceptance
+
+Introduced `RemoteCommandHandle<Service>` and the one-step
+`Application::issue_remote<Service>()` path. A Handle retains an independent
+DDS Domain/Backend until explicitly finished, even after the creating
+`Application` is destroyed. It exposes Status/Ack-correlated polling,
+bounded waiting, guarded in-flight update, confirmed cancellation and
+checked final Dispose. A released Command is not re-issued implicitly.
+Both synthetic real DDS plugins and the identical-binary workflow run
+the new Handle-based client. **No full official UMAA type/QoS or
+production recovery/RTI claim** is made.

@@ -322,3 +322,24 @@ hardware recovered after a crash.
 final-keyed-Dispose empty collection case is handled, including resync after
 an unknown delivery. Native GROUP coherent/ordered DDS policies and
 official UMAA metadata/element TypeSupport remain OPEN.
+
+### Typed asynchronous remote CommandHandle
+
+```cpp
+umaa::Application app;
+app.use_backend(backend_path, 44);
+auto handle=app.issue_remote<EngineControl>(
+    EngineControl::Command{1500}, "17", "controller", "vehicle");
+if(handle.ready_for_update())handle.update(EngineControl::Command{1900});
+// Alternatively, handle.request_cancel(std::chrono::seconds(5))
+const auto result=handle.wait_for(std::chrono::seconds(10));
+if(result!=umaa::RemoteCommandResult::Pending)
+  handle.finish(std::chrono::seconds(10));
+```
+
+The SDK owns the DDS entities and the Handle retains the backend even if
+`Application` is destroyed. All terminal business outcomes remain subject
+to matching remote Status AND Ack; timeout returns Pending rather than
+falsifying completion. Cancellation, update and disposal cannot be
+automatically replayed after unknown delivery. Service-specific codecs,
+normative transport profile and state recovery are independent gates.

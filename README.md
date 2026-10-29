@@ -344,3 +344,14 @@ bounded collection batches, final-element Dispose and generation recovery.
 Neither the child-process experiment nor the collection transaction API
 is a formal UMAA 6.0 conformance result. See the
 [implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md).
+
+### Remote asynchronous CommandHandle (typed application entrypoint)
+
+Use `Application::issue_remote<Service>(command,session,source,destination)`
+to obtain a `RemoteCommandHandle<Service>` with SDK-owned DDS Reader/Writer
+lifetime. The handle supports `state()`, `poll()`, `wait_for()`,
+`request_cancel()`, `ready_for_update()`, `update()` and `finish()`.
+It remains usable after destruction of the configuration `Application`.
+Only explicit, non-normative synthetic service bindings are proven by the
+Cyclone/Fast DDS end-to-end tests; an official UMAA CommandHandle contract
+still requires service-specific IDL and QoS review.

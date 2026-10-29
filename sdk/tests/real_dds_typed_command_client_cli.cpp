@@ -45,9 +45,13 @@ int main(int argc,char** argv){
                  std::string(argv[1])!="client-cancel" &&
                  std::string(argv[1])!="client-update"))return 2;
   try{
-    umaa::Application app;
-    app.use_backend(argv[2],44);
-    auto cmd=app.issue_remote<AsyncEngine>({1800},"17","controller","vehicle");
+    // A typed CommandHandle must own its DDS channel independently of
+    // the short-lived Application configuration object that created it.
+    auto cmd=[&] {
+      umaa::Application app;
+      app.use_backend(argv[2],44);
+      return app.issue_remote<AsyncEngine>({1800},"17","controller","vehicle");
+    }();
     const bool cancel_mode=std::string(argv[1])=="client-cancel";
     const bool update_mode=std::string(argv[1])=="client-update";
     if(update_mode) {

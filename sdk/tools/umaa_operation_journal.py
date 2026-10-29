@@ -147,7 +147,9 @@ class OperationJournal:
         if type(session) is not int or type(action) is not int or not 0 < session < 2**64 or action not in (1, 2):
             raise ValueError("durable Command requires trackable nonzero session")
         entry = {"service": service, "session": session, "action": action}
-        if entry in self.entries:
+        if entry in self.entries or (action == 1 and any(
+                row["service"] == service and row["session"] == session
+                for row in self.entries)):
             raise JournalFault("unresolved operation; replay forbidden")
         if any(row["service"] == service and row["session"] == session
                for row in self.settled):

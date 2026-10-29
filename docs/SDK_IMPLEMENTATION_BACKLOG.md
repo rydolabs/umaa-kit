@@ -6,18 +6,18 @@ required acceptance gates, never a conformance certificate.
 | Capability | State | Evidence and unresolved gate |
 |---|---|---|
 | Simple typed Provider Component module | PASS (prototype) | C ABI v2 DLL/SO, module loader, Linux/Windows tests; official service runtime incomplete |
-| Typed Consumer/CommandHandle | PARTIAL | local session poll/cancel/wait; not actual UMAA on-wire Ack/Status |
+| Typed remote CommandHandle | PASS (synthetic real DDS); PARTIAL official | Host `issue_remote` completes/cancels/updates after actual Status+Ack; official UMAA TypeSupport/QoS remain unapproved |
 | Report Provider lifecycle | PASS (synthetic development scope) | persistent writer, multiple updates, dispose, acknowledgment, fault fencing; no official all-service policy |
 | Per-key Report cache | PASS (mock development scope) | independent keys, per-key timestamp and tombstone; vendor lifecycle proof separately required |
-| Cyclone DDS backend facade | PARTIAL | synthetic BatteryStatus real-wire; official services remain legacy DDS hosts |
-| Fast DDS backend facade | PASS (synthetic Report only) | Ubuntu Fast DDS 2.11 independent-process [wire run 40810503339](https://github.com/rydolabs/umaa-kit/actions/runs/40810503339) SUCCESS; official UMAA mappings not complete |
-| Identical client and module binaries across vendors | PASS (synthetic Report only) | [parity run 40810503302](https://github.com/rydolabs/umaa-kit/actions/runs/40810503302) SUCCESS: same Consumer executable + same device .so, separate Cyclone/Fast DDS backends |
-| LargeSet / LargeList | PARTIAL | CollectionAssembler core only; group coherent/ordered DDS plus recovery not verified |
+| Cyclone DDS backend facade | PASS (synthetic Command, Report, Collection) | Independent-process real DDS tests; official type coverage incomplete |
+| Fast DDS backend facade | PASS (synthetic Command, Report, Collection) | Real Fast DDS 2.x wire tests; GROUP Presentation not implemented/verified |
+| Identical binaries across vendors | PASS (synthetic) | Command provider/client and Collection Set/List same binaries on Cyclone or Fast DDS; not mixed network |
+| LargeSet / LargeList | PASS (single-sample development fallback); BLOCKED native GROUP | Bounded frame codec, Set/List snapshot/revision/Dispose, explicit recovery, both vendors real wire; native multi-writer coherent/ordered absent |
 | Official UMAA 6.0 TypeBindings | BLOCKED ON CONTRACT REVIEW | source IDLs compiled previously; no approved all-service roles, keys and QoS |
-| Cross-vendor mixed-network operation | NOT PROVEN | same-binary parity is not Cyclone-to-Fast DDS mixed-network interoperability |
+| Cross-vendor mixed-network operation | FAIL (strict) | [Mixed Collection test 40885883191](https://github.com/rydolabs/umaa-kit/actions/runs/40885883191): Fast writer ACK unconfirmed and Fast reader cannot recover foreign Dispose key |
 | RTI Connext backend | BLOCKED | licensed SDK, runner, TypeSupport and policy verification required |
-| Safe module stop/reload | PARTIAL | in-process ABI checks and failed-stop mapping retention; pending-session draining and crash isolation still absent |
-| Linux/Windows regressions | PASS [Actions run 40810503199](https://github.com/rydolabs/umaa-kit/actions/runs/40810503199) | GCC/Clang/MSVC success on `afa5b269`; final docs-only commit recheck required |
+| Safe module stop/reload | PASS development isolation; PARTIAL production | Cooperatively drain in-flight calls; isolated worker/supervisor with crash quarantine, explicit restart and no automatic command replay; secure durable supervision open |
+| Linux/Windows regressions | PASS in prior validated head; recheck final commit | CMake CTest and Python on Linux GCC/Clang/Windows MSVC; final CI must pass |
 | Formal UMAA compliance | BLOCKED | reviewer-approved profile, normative SHALL traceability, independent oracle and acceptance |
 
 ## Source of truth for extension
@@ -307,3 +307,36 @@ checked final Dispose. A released Command is not re-issued implicitly.
 Both synthetic real DDS plugins and the identical-binary workflow run
 the new Handle-based client. **No full official UMAA type/QoS or
 production recovery/RTI claim** is made.
+
+## Final continuation scope: real typed Host, single-sample Collection, package
+
+- `DdsCommandRequestServer<Service>` owns DDS Request Reader and business
+  Command FSM, publishes correlated real Status/Ack and safely retires
+  instances. `Application::start_remote<Service>()` runs the provider
+  automatically on a joined thread, while `issue_remote<Service>()`
+  returns the lifetime-safe async Client Handle. Cyclone and Fast DDS
+  independent-process completion, early cancel and in-flight update pass.
+- `CollectionFrameCodec<Service>` validates a 64-KiB, versioned, bounded
+  whole-revision Set/List envelope (rejecting wrong kind, malformed length,
+  stale sequence and unknown generation). `DdsCollectionPublisher` and
+  `DdsCollectionConsumer` expose explicit generation recovery. The vendor
+  plugins map an IDL `sequence<octet,65536>` and keyed Dispose through
+  genuine DDS; same-binary swapping for both vendors PASS.
+- The process worker has a separately installable **release** target without
+  its test-only crash injection. The Python Supervisor remains a development
+  IPC implementation requiring explicit physical reconciliation for restarts.
+
+**Strict mixed network FAIL:** [40885883191](https://github.com/rydolabs/umaa-kit/actions/runs/40885883191).
+Fast DDS publisher samples and Dispose reach Cyclone, but final reliable
+Writer ACK remains unconfirmed. Cyclone publisher to Fast DDS subscriber
+fails because Fast DDS 2.x does not supply a trustworthy instance key on
+the foreign Dispose sample (reader InstanceHandle does not match the
+stored data handle). DO NOT substitute a guessed key or claim parity. A
+supported DDS version with verified `get_key_value`, XTypes compatibility,
+and a strict two-way ACK+Dispose test is required.
+
+**Official UMAA 6.0 remains BLOCKED:** full reviewed topic TypeSupport,
+Component Definition roles, Key identity rules, QoS GROUP Presentation,
+normative state-table traceability and independent conformance oracle
+are not approved. RTI Connext additionally needs a licensed SDK and Runner.
+No tests in this section prove official conformance.

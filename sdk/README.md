@@ -2,6 +2,59 @@
 
 **Status:** Verifiable core slice, not full UMAA 6.0 compliance.
 
+## Current minimum typed application API (scoped synthetic DDS)
+
+Device DLL/SO business code registers
+`component.provide<Service>(command_handler)` or
+`component.provide<Service>(report_source)` and exports
+`UMAA_EXPORT_COMPONENT_V2(...)`. DDS adapters, Reader/Writer,
+CommandStatus/Ack and device session transitions belong to the host SDK.
+
+```cpp
+// Host process: provider owns incoming DDS Requests + FSM + response writers
+umaa::Application host;
+host.load_component("device-component.so");
+host.use_backend("umaa-dds-backend.so", 44);
+auto server=host.start_remote<EngineControl>(
+    "controller", "vehicle", std::chrono::milliseconds(180));
+// server->stop_background(); before final cleanup.
+
+// Independent consumer: Client and session lifetime owned by one Handle.
+umaa::Application app;
+app.use_backend("umaa-dds-backend.so", 44);
+auto cmd=app.issue_remote<EngineControl>(
+    EngineControl::Command{1800}, "17", "controller", "vehicle");
+auto outcome=cmd.wait_for(std::chrono::seconds(10));
+if(outcome!=umaa::RemoteCommandResult::Pending)
+    cmd.finish(std::chrono::seconds(10));
+```
+
+The `EngineControl` example requires an explicit reviewed or test-only
+Service trait (Command/Status/Ack topic names, schemas, keys and codecs).
+The current concrete real-DDS fixture uses **synthetic IDL**, not a
+verified official UMAA Command wire contract.
+
+```cpp
+auto publisher=app.publish_collection<CollectionService>("17");
+publisher->snapshot(1, collection_elements);
+publisher->revise(changes);    // one entire validated DDS sample per revision
+publisher->finish();
+
+auto consumer=app.consume_collection<CollectionService>("17");
+consumer->expect_snapshot(1);
+consumer->poll();              // validated whole-sample transaction only
+auto latest=consumer->snapshot();
+```
+
+An atomic sample is **not equivalent to DDS GROUP Coherent/Ordered QoS**
+across multiple Writer topics. The verifier rejects unknown schema/QoS or
+unsupported mandatory `COHERENT_GROUP`/`ORDERED_ACCESS`.
+The optional `umaa_component_worker` executable is installable with
+`-DUMAA_BUILD_PROCESS_WORKER=ON`; Python
+`tools/umaa_process_supervisor.py` provides bounded development IPC and
+requires explicit hardware reconciliation before crash restart. It is NOT
+secured production IPC.
+
 ## Public workflow
 
 From the repository root:

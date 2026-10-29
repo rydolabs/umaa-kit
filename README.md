@@ -8,6 +8,31 @@ repository. See [release gates](docs/DELIVERY_GATES.md), [the SDK quick start](d
 and the [open implementation roadmap](https://github.com/rydolabs/umaa-kit/issues/2).
 
 
+## Current modular SDK development gates — 2026-10-29
+
+**Verified synthetic real DDS:** a user Component DLL/SO implements only
+`provide<Service>(handler)`. `Application::start_remote<Service>()`
+automatically polls incoming Command requests and drives the SDK-owned
+Status/Ack FSM on a background worker. `Application::issue_remote<Service>()`
+returns a typed `RemoteCommandHandle` with completion, cancellation and
+guarded update. The typed `publish_collection/consume_collection` paths
+transfer a **whole bounded Set/List revision in one reliable DDS sample**,
+validating generation, sequence, disposal and resync. Both Cyclone DDS and
+Fast DDS vendor plugins have real-wire, independent-process tests; the
+same physical client, provider and device modules run on either vendor.
+
+**Not complete:** the Collection frame is an application-level atomic
+fallback, **not** DDS native GROUP Coherent/Ordered Presentation. Reviewed
+official UMAA 6.0 TypeSupport plus role/key/QoS contract remains a separate
+approval gate. Mixed Cyclone/Fast network interoperation failed strict
+ACK/Dispose checks on actual GitHub-hosted Runners, and RTI Connext requires
+a licensed SDK. Optional process isolation is a development IPC tool,
+not production-grade durable hardware recovery.
+
+See [current implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md),
+[mixed-network failures](docs/SDK_DDS_MIXED_NETWORK_LIMITS.md) and
+[how to implement another backend](dds/vendors/ADDING_A_BACKEND.md).
+
 ## Modular SDK architecture (MVP, 2026-10-29)
 
 **Design rule:** applications only register UMAA service handlers. DDS Reader/Writer,

@@ -12,7 +12,7 @@ int main(int argc,char** argv){
  if(argc!=2)return 2;
  umaa::ComponentModule m(argv[1]);
  assert(m.name()=="vehicle-component");
- assert(m.services().size()==2);
+ assert(m.services().size()==3);
  assert(m.services()[0].schema=="demo:engine-v1");
  assert(m.services()[1].schema=="demo:battery-v1");
  int32_t rpm=1500, business=-1;

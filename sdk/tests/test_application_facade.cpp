@@ -17,6 +17,9 @@ struct EngineControl {
     std::memcpy(p.data(),&c.target_rpm,p.size());return p;
   }
 };
+struct AsyncEngineControl : EngineControl {
+  static constexpr const char* id="Demo::EO::AsyncEngineControl";
+};
 struct BatteryStatus {
   static constexpr bool is_command=false;
   static constexpr const char* id="Demo::EO::BatteryStatus";
@@ -33,6 +36,19 @@ int main(int argc,char** argv) {
   auto engine=app.consume<demo::EngineControl>();
   assert(engine.send({1500}).wait()==umaa::Result::Completed);
   assert(engine.send({-1}).wait()==umaa::Result::Rejected);
+  auto async_client=app.consume<demo::AsyncEngineControl>();
+  auto pending=async_client.send({1500});
+  assert(pending.session_id()!=0 && pending.state()==umaa::Result::Pending);
+  bool refused=false;
+  try{(void)pending.wait();}catch(const std::logic_error&){refused=true;}
+  assert(refused);
+  assert(pending.poll()==umaa::Result::Pending);
+  assert(pending.wait_for(std::chrono::milliseconds(200))==umaa::Result::Completed);
+  assert(pending.wait()==umaa::Result::Completed);
+  auto cancelled=async_client.send({1500});
+  assert(cancelled.cancel()==umaa::Result::Failed);
+  assert(cancelled.terminal());
+  assert(async_client.send({-1}).state()==umaa::Result::Rejected);
   assert(app.consume<demo::BatteryStatus>().read_local().level_pct==80);
   std::cout<<"PASS typed host-local consumer/command handle; no DDS wire claim\n";
 }

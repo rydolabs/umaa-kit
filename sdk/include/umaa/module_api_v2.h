@@ -25,6 +25,7 @@ extern "C" {
 #define UMAA_COMPONENT_COMMAND 1u
 #define UMAA_COMPONENT_CANCEL  2u
 #define UMAA_COMPONENT_REPORT  3u
+#define UMAA_COMPONENT_COMMAND_POLL 4u /* host-local session query; not DDS Ack/Status */
 #define UMAA_COMPONENT_OK 0
 #define UMAA_COMPONENT_REJECTED 1
 #define UMAA_COMPONENT_NOT_FOUND -1
@@ -36,7 +37,7 @@ extern "C" {
 typedef struct UmaaComponentServiceV2 {
   const char* service_id;
   const char* schema_id;
-  uint32_t kinds; /* bitmask: 1=COMMAND, 2=CANCEL, 4=REPORT */
+  uint32_t kinds; /* bitmask: 1=COMMAND, 2=CANCEL, 4=REPORT; poll requires COMMAND */
   uint32_t reserved;
 } UmaaComponentServiceV2;
 

@@ -14,7 +14,7 @@ int main(int argc,char** argv){
   umaa::internal::ComponentRuntime runtime;
   runtime.load_component(argv[1]);
   runtime.load_backend(argv[2],42);
-  assert(runtime.services().size()==2);
+  assert(runtime.services().size()==3);
   bool refused=false;
   try{runtime.load_component(argv[1]);}catch(const std::runtime_error&){refused=true;}
   assert(refused);

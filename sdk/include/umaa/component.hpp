@@ -26,6 +26,10 @@ template<class Service> struct CommandHandler {
   virtual ~CommandHandler() = default;
   virtual Result execute(const typename Service::Command& command) = 0;
   virtual Result cancel() { return Result::Rejected; }
+  virtual Result execute_session(const typename Service::Command& c,uint64_t) {return execute(c);}
+  virtual Result cancel_session(uint64_t) {return cancel();}
+  // Device reports pending completion, default NEVER creates success.
+  virtual Result poll_session(uint64_t) {return Result::Pending;}
 };
 template<class Service> struct ReportSource {
   virtual ~ReportSource() = default;
@@ -48,9 +52,11 @@ public:
             typename Service::Command c{};
             if (!Service::decode_command(call.payload, call.payload_size, c))
               return UMAA_COMPONENT_INVALID;
-            result = h.execute(c);
+            result = h.execute_session(c,call.session_id);
           } else if (call.action == UMAA_COMPONENT_CANCEL) {
-            result = h.cancel();
+            result = h.cancel_session(call.session_id);
+          } else if(call.action==UMAA_COMPONENT_COMMAND_POLL && call.session_id!=0) {
+            result=h.poll_session(call.session_id);
           } else return UMAA_COMPONENT_INVALID;
           out.size = 0;
           out.business_result = static_cast<int32_t>(result);
@@ -86,8 +92,9 @@ public:
     if (!active_ || !call || !out || !call->service_id ||
         (call->payload_size && !call->payload)) return UMAA_COMPONENT_NOT_ACTIVE;
     for (auto& r : registered_) {
-      if (r.service == call->service_id && call->action >= 1 && call->action <= 3 &&
-          (r.kinds & (1u << (call->action - 1))))
+      if (r.service == call->service_id && ((call->action >= 1 && call->action <= 3 &&
+           (r.kinds & (1u << (call->action - 1)))) ||
+           (call->action==UMAA_COMPONENT_COMMAND_POLL && (r.kinds & 1u))))
         return r.invoke(*call, *out);
     }
     return UMAA_COMPONENT_NOT_FOUND;

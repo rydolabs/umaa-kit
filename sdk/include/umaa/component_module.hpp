@@ -65,7 +65,9 @@ public:
     if (payload.size() > UINT32_MAX) throw std::runtime_error("oversized component payload");
     bool authorized = false;
     for (const auto& s : services_)
-      if (s.service == service && action >= 1 && action <= 3 && (s.actions & (1u << (action - 1))))
+      if (s.service == service &&
+          ((action >= 1 && action <= 3 && (s.actions & (1u << (action - 1)))) ||
+           (action == UMAA_COMPONENT_COMMAND_POLL && (s.actions & 1u))))
         authorized = true;
     if (!authorized) return UMAA_COMPONENT_NOT_FOUND;
     UmaaComponentCallV2 request{service.c_str(), action, 0,

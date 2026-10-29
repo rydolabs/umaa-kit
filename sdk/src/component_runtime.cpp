@@ -287,6 +287,10 @@ void ReportPublisher::close(){
     state_->is_faulted=true;throw std::runtime_error("report delivery ack timeout");
   }
   state_->domain->close_writer(state_->writer);state_->writer=nullptr;
+  // A successfully closed publisher no longer owns the device component.
+  // This lets the host unload/reload a quiesced module even if the closed
+  // publisher wrapper remains in the application scope.
+  state_->module.reset();
 }
 void ReportPublisher::start_periodic(std::chrono::milliseconds interval){
   if(interval.count()<=0 || interval>std::chrono::hours(24))

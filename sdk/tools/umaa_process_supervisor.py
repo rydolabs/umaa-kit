@@ -108,13 +108,25 @@ class ComponentProcessSupervisor:
 
     def call(self, service: str, action: int, payload: bytes = b"",
              session: int = 0):
-        if not service or any(c in service for c in "\n\r\t"):
+        if (not isinstance(service, str) or not service or len(service) > 256
+                or any(c in service for c in "\n\r\t")):
             raise ValueError("invalid service")
-        if not 1 <= action <= 4 or not 0 <= session < 2**64:
+        if (type(action) is not int or type(session) is not int
+                or not 1 <= action <= 4 or not 0 <= session < 2**64):
             raise ValueError("invalid action or session")
         if len(payload) > 262144:
             raise ValueError("payload too large")
         with self._lock:
+            # Never add a durable intent when no worker can receive it.
+            # Previously a call after a crash could append an unresolved
+            # operation even though the worker was already quarantined.
+            # Check this under the same lock as journal admission and IPC.
+            if self._faulted or self._proc is None:
+                raise WorkerFault("worker quarantined; no operation sent")
+            if self._proc.poll() is not None:
+                self._faulted = True
+                self._kill()
+                raise WorkerFault("worker exited; no operation sent")
             if self._journal and action in (1, 2):
                 try:
                     self._journal.begin(service, session, action)

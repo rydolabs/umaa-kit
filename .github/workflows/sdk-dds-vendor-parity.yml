@@ -23,8 +23,8 @@ jobs:
       - name: Execute identical client and identical device module against both backends
         run: |
           set -euo pipefail
-          cli="$PWD/build/parity-cyclone/umaa_dds_plugin_wire_client"
-          module="$PWD/build/parity-cyclone/libumaa_dds_plugin_vehicle_demo.so"
+          cli="$PWD/build/parity-cyclone/umaa_cyclone_backend_cli"
+          module="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
           cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_demo.so"
           fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_demo.so"
           test -f "$cli" && test -f "$module" && test -f "$cyclone" && test -f "$fastdds"

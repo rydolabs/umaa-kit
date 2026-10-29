@@ -3,6 +3,7 @@
 #endif
 #include "umaa/component_command_provider.hpp"
 #include "umaa/dds_command_event_transport.hpp"
+#include "umaa/remote_command_monitor.hpp"
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -33,8 +34,10 @@ struct S {
 };
 struct Capture{
  std::vector<std::string> values;
+ std::vector<std::int64_t> times;
  static void receive(void* ctx,const UmaaDdsSampleV1* sample) {
    auto* self=static_cast<Capture*>(ctx);
+   self->times.push_back(sample->source_timestamp_ns);
    if(sample->event_kind==UMAA_DDS_EVENT_DISPOSE)
      self->values.push_back(std::string("dispose:")+sample->instance_key);
    else self->values.emplace_back(reinterpret_cast<const char*>(sample->payload),
@@ -67,6 +70,19 @@ int main(int argc,char** argv){
    assert(statuses.values.size()==5 && acks.values.size()==2);
    assert(statuses.values[0]=="ISSUED" && statuses.values[3]=="COMPLETED");
    assert(statuses.values[4]=="dispose:s1" && acks.values[1]=="dispose:s1");
+   // Independent receiving client: Status alone must not fabricate success.
+   umaa::RemoteCommandMonitor client;
+   client.issue({"controller","vehicle","s1",1});
+   assert(client.status("s1","vehicle",umaa::State::ISSUED,statuses.times[0]));
+   assert(client.status("s1","vehicle",umaa::State::COMMANDED,statuses.times[1]));
+   assert(client.status("s1","vehicle",umaa::State::EXECUTING,statuses.times[2]));
+   assert(client.status("s1","vehicle",umaa::State::COMPLETED,statuses.times[3]));
+   assert(client.result("s1")==umaa::RemoteCommandResult::Pending);
+   assert(client.ack("s1","vehicle",acks.times[0]));
+   assert(client.result("s1")==umaa::RemoteCommandResult::Completed);
+   assert(client.disposed_status("s1","vehicle"));
+   assert(client.disposed_ack("s1","vehicle"));
+   assert(client.release("s1"));
  }
  domain->close_reader(status_reader);
  domain->close_reader(ack_reader);

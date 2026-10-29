@@ -1,0 +1,37 @@
+name: SDK same binary / Cyclone and Fast DDS parity (synthetic)
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  vendor-parity-synthetic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install both genuine DDS libraries and IDL compilers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
+      - name: Build one device module and both adapters
+        run: |
+          cmake -S dds/vendors/cyclone -B build/parity-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/parity-cyclone --parallel 2
+          cmake -S dds/vendors/fastdds -B build/parity-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/parity-fastdds --parallel 2
+      - name: Execute identical client and identical device module against both backends
+        run: |
+          set -euo pipefail
+          cli="$PWD/build/parity-cyclone/umaa_dds_plugin_wire_client"
+          module="$PWD/build/parity-cyclone/libumaa_dds_plugin_vehicle_demo.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_demo.so"
+          test -f "$cli" && test -f "$module" && test -f "$cyclone" && test -f "$fastdds"
+          python3 sdk/tests/run_real_dds_backend.py "$cli" "$cyclone" "$module"
+          python3 sdk/tests/run_real_dds_backend.py "$cli" "$fastdds" "$module"
+          sha256sum "$cli" "$module"
+      - name: Evidence
+        if: always()
+        run: find build/parity-* \( -name CTestTestfile.cmake -o -name '*.so' \) | sort
+# Genuine DDS middleware; synthetic IDL only, NOT official UMAA conformance.

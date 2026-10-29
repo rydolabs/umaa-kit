@@ -304,3 +304,14 @@ recovery policy and real Cyclone/Fast DDS Command wire tests remain open.
 The new `CoherentCollectionReceiver` similarly provides atomic, bounded
 revision processing but still requires vendor Coherent/Ordered DDS bindings.
 See [the implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md).
+
+### Real DDS Command transport development slice (synthetic)
+
+Separate Cyclone DDS and Fast DDS `UmaaDdsBackendV1` plugins now publish
+typed synthetic Command Status and Ack, with independent-process readers
+verifying the ordered 4 Status events, 1 Ack and 2 keyed Dispose events.
+The same command client executable and Component module binary are tested
+against each vendor backend without rebuilding user code. This is a
+**synthetic Command example only**: it is not the full official UMAA
+Command topic/client/session implementation. See the
+[SDK implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md).

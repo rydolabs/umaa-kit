@@ -194,3 +194,22 @@ Fast DDS CommandStatus/Ack session tests pass. The new tests are *host-local*
 and *mock-transport* evidence, not official UMAA protocol conformance.
 `CoherentCollectionReceiver` does not substitute for actual vendor
 GROUP-coherent and ordered access.
+
+## 2026-10-29 genuine DDS synthetic Command vertical slice
+
+The new `dds/cyclone/idl/DemoCommandEvent.idl` fixture and two **separate**
+Command backend plugins (Cyclone DDS and Fast DDS) connect the common
+Component business handler through `CommandEngine` and the DDS Backend
+Facade. Independent-process subscriber verification requires exactly four
+ordered Status data samples (ISSUED, COMMANDED, EXECUTING, COMPLETED), one
+ACK data sample and keyed Dispose of both response topics. The client-side
+`RemoteCommandMonitor` correlates actual source timestamps and ACK/Status
+to the initiating session. The same command executable + device Component
+module are also exercised against both DDS vendors with only the backend
+library swapped. No official UMAA conformance is claimed.
+
+**Still incomplete:** incoming official UMAA DDS Command Reader and
+client-issued Command Writer, validated status/ack IDL and QoS, correlation
+across update/cancel/recovery, full service registry TypeBindings, and
+mixed-vendor network interoperability. Do not upgrade the full
+CommandClient status beyond PARTIAL based on this fixture.

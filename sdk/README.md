@@ -247,3 +247,17 @@ implement the Command, Status and Ack topics to clear that acceptance gate.
 
 `ReportSubscription::latest()` now returns the newest *live* instance
 instead of becoming empty whenever an unrelated key was disposed.
+
+### Synthetic Command real-wire proof
+
+The `dds/vendors/{cyclone,fastdds}/command_adapter.cpp` plugins implement
+`demo:async-status-v1` and `demo:async-ack-v1` using the distinct
+`DemoCommandEvent.idl` fixture. The host uses
+`ComponentCommandProvider<Service>` and `DdsCommandEventTransport<Service>`;
+an independent remote client correlates Status and Ack to session `17`,
+checks keyed Dispose, and refuses fabricated terminal success. The
+`sdk-dds-vendor-parity.yml` command leg reuses one client executable and
+one user Component `.so` for both vendor plugins. Real vendor traffic
+is tested, but the schema and QoS are explicitly synthetic. A complete
+official Command consumer, Request writer, reviewed UMAA TypeBindings,
+cancellation/update/recovery and production-grade DDS QoS remain open.

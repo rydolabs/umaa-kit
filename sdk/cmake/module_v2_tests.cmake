@@ -11,3 +11,7 @@ add_executable(umaa_dds_backend_abi_test tests/test_dds_backend_abi.cpp)
 target_link_libraries(umaa_dds_backend_abi_test PRIVATE UMAA::Core ${CMAKE_DL_LIBS})
 add_test(NAME umaa_dds_backend_abi_test COMMAND umaa_dds_backend_abi_test
   "$<TARGET_FILE:umaa_mock_dds_backend>")
+add_executable(umaa_application_facade_test tests/test_application_facade.cpp)
+target_link_libraries(umaa_application_facade_test PRIVATE UMAA::Runtime)
+add_test(NAME umaa_application_facade_test COMMAND umaa_application_facade_test
+  "$<TARGET_FILE:umaa_demo_vehicle_v2>")

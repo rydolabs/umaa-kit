@@ -200,3 +200,13 @@ generator with deterministic regeneration checks and an optional Cyclone
 `idlc` syntax gate. It does **not** rewrite or supersede the official UMAA IDL.
 See [Studio scope and commands](studio/README.md) and
 [V5 acceptance scope](docs/UMAA_ROADMAP_STATUS_V5.md).
+
+
+## SDK module facade phase 2 — typed local consumer
+
+The experimental `umaa::Application` in `sdk/include/umaa/application.hpp` adds a
+small `consume<Service>()` API over an ABI-v2 device component for **host-local**
+calls. `CommandHandle::wait()` refuses a Pending result until an actual
+UMAA ACK/Status tracking implementation is attached. `read_local()` is not
+DDS subscription; see [scope and remaining gates](docs/SDK_FACADE_PHASE2.md).
+All official UMAA vendor, QoS, runtime and conformance gates remain open.

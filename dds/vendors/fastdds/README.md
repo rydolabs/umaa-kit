@@ -1,15 +1,13 @@
-# Fast DDS vendor adapter — NOT YET IMPLEMENTED
+# Fast DDS plugin (synthetic BatteryStatus)
 
-Implement the single vendor contract
-`sdk/include/umaa/internal/dds_backend.h` inside this directory.
-Keep all eProsima headers, Fast DDS library calls, generated `fastddsgen`
-TypeSupport and QoS mapping inside `dds/vendors/fastdds/`.
+This plugin implements the same native DDS backend facade contract as Cyclone DDS
+(`sdk/include/umaa/internal/dds_backend.h`). The *same* user module and
+`Application::consume<BatteryStatus>()` can be used without Fast DDS includes.
 
-Acceptance requires official reviewed type/key/topic/QoS contracts, compile/link
-with a pinned supported Fast DDS version, real typed data and Dispose tests,
-UNKNOWN_DELIVERY handling, discovery/reliability, source time and mandatory
-coherent/ordered Presentation capability checks. A missing capability or
-unreviewed type must fail closed. Pass the same independently executed
-publisher/subscriber contract tests as Cyclone with the unchanged user module.
+Requires `libfastrtps-dev`, `libfastcdr-dev`, `fastddsgen`.
+Build with `cmake -S dds/vendors/fastdds -B build/fastdds`.
 
-**Status: OPEN — no implementation or real-wire Fast DDS evidence yet.**
+Only the synthetic `demo:battery-v1` binding and `demo-reliable` QoS profile
+are supported. Unknown official UMAA types and unimplemented required QoS
+are rejected. Formal UMAA compatibility, Command/Ack/Status, collections,
+RTI and actual DDS interoperability are not claimed.

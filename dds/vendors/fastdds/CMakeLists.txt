@@ -1,0 +1,37 @@
+cmake_minimum_required(VERSION 3.20)
+project(UMAAFastDDSPluginSynthetic LANGUAGES CXX)
+include(CTest)
+find_package(fastrtps CONFIG REQUIRED)
+find_package(fastcdr CONFIG REQUIRED)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_program(FASTDDSGEN fastddsgen REQUIRED)
+set(SDK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../sdk")
+set(TYPE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(MAKE_DIRECTORY "${TYPE_ROOT}")
+execute_process(COMMAND "${FASTDDSGEN}" -replace -d "${TYPE_ROOT}"
+  "${CMAKE_CURRENT_LIST_DIR}/../../cyclone/idl/DemoBattery.idl"
+  RESULT_VARIABLE GEN_RESULT OUTPUT_VARIABLE GEN_OUT ERROR_VARIABLE GEN_ERR)
+if(NOT GEN_RESULT EQUAL 0)
+  message(FATAL_ERROR "fastddsgen failed: ${GEN_ERR} ${GEN_OUT}")
+endif()
+file(GLOB TYPE_SOURCES CONFIGURE_DEPENDS "${TYPE_ROOT}/*.cxx")
+if(NOT TYPE_SOURCES)
+  message(FATAL_ERROR "fastddsgen generated no C++ sources")
+endif()
+add_library(umaa_dds_fastdds_demo MODULE adapter.cpp ${TYPE_SOURCES})
+target_compile_features(umaa_dds_fastdds_demo PRIVATE cxx_std_17)
+target_include_directories(umaa_dds_fastdds_demo PRIVATE "${SDK_ROOT}/include" "${TYPE_ROOT}")
+target_link_libraries(umaa_dds_fastdds_demo PRIVATE fastrtps fastcdr)
+set(UMAA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+add_subdirectory("${SDK_ROOT}" sdk-runtime)
+add_library(umaa_fastdds_vehicle_demo MODULE "${SDK_ROOT}/examples/modules/vehicle_component.cpp")
+target_include_directories(umaa_fastdds_vehicle_demo PRIVATE "${SDK_ROOT}/include")
+add_executable(umaa_fastdds_plugin_wire_client "${SDK_ROOT}/tests/real_dds_backend_cli.cpp")
+target_include_directories(umaa_fastdds_plugin_wire_client PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_fastdds_plugin_wire_client PRIVATE UMAA::Runtime)
+add_test(NAME umaa_fastdds_backend_real_wire
+ COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_backend.py"
+ "$<TARGET_FILE:umaa_fastdds_plugin_wire_client>"
+ "$<TARGET_FILE:umaa_dds_fastdds_demo>"
+ "$<TARGET_FILE:umaa_fastdds_vehicle_demo>")
+set_tests_properties(umaa_fastdds_backend_real_wire PROPERTIES TIMEOUT 35)

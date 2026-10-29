@@ -20,6 +20,7 @@
 #include <chrono>
 #include <new>
 #include <string>
+#include <unordered_map>
 #include <thread>
 namespace {
 using namespace eprosima::fastdds::dds;
@@ -28,7 +29,7 @@ using WirePubSub=Demo::EO::BatteryReportTypePubSubType;
 constexpr uint64_t supported=UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE;
 struct Domain {DomainParticipant* p;TypeSupport type;};
 struct Writer {Domain* d;Topic* t;Publisher* pub;DataWriter* writer;};
-struct Reader {Domain* d;Topic* t;Subscriber* sub;DataReader* reader;UmaaDdsOnSampleV1 callback;void* user;};
+struct Reader {Domain* d;Topic* t;Subscriber* sub;DataReader* reader;UmaaDdsOnSampleV1 callback;void* user;std::unordered_map<std::string,std::string> instance_keys;};
 bool approved(const UmaaDdsTopicV1* topic){
  return topic && topic->topic_name && topic->schema_id && topic->qos_profile &&
  !std::strcmp(topic->topic_name,"demo/BatteryStatus") &&
@@ -149,10 +150,20 @@ int32_t poll(void* handle,uint32_t max_samples){
   if(info.valid_data)kind=UMAA_DDS_EVENT_DATA;
   else if(info.instance_state==NOT_ALIVE_DISPOSED_INSTANCE_STATE)kind=UMAA_DDS_EVENT_DISPOSE;
   else if(info.instance_state==NOT_ALIVE_NO_WRITERS_INSTANCE_STATE)kind=UMAA_DDS_EVENT_UNREGISTER;
-  if(!info.valid_data&&kind&&r->reader->get_key_value(&wire,info.instance_handle)!=ReturnCode_t::RETCODE_OK)
-   return UMAA_DDS_IO_ERROR;
   if(kind){
-   const std::string key=std::to_string(wire.source_id());
+   // Fast DDS 2.x may not support Reader::get_key_value on a disposed sample.
+   // Never invent a key for unknown lifecycle events.
+   const std::string handle_bytes(reinterpret_cast<const char*>(&info.instance_handle),
+                                  sizeof(info.instance_handle));
+   std::string key;
+   if(info.valid_data){
+     key=std::to_string(wire.source_id());
+     r->instance_keys.insert_or_assign(handle_bytes,key);
+   }else{
+     const auto known=r->instance_keys.find(handle_bytes);
+     if(known==r->instance_keys.end())return UMAA_DDS_IO_ERROR;
+     key=known->second;
+   }
    int32_t value=wire.level_percent();
    int64_t timestamp=info.source_timestamp.to_ns();
    UmaaDdsSampleV1 sample{

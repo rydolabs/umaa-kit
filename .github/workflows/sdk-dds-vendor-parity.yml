@@ -103,6 +103,16 @@ jobs:
             python3 sdk/tests/run_real_dds_collection.py "$cli" "$plugin" list
           done
           sha256sum "$cli"
+      - name: Same binaries using SDK autonomous Command server polling
+        run: |
+          set -euo pipefail
+          server="$PWD/build/parity-cyclone/umaa_cyclone_typed_command_server_cli"
+          client="$PWD/build/parity-cyclone/umaa_cyclone_typed_command_client_cli"
+          component="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_command_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_command_demo.so"
+          python3 sdk/tests/run_real_dds_command_request.py "$server" "$cyclone" "$component" "$client" auto
+          python3 sdk/tests/run_real_dds_command_request.py "$server" "$fastdds" "$component" "$client" auto
       - name: Evidence
         if: always()
         run: find build/parity-* \( -name CTestTestfile.cmake -o -name '*.so' \) | sort

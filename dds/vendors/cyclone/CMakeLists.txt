@@ -138,3 +138,12 @@ foreach(collection_kind IN ITEMS set list)
     "$<TARGET_FILE:umaa_dds_cyclone_collection_demo>" "${collection_kind}")
   set_tests_properties("umaa_cyclone_collection_${collection_kind}_real_wire" PROPERTIES TIMEOUT 40)
 endforeach()
+
+# SDK-owned background reader/pending-session scheduling (no host poll loop).
+add_test(NAME umaa_cyclone_typed_server_background_real_wire
+ COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_command_request.py"
+ "$<TARGET_FILE:umaa_cyclone_typed_command_server_cli>"
+ "$<TARGET_FILE:umaa_dds_cyclone_command_demo>"
+ "$<TARGET_FILE:umaa_cyclone_vehicle_component>"
+ "$<TARGET_FILE:umaa_cyclone_typed_command_client_cli>" auto)
+set_tests_properties(umaa_cyclone_typed_server_background_real_wire PROPERTIES TIMEOUT 55)

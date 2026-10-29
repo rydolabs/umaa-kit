@@ -161,3 +161,11 @@ foreach(collection_kind IN ITEMS set list)
     "$<TARGET_FILE:umaa_dds_fastdds_collection_demo>" "${collection_kind}")
   set_tests_properties("umaa_fastdds_collection_${collection_kind}_real_wire" PROPERTIES TIMEOUT 40)
 endforeach()
+
+add_test(NAME umaa_fastdds_typed_server_background_real_wire
+ COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_command_request.py"
+ "$<TARGET_FILE:umaa_fastdds_typed_command_server_cli>"
+ "$<TARGET_FILE:umaa_dds_fastdds_command_demo>"
+ "$<TARGET_FILE:umaa_fastdds_vehicle_demo>"
+ "$<TARGET_FILE:umaa_fastdds_typed_command_client_cli>" auto)
+set_tests_properties(umaa_fastdds_typed_server_background_real_wire PROPERTIES TIMEOUT 55)

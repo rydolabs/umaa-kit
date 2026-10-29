@@ -1,0 +1,59 @@
+name: Synthetic Collection Cyclone / Fast DDS mixed-network interoperability
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/sdk-dds-mixed-collection.yml'
+      - 'dds/vendors/**/collection_adapter.cpp'
+      - 'dds/cyclone/idl/DemoCollectionBatch.idl'
+      - 'sdk/tests/run_real_dds_collection.py'
+      - 'sdk/tests/real_dds_collection_cli.cpp'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  collection-mixed-wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install two real DDS vendors and generators
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
+      - name: Build real vendor TypeSupport plugins and one client binary
+        run: |
+          cmake -S dds/vendors/cyclone -B build/mix-col-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/mix-col-cyclone --parallel 2
+          cmake -S dds/vendors/fastdds -B build/mix-col-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/mix-col-fastdds --parallel 2
+      - name: Test all four actual cross-vendor directions with strict Dispose and ACK
+        run: |
+          set +e
+          cli="$PWD/build/mix-col-cyclone/umaa_cyclone_collection_cli"
+          cyclone="$PWD/build/mix-col-cyclone/libumaa_dds_cyclone_collection_demo.so"
+          fastdds="$PWD/build/mix-col-fastdds/libumaa_dds_fastdds_collection_demo.so"
+          failed=0
+          for kind in set list; do
+            echo "::group::FastDDS publisher -> Cyclone subscriber ($kind)"
+            python3 sdk/tests/run_real_dds_collection.py "$cli" "$cyclone" "$kind" "$fastdds"
+            status=$?
+            echo "::endgroup::"
+            if test "$status" -ne 0; then failed=1; fi
+            echo "::group::Cyclone publisher -> FastDDS subscriber ($kind)"
+            python3 sdk/tests/run_real_dds_collection.py "$cli" "$fastdds" "$kind" "$cyclone"
+            status=$?
+            echo "::endgroup::"
+            if test "$status" -ne 0; then failed=1; fi
+          done
+          echo "MIXED_COLLECTION_STRICT_FAILURE=$failed"
+          test "$failed" -eq 0
+      - name: Upload evidence even when mixed vendor compatibility fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mixed-collection-dds-ctest
+          path: |
+            build/mix-col-cyclone/Testing/Temporary/
+            build/mix-col-fastdds/Testing/Temporary/
+          if-no-files-found: warn
+# A red run is a genuine missing interoperability gate; never hide failure.

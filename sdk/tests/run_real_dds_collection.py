@@ -4,14 +4,15 @@ import sys
 import time
 
 def main():
-    if len(sys.argv)!=4 or sys.argv[3] not in ("set","list"):
+    if len(sys.argv) not in (4,5) or sys.argv[3] not in ("set","list"):
         return 2
-    exe,backend,kind=sys.argv[1:]
+    exe,backend,kind=sys.argv[1:4]
+    publisher_backend=sys.argv[4] if len(sys.argv)==5 else backend
     sub=subprocess.Popen([exe,"subscriber",backend,kind],
                          stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
     try:
         time.sleep(0.75)
-        pub=subprocess.run([exe,"publisher",backend,kind],
+        pub=subprocess.run([exe,"publisher",publisher_backend,kind],
                            capture_output=True,text=True,timeout=18)
         try:
             output,_=sub.communicate(timeout=12)

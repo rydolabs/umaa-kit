@@ -56,9 +56,24 @@ int main(int argc,char** argv) {
      if(device.call("Demo::EO::BatteryStatus",UMAA_COMPONENT_REPORT,
                     request,reply,result)!=UMAA_COMPONENT_OK ||
         result!=0 || reply.size()!=sizeof(int32_t))return 4;
+     // Real vendor must refuse official/unreviewed types and unsupported QoS.
+     UmaaDdsTopicV1 unapproved=topic;
+     unapproved.schema_id="official:unreviewed";
+     bool rejected=false;
+     try {auto* unexpected=domain->writer(unapproved);domain->close_writer(unexpected);}
+     catch(const std::runtime_error&){rejected=true;}
+     if(!rejected)return 8;
+     UmaaDdsTopicV1 unsupported=topic;
+     unsupported.required_features=UMAA_DDS_CAP_COHERENT_GROUP;
+     rejected=false;
+     try {auto* unexpected=domain->writer(unsupported);domain->close_writer(unexpected);}
+     catch(const std::runtime_error&){rejected=true;}
+     if(!rejected)return 9;
      auto* writer=domain->writer(topic);
      UmaaDdsSampleV1 sample{reply.data(),static_cast<uint32_t>(reply.size()),
                             "17",1,UMAA_DDS_EVENT_DATA};
+     auto bad_key=sample;bad_key.instance_key="not-a-dds-key";
+     if(domain->write(writer,bad_key)!=UMAA_DDS_INVALID)return 10;
      int32_t sent=domain->write(writer,sample);
      // Test-only pacing is isolated to the synthetic real-wire fixture.
      // Do not retry commands after an unknown delivery outcome.

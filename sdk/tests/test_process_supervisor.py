@@ -126,6 +126,44 @@ class IsolatedWorkerTest(unittest.TestCase):
             with self.assertRaises(JournalFault):
                 self.make_journal(target)
 
+    def test_durable_completed_session_cannot_be_replayed(self):
+        from umaa_operation_journal import JournalFault
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = pathlib.Path(tmp) / "dedup.json"
+            with self.make_journal(journal) as first:
+                self.assertEqual(first.call("Demo::EO::EngineControl", 1,
+                    struct.pack("=i", 1200), 901)[:2], (0, 0))
+                self.assertTrue(first.stop())
+            with self.make_journal(journal) as second:
+                with self.assertRaises(JournalFault):
+                    second.call("Demo::EO::EngineControl", 1,
+                                struct.pack("=i", 1200), 901)
+                self.assertTrue(second.faulted)
+            # The signed-off physical reconciliation does NOT make the
+            # previous Command Session ID eligible for a replay.
+            with self.make_journal(journal) as third:
+                self.assertTrue(third.ping())
+                self.assertEqual(third.call("Demo::EO::EngineControl", 1,
+                    struct.pack("=i", 1200), 902)[:2], (0, 0))
+                self.assertTrue(third.stop())
+
+    def test_reconciled_unknown_session_stays_deduplicated(self):
+        from umaa_operation_journal import JournalFault
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = pathlib.Path(tmp) / "recover.json"
+            with self.make_journal(journal) as first:
+                self.assertEqual(first.call("Demo::EO::AsyncEngineControl", 1,
+                    struct.pack("=i", 1200), 951)[:2], (0, 2))
+                with self.assertRaises(WorkerFault):
+                    first.test_crash()
+            ComponentProcessSupervisor.reconcile_journal(
+                journal, hardware_reconciled=True)
+            with self.make_journal(journal) as second:
+                with self.assertRaises(JournalFault):
+                    second.call("Demo::EO::AsyncEngineControl", 1,
+                                struct.pack("=i", 1200), 951)
+                self.assertTrue(second.faulted)
+
     def test_durable_intent_has_one_process_owner(self):
         from umaa_operation_journal import JournalFault
         with tempfile.TemporaryDirectory() as tmp:

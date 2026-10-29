@@ -36,7 +36,7 @@ class OperationJournal:
                 str(self.owner_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
             os.write(self._owner_fd, str(os.getpid()).encode("ascii"))
             os.fsync(self._owner_fd)
-            self.entries = self._load()
+            self.entries, self.settled = self._load()
             if self.entries:
                 raise JournalFault("unreconciled device operation journal; refuse startup")
         except FileExistsError as exc:
@@ -63,7 +63,7 @@ class OperationJournal:
         if self.path.is_symlink():
             raise JournalFault("refuse symlink journal")
         if not self.path.exists():
-            return []
+            return [], []
         try:
             if self.path.stat().st_size > self.LIMIT:
                 raise JournalFault("oversized operation journal")
@@ -89,10 +89,28 @@ class OperationJournal:
             if key in seen:
                 raise JournalFault("duplicate operation journal identity")
             seen.add(key)
-        return rows
+        settled = data.get("settled", [])
+        if not isinstance(settled, list) or len(settled) > 1024:
+            raise JournalFault("invalid completed Command deduplication ledger")
+        settled_ids = set()
+        for item in settled:
+            if not isinstance(item, dict) or set(item) != {"service", "session"}:
+                raise JournalFault("invalid completed Command identity")
+            name, number = item["service"], item["session"]
+            if (not isinstance(name, str) or not name or len(name) > 256
+                    or type(number) is not int or not 0 < number < 2**64):
+                raise JournalFault("invalid completed Command key")
+            key = (name, number)
+            if key in settled_ids:
+                raise JournalFault("duplicate completed Command key")
+            settled_ids.add(key)
+        if any((row["service"],row["session"]) in settled_ids for row in rows):
+            raise JournalFault("settled Command also marked unresolved")
+        return rows, settled
 
     def _save(self):
-        payload = json.dumps({"version": 1, "unresolved": self.entries},
+        payload = json.dumps({"version": 1, "unresolved": self.entries,
+                              "settled": self.settled},
                              sort_keys=True, separators=(",", ":")).encode("utf-8")
         if len(payload) > self.LIMIT:
             raise JournalFault("operation journal exceeds durable bound")
@@ -131,6 +149,9 @@ class OperationJournal:
         entry = {"service": service, "session": session, "action": action}
         if entry in self.entries:
             raise JournalFault("unresolved operation; replay forbidden")
+        if any(row["service"] == service and row["session"] == session
+               for row in self.settled):
+            raise JournalFault("previously completed Command session; replay forbidden")
         if len(self.entries) >= 128:
             raise JournalFault("too many unresolved device operations")
         self.entries.append(entry)
@@ -141,22 +162,43 @@ class OperationJournal:
             raise
 
     def resolved(self, service: str, session: int, action=None):
-        # Only an unambiguous terminal device result may clear an intent.
-        before = list(self.entries)
+        # Only an unambiguous terminal result can clear an unresolved intent.
+        # Keep a bounded durable deduplication ledger of completed sessions;
+        # even a new Python process must never replay one by accident.
+        before, old_settled = list(self.entries), list(self.settled)
         self.entries = [row for row in self.entries
                         if not (row["service"] == service and
                                 row["session"] == session and
                                 (action is None or row["action"] == action))]
         if self.entries != before:
+            if not any(row["service"] == service and row["session"] == session
+                       for row in self.entries + self.settled):
+                self.settled.append({"service": service, "session": session})
             try:
+                if len(self.settled) > 1024:
+                    raise JournalFault("completed command ledger full; operator archival needed")
                 self._save()
             except Exception:
-                self.entries = before
+                self.entries, self.settled = before, old_settled
                 raise
 
     def resolved_all_after_reconciliation(self):
+        # Hardware reconciliation does NOT give permission to replay an old
+        # session identifier. Transfer every unknown session to dedup history.
+        before, old_settled = list(self.entries), list(self.settled)
+        for row in self.entries:
+            if not any(old["service"] == row["service"] and
+                       old["session"] == row["session"] for old in self.settled):
+                self.settled.append({"service": row["service"],
+                                     "session": row["session"]})
         self.entries.clear()
-        self._save()
+        try:
+            if len(self.settled) > 1024:
+                raise JournalFault("completed command ledger full; operator archival needed")
+            self._save()
+        except Exception:
+            self.entries, self.settled = before, old_settled
+            raise
 
     @classmethod
     def reconcile(cls, path, *, hardware_reconciled=False):
@@ -169,6 +211,5 @@ class OperationJournal:
         obj._owner_fd = None
         if obj.owner_path.exists() or obj.owner_path.is_symlink():
             raise JournalFault("journal owner present; stop supervisor and clear stale marker explicitly")
-        obj.entries = obj._load()
-        obj.entries.clear()
-        obj._save()
+        obj.entries, obj.settled = obj._load()
+        obj.resolved_all_after_reconciliation()

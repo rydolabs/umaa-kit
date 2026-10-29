@@ -204,3 +204,10 @@ if(UMAA_BUILD_TESTS)
   target_link_libraries(umaa_collection_batch_builder_test PRIVATE UMAA::Core)
   add_test(NAME umaa_collection_batch_builder_test COMMAND umaa_collection_batch_builder_test)
 endif()
+
+# Vendor-independent bounded binary Collection envelope and corruption tests.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_collection_frame_codec_test tests/test_collection_frame_codec.cpp)
+  target_link_libraries(umaa_collection_frame_codec_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_collection_frame_codec_test COMMAND umaa_collection_frame_codec_test)
+endif()

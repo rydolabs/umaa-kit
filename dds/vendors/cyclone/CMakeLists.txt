@@ -26,3 +26,22 @@ add_test(NAME umaa_backend_plugin_real_wire
  "$<TARGET_FILE:umaa_dds_cyclone_demo>"
  "$<TARGET_FILE:umaa_cyclone_vehicle_component>")
 set_tests_properties(umaa_backend_plugin_real_wire PROPERTIES TIMEOUT 35)
+
+# Synthetic end-to-end CommandStatus/Ack over real Cyclone DDS.
+idlc_generate(TARGET umaa_cyclone_command_types
+  FILES "${CMAKE_CURRENT_LIST_DIR}/../../cyclone/idl/DemoCommandEvent.idl")
+add_library(umaa_dds_cyclone_command_demo MODULE command_adapter.cpp)
+target_compile_features(umaa_dds_cyclone_command_demo PRIVATE cxx_std_17)
+target_include_directories(umaa_dds_cyclone_command_demo PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_dds_cyclone_command_demo PRIVATE
+  umaa_cyclone_command_types CycloneDDS::ddsc)
+add_executable(umaa_cyclone_command_cli "${SDK_ROOT}/tests/real_dds_command_cli.cpp")
+target_compile_features(umaa_cyclone_command_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_cyclone_command_cli PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_cyclone_command_cli PRIVATE UMAA::Runtime "${CMAKE_DL_LIBS}")
+add_test(NAME umaa_command_backend_real_wire
+ COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_backend.py"
+ "$<TARGET_FILE:umaa_cyclone_command_cli>"
+ "$<TARGET_FILE:umaa_dds_cyclone_command_demo>"
+ "$<TARGET_FILE:umaa_cyclone_vehicle_component>")
+set_tests_properties(umaa_command_backend_real_wire PROPERTIES TIMEOUT 45)

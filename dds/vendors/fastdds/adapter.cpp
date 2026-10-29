@@ -200,8 +200,9 @@ int32_t wait_for_acks(void* ptr,uint32_t ms){
    if(Clock::now()>=deadline)break;
    std::this_thread::sleep_for(std::chrono::milliseconds(20));
  }while(true);
- std::fprintf(stderr,"Fast DDS writer ACK wait unconfirmed: rc=%d attempts=%u\\n",
-              static_cast<int>(rc),tries);
+ std::fprintf(stderr,"Fast DDS writer ACK wait unconfirmed: status=%s attempts=%u\\n",
+              rc==ReturnCode_t::RETCODE_TIMEOUT?"TIMEOUT":
+              rc==ReturnCode_t::RETCODE_ERROR?"ERROR":"OTHER",tries);
  return UMAA_DDS_IO_ERROR;
 }
 void close_writer(void* handle){

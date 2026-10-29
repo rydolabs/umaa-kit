@@ -226,3 +226,25 @@ full multi-service Cyclone adapter, and not proven Fast DDS / RTI parity.
 The true UMAA Command ACK/Status async client, official service binding
 generation and safe device hot-swap remain open. See
 [SDK Facade Phase 2](docs/SDK_FACADE_PHASE2.md).
+
+## SDK implementation gates (active PR #15)
+
+The SDK uses a **device Component DLL/SO** loaded by a shared UMAA runtime and a
+separate **DDS backend plugin DLL/SO**. User device code implements a typed
+`Component::provide<Service>(handler)`; the loader owns the module ABI v2.
+The host-side `Application::consume<Service>()` currently supports local
+Command results and typed synthetic Report subscription. DDS vendor code is
+isolated under `dds/vendors/<vendor>/`, behind
+`sdk/include/umaa/internal/dds_backend.h`. New vendors MUST NOT change
+application handlers or the common protocol FSM.
+
+**Proven:** Linux/Windows SDK builds, device-module load/unload ABI, Cyclone DDS
+synthetic BatteryStatus cross-process wire with value/Dispose, and scoped
+legacy official service tests. Development-only Report Writer reuse and
+per-instance cache are covered by CTest.
+**Still open:** actual UMAA Command/Ack/Status consumer wire, approved
+TypeSupport/QoS for all scoped services, coherent LargeSet/LargeList,
+production module isolation, RTI licensed validation and normative conformance.
+See [module architecture](docs/SDK_MODULAR_ARCHITECTURE.md) and the
+[implementation evidence and blockers](docs/SDK_IMPLEMENTATION_BACKLOG.md).
+Never infer formal compliance from synthetic IDL or service-name catalogs.

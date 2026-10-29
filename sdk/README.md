@@ -114,3 +114,18 @@ host-local results only** and explicitly refuses `Pending`.
 See `dds/vendors/cyclone/` for the **synthetic BatteryStatus-only** real-wire
 adapter, and `docs/SDK_FACADE_PHASE2.md` for limitations and CI reproduction.
 These development APIs are not official UMAA conformance evidence.
+
+## Vendor-parity acceptance
+
+The development API intentionally hides Reader/Writer/QoS from the user.
+Two builds of `dds/vendors/cyclone` and `dds/vendors/fastdds` provide
+separate vendor-native TypeSupport for one **synthetic** BatteryStatus fixture.
+The parity workflow requires **the identical component .so and identical
+consumer executable binaries** to run against each DDS backend plugin. It
+does not establish official UMAA 6.0 compliance or multi-vendor interoperation
+on a mixed DDS network.
+
+`ReportPublisher` now maintains a writer across multiple updates and Dispose.
+`ReportSubscription` caches by DDS instance key, and disposal of one source
+does not remove another source. Both are subject to the explicit mock/real-wire
+scope. See [backlog](../docs/SDK_IMPLEMENTATION_BACKLOG.md).

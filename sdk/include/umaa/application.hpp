@@ -174,6 +174,19 @@ public:
     return Service::decode_report(bytes.data(),bytes.size(),out);
   }
   bool disposed() const {return subscription_&&subscription_->disposed();}
+  // Explicit keyed access: latest() alone is insufficient for multiple instances.
+  bool latest_for(const std::string& instance_key,typename Service::Report& out) const {
+    if(!subscription_||instance_key.empty())return false;
+    std::vector<uint8_t> bytes;
+    if(!subscription_->latest_for(instance_key,bytes))return false;
+    return Service::decode_report(bytes.data(),bytes.size(),out);
+  }
+  std::vector<std::string> keys() const {
+    return subscription_?subscription_->keys():std::vector<std::string>{};
+  }
+  bool disposed_for(const std::string& instance_key) const {
+    return subscription_&&subscription_->disposed_for(instance_key);
+  }
   // Development-only local read, not DDS subscription.
   typename Service::Report read_local() {
     std::vector<uint8_t> empty,out;

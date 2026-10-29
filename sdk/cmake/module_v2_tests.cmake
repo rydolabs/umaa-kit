@@ -15,3 +15,8 @@ add_executable(umaa_application_facade_test tests/test_application_facade.cpp)
 target_link_libraries(umaa_application_facade_test PRIVATE UMAA::Runtime)
 add_test(NAME umaa_application_facade_test COMMAND umaa_application_facade_test
   "$<TARGET_FILE:umaa_demo_vehicle_v2>")
+
+add_executable(umaa_report_publisher_v2_test tests/test_report_publisher_v2.cpp)
+target_link_libraries(umaa_report_publisher_v2_test PRIVATE UMAA::Runtime)
+add_test(NAME umaa_report_publisher_v2_test COMMAND umaa_report_publisher_v2_test
+  "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")

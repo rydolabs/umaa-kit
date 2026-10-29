@@ -23,9 +23,27 @@ public:
   int32_t poll(uint32_t max_samples=32);
   bool latest(std::vector<uint8_t>& data,std::string& key) const;
   bool disposed() const;
+  bool latest_for(const std::string& key,std::vector<uint8_t>& out) const;
+  std::vector<std::string> keys() const;
+  bool disposed_for(const std::string& key) const;
 private:
   struct State;
   explicit ReportSubscription(std::unique_ptr<State> state);
+  std::unique_ptr<State> state_;
+  friend class ComponentRuntime;
+};
+class UMAA_RUNTIME_API ReportPublisher final {
+public:
+  ~ReportPublisher();
+  ReportPublisher(const ReportPublisher&) = delete;
+  ReportPublisher& operator=(const ReportPublisher&) = delete;
+  void update();
+  void dispose();
+  void close();
+  bool faulted() const noexcept;
+private:
+  struct State;
+  explicit ReportPublisher(std::unique_ptr<State> state);
   std::unique_ptr<State> state_;
   friend class ComponentRuntime;
 };
@@ -46,10 +64,13 @@ public:
                uint64_t session_id = 0);
   // Development-only vertical boundary exercise, not a complete UMAA
   // Report lifecycle. A generated ServiceBinding will own reviewed topic/QoS.
+  std::unique_ptr<ReportPublisher> open_report_fixture(
+    const std::string& service_id,const std::string& topic_name,
+    const std::string& schema_id,const std::string& instance_key);
   void publish_report_fixture(const std::string& service_id,
                               const std::string& topic_name,
                               const std::string& schema_id,
-                              const std::string& instance_key);
+                              const std::string& instance_key, bool dispose_after=false);
 private:
   struct State;
   std::unique_ptr<State> state_;

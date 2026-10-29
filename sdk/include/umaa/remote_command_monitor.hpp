@@ -51,6 +51,11 @@ public:
        source_timestamp<e.id.timestamp)return false;
     e.acked=true;return true;
   }
+  bool acknowledged(const std::string& session) const {
+    const auto it=sessions_.find(session);
+    if(it==sessions_.end())throw std::out_of_range("unknown Command session");
+    return !it->second.faulted && it->second.acked;
+  }
   RemoteCommandResult result(const std::string& session) const {
     const auto it=sessions_.find(session);
     if(it==sessions_.end())throw std::out_of_range("unknown command session");

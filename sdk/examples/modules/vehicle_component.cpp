@@ -54,7 +54,8 @@ public:
     sessions_.erase(it);return umaa::Result::Completed;
   }
   umaa::Result cancel_session(uint64_t id) override {
-    return sessions_.erase(id)?umaa::Result::Failed:umaa::Result::Rejected;
+    // Completed means hardware stop was confirmed; Failed never proves that.
+    return sessions_.erase(id)?umaa::Result::Completed:umaa::Result::Rejected;
   }
 private:
   std::unordered_map<uint64_t,int> sessions_;

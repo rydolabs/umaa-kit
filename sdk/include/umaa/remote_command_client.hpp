@@ -88,6 +88,31 @@ public:
      std::this_thread::sleep_for(std::chrono::milliseconds(20));
    }while(true);
  }
+ // Cancel requests dispose of the initiating Command while device work is
+ // pending. This is an intent, NOT proof that hardware actually stopped:
+ // callers must await a real terminal Status+Ack and response disposal.
+ // A failed/unknown writer ACK permanently faults this client; no replay.
+ void request_cancel(const std::string& session,std::chrono::milliseconds timeout) {
+   require_active();
+   if(timeout.count()<0 || timeout.count()>std::chrono::milliseconds::max().count() ||
+      timeout.count()>static_cast<std::int64_t>(UINT32_MAX))
+     throw std::invalid_argument("invalid Command cancel ACK timeout");
+   if(commands_.find(session)==commands_.end())
+     throw std::out_of_range("unknown Command cancellation session");
+   if(!disposed_.emplace(session,true).second)
+     throw std::logic_error("Command instance already disposed");
+   UmaaDdsSampleV1 request{nullptr,0,session.c_str(),1,UMAA_DDS_EVENT_DISPOSE};
+   if(domain_->dispose(command_writer_,request)!=UMAA_DDS_OK ||
+      domain_->wait_for_acks(command_writer_,static_cast<std::uint32_t>(timeout.count()))!=UMAA_DDS_OK){
+     faulted_=true;
+     monitor_.ambiguous_delivery(session);
+     throw std::runtime_error("Command cancellation delivery unconfirmed");
+   }
+ }
+ bool acknowledged(const std::string& session) const {
+   require_active();
+   return monitor_.acknowledged(session);
+ }
  // Dispose the initiating Command ONLY after confirmed terminal status+ACK.
  // The provider then disposes its Status and Ack instances. A failed cleanup
  // faults the transport instead of inventing success.
@@ -96,14 +121,10 @@ public:
    if(monitor_.result(session)==RemoteCommandResult::Pending)
      throw std::logic_error("cannot finish unconfirmed Command");
    if(timeout.count()<0)throw std::invalid_argument("negative cleanup timeout");
-   if(!disposed_.emplace(session,true).second)
-     throw std::logic_error("Command was already disposed");
-   UmaaDdsSampleV1 request{nullptr,0,session.c_str(),1,UMAA_DDS_EVENT_DISPOSE};
-   if(domain_->dispose(command_writer_,request)!=UMAA_DDS_OK ||
-      domain_->wait_for_acks(command_writer_,
-        static_cast<std::uint32_t>(timeout.count()))!=UMAA_DDS_OK){
-     faulted_=true;throw std::runtime_error("unconfirmed Command disposal");
-   }
+   // After a prior cancel request the Command is already disposed:
+   // never repeat a potentially side-effecting DDS lifecycle operation.
+   if(disposed_.find(session)==disposed_.end())
+     request_cancel(session,timeout);
    const auto end=std::chrono::steady_clock::now()+timeout;
    for(;;){
      poll();

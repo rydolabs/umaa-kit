@@ -46,7 +46,7 @@ int main(int argc,char** argv) {
   assert(pending.wait_for(std::chrono::milliseconds(200))==umaa::Result::Completed);
   assert(pending.wait()==umaa::Result::Completed);
   auto cancelled=async_client.send({1500});
-  assert(cancelled.cancel()==umaa::Result::Failed);
+  assert(cancelled.cancel()==umaa::Result::Completed);
   assert(cancelled.terminal());
   assert(async_client.send({-1}).state()==umaa::Result::Rejected);
   auto report_client=app.consume<demo::BatteryStatus>();

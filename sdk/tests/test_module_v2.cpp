@@ -1,3 +1,6 @@
+#ifdef NDEBUG
+#undef NDEBUG  // Keep ABI checks active in Release-mode CI.
+#endif
 #include "umaa/component_module.hpp"
 #include <cassert>
 #include <cstdint>

@@ -1,3 +1,6 @@
+#ifdef NDEBUG
+#undef NDEBUG  // Keep ABI checks active in Release-mode CI.
+#endif
 #include "umaa/dds_backend_loader.hpp"
 #include <cassert>
 #include <cstdint>

@@ -45,6 +45,10 @@ struct Receiver {
 
  static void receive(void* context,const UmaaDdsSampleV1* sample){
    auto& self=*static_cast<Receiver*>(context);
+   if(sample)std::cerr<<"COMMAND_RX "<<(self.ack_topic?"ACK":"STATUS")
+     <<" event="<<sample->event_kind
+     <<" key="<<(sample->instance_key?sample->instance_key:"(null)")
+     <<" ts="<<sample->source_timestamp_ns<<"\n";
    if(!sample||!sample->instance_key||std::string(sample->instance_key)!="17"){
      self.bad=true;return;
    }
@@ -89,6 +93,7 @@ int main(int argc,char** argv){
      if(provider.poll_device("17")[0].kind!=umaa::Event::Kind::Ignored)return 4;
      if(provider.poll_device("17")[0].kind!=umaa::Event::Kind::Ignored)return 5;
      if(provider.poll_device("17")[0].detail!="COMPLETED")return 6;
+     std::this_thread::sleep_for(std::chrono::milliseconds(150));
      if(provider.command_disposed("controller","17").size()!=2)return 7;
      wire.wait_for_acks(5000);
      std::this_thread::sleep_for(std::chrono::milliseconds(200));

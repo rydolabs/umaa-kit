@@ -51,10 +51,17 @@ int main(int argc,char** argv) {
      UmaaDdsSampleV1 sample{reply.data(),static_cast<uint32_t>(reply.size()),
                             "17",1,UMAA_DDS_EVENT_DATA};
      int32_t sent=domain->write(writer,sample);
+     // Test-only pacing is isolated to the synthetic real-wire fixture.
+     // Do not retry commands after an unknown delivery outcome.
+     int32_t first_ack=domain->wait_for_acks(writer,2000);
+     std::this_thread::sleep_for(std::chrono::milliseconds(200));
      int32_t disposed=domain->dispose(writer,sample);
-     int32_t ack=domain->wait_for_acks(writer,2000);
+     int32_t last_ack=domain->wait_for_acks(writer,2000);
+     std::this_thread::sleep_for(std::chrono::milliseconds(200));
      domain->close_writer(writer);
-     if(sent||disposed||ack)return 5;
+     std::cerr << "writer result data=" << sent << " first_ack=" << first_ack
+               << " dispose=" << disposed << " last_ack=" << last_ack << "\n";
+     if(sent||disposed||first_ack||last_ack)return 5;
      std::cout<<"PASS separate device component -> DDS vendor plugin\n";return 0;
    }
    return 6;

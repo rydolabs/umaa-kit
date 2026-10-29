@@ -123,8 +123,8 @@ int32_t send(void* handle,const UmaaDdsSampleV1* sample,uint32_t kind){
  auto* writer=static_cast<Writer*>(handle)->writer;
  ReturnCode_t rc=ReturnCode_t::RETCODE_BAD_PARAMETER;
  if(kind==UMAA_DDS_EVENT_DATA)rc=writer->write(&wire);
- else if(kind==UMAA_DDS_EVENT_DISPOSE)rc=writer->dispose(&wire,rtps::HANDLE_NIL);
- else if(kind==UMAA_DDS_EVENT_UNREGISTER)rc=writer->unregister_instance(&wire,rtps::HANDLE_NIL);
+ else if(kind==UMAA_DDS_EVENT_DISPOSE)rc=writer->dispose(&wire,eprosima::fastrtps::rtps::HANDLE_NIL);
+ else if(kind==UMAA_DDS_EVENT_UNREGISTER)rc=writer->unregister_instance(&wire,eprosima::fastrtps::rtps::HANDLE_NIL);
  return rc==ReturnCode_t::RETCODE_OK?UMAA_DDS_OK:UMAA_DDS_UNKNOWN_DELIVERY;
 }
 int32_t write(void* p,const UmaaDdsSampleV1* s){return send(p,s,UMAA_DDS_EVENT_DATA);}

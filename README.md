@@ -8,6 +8,28 @@ repository. See [release gates](docs/DELIVERY_GATES.md), [the SDK quick start](d
 and the [open implementation roadmap](https://github.com/rydolabs/umaa-kit/issues/2).
 
 
+## Modular SDK architecture (MVP, 2026-10-29)
+
+**Design rule:** applications only register UMAA service handlers. DDS Reader/Writer,
+Command/Ack/Status and QoS belong to the internal runtime, not device code.
+A module can expose several services through one DLL/SO; vendor backends are
+separate DLL/SO plugins behind a single versioned C ABI.
+
+| Binary / source | Responsibility | Current implementation |
+| --- | --- | --- |
+| `UMAA::Core` | command/report/collection protocol core | Existing C++17 INTERFACE library |
+| `UMAA::Runtime` | shared host runtime and ABI loaders | **Built DLL/SO**, development orchestration |
+| `vehicle_component` DLL/SO | user-created Engine/Battery typed Handler(s) | **Built** from synthetic fixture |
+| `dds_backend.h` | **single DDS vendor contract** | Versioned C ABI, capabilities/fail-closed |
+| `mock_backend` DLL/SO | ABI/loader contract regression | **Test-only**, NOT real DDS |
+| Cyclone DDS plugin | move legacy Cyclone adapters under the new ABI | **Pending**; existing real-wire tests remain |
+| Fast DDS / RTI plugins | implement the same ABI without app/core edits | **Pending**; RTI SDK/license required |
+
+See [full architecture, DLL/SO ownership and new-vendor instructions](docs/SDK_MODULAR_ARCHITECTURE.md),
+[implementation/evidence scope](docs/MODULAR_IMPLEMENTATION_EVIDENCE.md), and
+[existing delivery gates](docs/DELIVERY_GATES.md). This modularization milestone
+**does not claim official UMAA 6.0 conformance** or completed DDS vendor swapping.
+
 Two **separate projects** for development and independent verification of UMAA services:
 
 - [sdk/](sdk/): strict synthetic-subset generator and **official-EngineControl-derived ignition Handler generator**, Command/Report/Collection prototype, versioned native service module loader (DLL/SO), installable CMake package and tests.

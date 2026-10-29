@@ -149,3 +149,28 @@ if(UMAA_BUILD_TESTS)
   endforeach()
   add_test(NAME umaa_generated_report_smoke COMMAND umaa_mock_report_host)
 endif()
+
+# Device component ABI v2 and DDS-vendor plugin ABI contract tests.
+# Mock backend is deliberately NOT a real DDS middleware implementation.
+if(UMAA_BUILD_TESTS)
+  include(cmake/module_v2_tests.cmake)
+endif()
+
+# Shared, vendor-neutral host orchestrator: a single runtime loaded by host.
+# The user module's C++ business code does not link any DDS vendor library.
+add_library(umaa_sdk_runtime SHARED src/component_runtime.cpp)
+add_library(UMAA::Runtime ALIAS umaa_sdk_runtime)
+set_target_properties(umaa_sdk_runtime PROPERTIES EXPORT_NAME Runtime)
+target_compile_definitions(umaa_sdk_runtime PRIVATE UMAA_RUNTIME_BUILD)
+target_link_libraries(umaa_sdk_runtime PUBLIC UMAA::Core PRIVATE ${CMAKE_DL_LIBS})
+target_compile_features(umaa_sdk_runtime PUBLIC cxx_std_17)
+install(TARGETS umaa_sdk_runtime EXPORT UMAASDKTargets
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_runtime_v2_test tests/test_runtime_v2.cpp)
+  target_link_libraries(umaa_runtime_v2_test PRIVATE UMAA::Runtime)
+  add_test(NAME umaa_runtime_v2_test COMMAND umaa_runtime_v2_test
+    "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")
+endif()

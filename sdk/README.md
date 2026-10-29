@@ -71,3 +71,30 @@ vendor supplies a valid disposal timestamp; without a timestamp, ordering cannot
 be proven. Instances are scoped to one collection ID; call `clear()` or create
 another assembler before processing a different ID. This is not a normative DDS
 ordered-access or atomic-presentation implementation.
+
+## Modular SDK architecture / component ABI v2 (2026-10-29 development slice)
+
+The application writer implements **only typed equipment/business handlers**.
+`UMAA_EXPORT_COMPONENT_V2()` generates the stable C entrypoint automatically;
+`Component::provide<Service>(handler)` registers any number of services in
+one DLL/SO. Host-side `UMAA::Runtime` is a shared library and the DDS vendor
+boundary is defined **once** in `include/umaa/internal/dds_backend.h`.
+
+- `include/umaa/component.hpp` — lightweight, vendor-agnostic application API.
+- `include/umaa/module_api_v2.h` — versioned multi-service component C ABI.
+- `include/umaa/component_module.hpp` — host-side component loader.
+- `include/umaa/internal/dds_backend.h` — **single new-vendor contract**.
+- `include/umaa/dds_backend_loader.hpp` — host-side vendor library loader.
+- `include/umaa/internal/component_runtime.hpp` — common host runtime API.
+- `src/component_runtime.cpp` — actual shared runtime library.
+- `examples/modules/vehicle_component.cpp` — Engine + Battery handlers in one
+  native module, with **no DDS imports**.
+- `tests/plugins/mock_backend.cpp` — in-process mock for ABI conformance only,
+  **not** genuine DDS network communication.
+
+See [full architecture and vendor extension rules](../docs/SDK_MODULAR_ARCHITECTURE.md).
+The old Module ABI v1 remains for legacy test compatibility. Cyclone's
+existing real DDS adapters/tests remain unchanged and are not yet migrated
+under the new runtime's single vendor facade. Fast DDS/RTI Adapter and
+normative service bindings remain outstanding. Never infer official UMAA
+conformance from these development-only ABI tests.

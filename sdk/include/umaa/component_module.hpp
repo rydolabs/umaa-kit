@@ -3,6 +3,9 @@
 #include "umaa/module_api_v2.h"
 #include "umaa/internal/native_library.hpp"
 #include <cstdint>
+#include <condition_variable>
+#include <mutex>
+#include <unordered_set>
 #include <cstdio>
 #include <memory>
 #include <stdexcept>
@@ -61,7 +64,6 @@ public:
   int32_t call(const std::string& service, uint32_t action,
                const std::vector<uint8_t>& payload, std::vector<uint8_t>& output,
                int32_t& business_result, uint64_t session = 0) {
-    if (!started_) throw std::runtime_error("component not active");
     if (payload.size() > UINT32_MAX) throw std::runtime_error("oversized component payload");
     bool authorized = false;
     for (const auto& s : services_)
@@ -70,31 +72,96 @@ public:
            (action == UMAA_COMPONENT_COMMAND_POLL && (s.actions & 1u))))
         authorized = true;
     if (!authorized) return UMAA_COMPONENT_NOT_FOUND;
-    UmaaComponentCallV2 request{service.c_str(), action, 0,
-                               payload.empty() ? nullptr : payload.data(),
-                               static_cast<uint32_t>(payload.size()), session};
-    // Allocate once: a COMMAND must never be invoked twice just because
-    // the caller's output buffer was small (hardware side effects!).
-    if (output.size() < 1024 * 1024) output.resize(1024 * 1024);
-    UmaaComponentResponseV2 response{output.data(),
-                                    static_cast<uint32_t>(output.size()), 0, 0};
-    const int32_t status = api_->call(instance_, &request, &response);
-    if (status == UMAA_COMPONENT_BUFFER_TOO_SMALL)
-      throw std::runtime_error("component output exceeds bounded single-call buffer");
-    if (status == UMAA_COMPONENT_OK) {
-      if (response.size > output.size()) throw std::runtime_error("component buffer overrun");
-      output.resize(response.size);
-      business_result = response.business_result;
+    // Admit a call before stop can drain/unload it. Hardware operations
+    // must never be replayed after an ambiguous delivery outcome.
+    {
+      std::lock_guard<std::mutex> lock(gate_);
+      if (!started_ || closing_ || !instance_)
+        throw std::runtime_error("component stopping or not active");
+      if (action == UMAA_COMPONENT_COMMAND && session != 0) {
+        PendingSession id{service,session};
+        if (pending_.count(id))
+          throw std::runtime_error("duplicate device session; command not replayed");
+        // Reserve before invoking hardware; even an exception is ambiguous.
+        pending_.insert(std::move(id));
+      }
+      ++in_flight_;
     }
-    return status;
+    auto leave = [this]() noexcept {
+      std::lock_guard<std::mutex> lock(gate_);
+      --in_flight_;
+      drained_.notify_all();
+    };
+    try {
+      UmaaComponentCallV2 request{service.c_str(), action, 0,
+                                 payload.empty() ? nullptr : payload.data(),
+                                 static_cast<uint32_t>(payload.size()), session};
+      if (output.size() < 1024 * 1024) output.resize(1024 * 1024);
+      UmaaComponentResponseV2 response{output.data(),
+                                      static_cast<uint32_t>(output.size()), 0, 0};
+      const int32_t status = api_->call(instance_, &request, &response);
+      if (status == UMAA_COMPONENT_BUFFER_TOO_SMALL)
+        throw std::runtime_error("component output exceeds bounded single-call buffer");
+      if (status == UMAA_COMPONENT_OK) {
+        if (response.size > output.size()) throw std::runtime_error("component buffer overrun");
+        output.resize(response.size);
+        business_result = response.business_result;
+        if (session != 0 && (action == UMAA_COMPONENT_COMMAND ||
+            action == UMAA_COMPONENT_COMMAND_POLL || action == UMAA_COMPONENT_CANCEL)) {
+          std::lock_guard<std::mutex> lock(gate_);
+          const PendingSession id{service,session};
+          if (action == UMAA_COMPONENT_COMMAND && business_result != 2)
+            pending_.erase(id);
+          else if (action == UMAA_COMPONENT_COMMAND_POLL && business_result != 2)
+            pending_.erase(id);
+          else if (action == UMAA_COMPONENT_CANCEL &&
+                   (business_result == 0 || business_result == 3))
+            pending_.erase(id);
+        }
+      }
+      leave();
+      return status;
+    } catch (...) {
+      leave();
+      throw;
+    }
   }
+  // Cooperative stop. A pending device command cannot be silently lost.
+  // Concurrent callers serialize; no module callback may run after unload.
   bool stop() noexcept {
+    std::unique_lock<std::mutex> lock(gate_);
+    drained_.wait(lock, [this] { return !stopping_; });
     if (!instance_) return true;
-    if (started_ && api_->stop(instance_) != UMAA_COMPONENT_OK) return false;
-    started_ = false;
-    api_->destroy(instance_);
-    instance_ = nullptr;
-    return true;
+    if (!pending_.empty()) return false;
+    stopping_ = true;
+    closing_ = true;
+    drained_.wait(lock, [this] { return in_flight_ == 0; });
+    if (!pending_.empty()) {
+      // A previously admitted call became Pending while stop was draining.
+      closing_ = false;
+      stopping_ = false;
+      lock.unlock();
+      drained_.notify_all();
+      return false;
+    }
+    lock.unlock();
+    int32_t result = UMAA_COMPONENT_EXCEPTION;
+    try { result = started_ ? api_->stop(instance_) : UMAA_COMPONENT_OK; }
+    catch (...) { result = UMAA_COMPONENT_EXCEPTION; }
+    if (result == UMAA_COMPONENT_OK) {
+      try { api_->destroy(instance_); }
+      catch (...) { result = UMAA_COMPONENT_EXCEPTION; }
+    }
+    lock.lock();
+    if (result == UMAA_COMPONENT_OK) {
+      instance_ = nullptr;
+      started_ = false;
+    }
+    // Failed stop is irreversible. Never re-enter unknown device state.
+    stopping_ = false;
+    lock.unlock();
+    drained_.notify_all();
+    return result == UMAA_COMPONENT_OK;
   }
 private:
   void shutdown() noexcept {
@@ -108,6 +175,25 @@ private:
   const UmaaComponentModuleV2* api_{nullptr};
   void* instance_{nullptr};
   bool started_{false};
+  struct PendingSession {
+    std::string service;
+    uint64_t id;
+    bool operator==(const PendingSession& other) const noexcept {
+      return id == other.id && service == other.service;
+    }
+  };
+  struct PendingHash {
+    std::size_t operator()(const PendingSession& s) const {
+      return std::hash<std::string>{}(s.service) ^
+             (std::hash<uint64_t>{}(s.id) << 1);
+    }
+  };
+  std::mutex gate_;
+  std::condition_variable drained_;
+  std::unordered_set<PendingSession,PendingHash> pending_;
+  std::size_t in_flight_{0};
+  bool closing_{false};
+  bool stopping_{false};
   std::vector<Service> services_;
 };
 } // namespace umaa

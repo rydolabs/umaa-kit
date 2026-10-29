@@ -5,7 +5,8 @@
  * All strings/buffers used as inputs are borrowed for the call duration.
  * The caller owns response output. A buffer-too-small response reports length.
  * stop() must drain in-flight calls before returning zero; the host must NOT
- * unload a module for which stop() fails.
+ * unload a module for which stop() fails. A Pending business Command must
+ * complete or be safely canceled before the module can be unloaded.
  */
 #ifndef UMAA_MODULE_API_V2_H
 #define UMAA_MODULE_API_V2_H

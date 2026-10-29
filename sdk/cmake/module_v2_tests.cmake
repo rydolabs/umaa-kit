@@ -20,3 +20,10 @@ add_executable(umaa_report_publisher_v2_test tests/test_report_publisher_v2.cpp)
 target_link_libraries(umaa_report_publisher_v2_test PRIVATE UMAA::Runtime)
 add_test(NAME umaa_report_publisher_v2_test COMMAND umaa_report_publisher_v2_test
   "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")
+
+# Regression: a pending device command must fence DLL/SO unload until drained.
+add_executable(umaa_component_safe_shutdown_v2_test tests/test_safe_shutdown_v2.cpp)
+target_link_libraries(umaa_component_safe_shutdown_v2_test PRIVATE UMAA::Core ${CMAKE_DL_LIBS})
+target_compile_features(umaa_component_safe_shutdown_v2_test PRIVATE cxx_std_17)
+add_test(NAME umaa_component_safe_shutdown_v2_test COMMAND umaa_component_safe_shutdown_v2_test
+  "$<TARGET_FILE:umaa_demo_vehicle_v2>")

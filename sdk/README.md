@@ -129,3 +129,18 @@ on a mixed DDS network.
 `ReportSubscription` caches by DDS instance key, and disposal of one source
 does not remove another source. Both are subject to the explicit mock/real-wire
 scope. See [backlog](../docs/SDK_IMPLEMENTATION_BACKLOG.md).
+
+## Module safe-stop protection (2026-10-29)
+
+`ComponentModule` now guards ABI calls against concurrent stop/unload.
+A Pending device session is identified by (service ID, session ID), not the
+session number alone. An ambiguous business invocation reserves its session
+**before** hardware execution and is never auto-replayed. `stop()` rejects
+an outstanding session; the caller may poll or cancel it and retry after it
+reaches a safe terminal state. If the plugin's `stop()` fails, mapping
+retention remains fail-closed; OS process isolation is still an open item.
+
+`umaa_component_safe_shutdown_v2_test` exercises reject-while-pending,
+duplicate replay fencing, poll-to-terminal, cancel and post-stop rejection.
+This is a device-module ABI safety gate, not a claim that UMAA wire
+CommandStatus/Ack integration is complete.

@@ -49,3 +49,15 @@ vendor-parity test. The suite covers **only synthetic DemoBattery** in the
 new plugin. It does not cover official UMAA ServiceTraits, COMMAND wire,
 LargeCollection coherent DDS, mixed Cyclone/Fast network interoperability,
 physical equipment or RTI Connext. No formal conformance approval is implied.
+
+## 2026-10-29 module command-drain hardening
+
+Module ABI v2 host admission, session tracking and cooperative teardown are
+updated: all in-flight ABI invocations drain before successful `stop()`;
+Pending device sessions reject unload and duplicate command replay;
+completion/cancellation permits subsequent stop. Per-service session identity
+avoids same-number collisions. An ambiguous exception retains the session
+reservation (fail closed). New CTest verifies the scoped safety behavior.
+
+**Still OPEN:** true out-of-process crash isolation, supervisor restart,
+active DDS CommandStatus/Ack sessions and formal UMAA conformance.

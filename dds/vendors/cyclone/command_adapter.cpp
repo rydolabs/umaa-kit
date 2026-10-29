@@ -19,7 +19,9 @@ bool supported(const UmaaDdsTopicV1* t) {
  ((std::strcmp(t->topic_name,"demo/AsyncEngineStatus")==0&&
    std::strcmp(t->schema_id,"demo:async-status-v1")==0) ||
   (std::strcmp(t->topic_name,"demo/AsyncEngineAck")==0&&
-   std::strcmp(t->schema_id,"demo:async-ack-v1")==0))&&
+   std::strcmp(t->schema_id,"demo:async-ack-v1")==0) ||
+  (std::strcmp(t->topic_name,"demo/AsyncEngineCommand")==0&&
+   std::strcmp(t->schema_id,"demo:async-command-v1")==0))&&
  std::strcmp(t->qos_profile,"demo-reliable")==0&&
  !(t->required_features&~caps);
 }
@@ -49,7 +51,9 @@ void close_domain(void* ptr) {
 }
 dds_entity_t topic(Domain* d,const UmaaDdsTopicV1* binding) {
  const auto* name=std::strcmp(binding->topic_name,"demo/AsyncEngineStatus")==0
-     ?"Demo_EO_AsyncEngineStatus":"Demo_EO_AsyncEngineAck";
+     ?"Demo_EO_AsyncEngineStatus":
+     (std::strcmp(binding->topic_name,"demo/AsyncEngineAck")==0
+      ?"Demo_EO_AsyncEngineAck":"Demo_EO_AsyncEngineCommand");
  return dds_create_topic(d->participant,&Demo_EO_CommandEvent_desc,
                          name,nullptr,nullptr);
 }

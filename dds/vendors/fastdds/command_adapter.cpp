@@ -35,7 +35,9 @@ bool approved(const UmaaDdsTopicV1* topic){
  ((!std::strcmp(topic->topic_name,"demo/AsyncEngineStatus") &&
    !std::strcmp(topic->schema_id,"demo:async-status-v1")) ||
   (!std::strcmp(topic->topic_name,"demo/AsyncEngineAck") &&
-   !std::strcmp(topic->schema_id,"demo:async-ack-v1"))) &&
+   !std::strcmp(topic->schema_id,"demo:async-ack-v1")) ||
+  (!std::strcmp(topic->topic_name,"demo/AsyncEngineCommand") &&
+   !std::strcmp(topic->schema_id,"demo:async-command-v1"))) &&
  !std::strcmp(topic->qos_profile,"demo-reliable") &&
  !(topic->required_features & ~supported);
 }
@@ -64,7 +66,9 @@ void close_domain(void* handle){
 }
 Topic* make_topic(Domain* d,const UmaaDdsTopicV1* binding){
  const auto* name=std::strcmp(binding->topic_name,"demo/AsyncEngineStatus")==0
-     ?"Demo_EO_AsyncEngineStatus":"Demo_EO_AsyncEngineAck";
+     ?"Demo_EO_AsyncEngineStatus":
+     (std::strcmp(binding->topic_name,"demo/AsyncEngineAck")==0
+      ?"Demo_EO_AsyncEngineAck":"Demo_EO_AsyncEngineCommand");
  return d->p->create_topic(name,d->type.get_type_name(),TOPIC_QOS_DEFAULT);
 }
 void* open_writer(void* handle,const UmaaDdsTopicV1* topic){

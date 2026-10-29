@@ -49,6 +49,11 @@ int main(int argc,char** argv) {
   assert(cancelled.cancel()==umaa::Result::Failed);
   assert(cancelled.terminal());
   assert(async_client.send({-1}).state()==umaa::Result::Rejected);
-  assert(app.consume<demo::BatteryStatus>().read_local().level_pct==80);
+  auto report_client=app.consume<demo::BatteryStatus>();
+  assert(report_client.keys().empty());
+  demo::BatteryStatus::Report absent{};
+  assert(!report_client.latest_for("missing",absent));
+  assert(!report_client.disposed_for("missing"));
+  assert(report_client.read_local().level_pct==80);
   std::cout<<"PASS typed host-local consumer/command handle; no DDS wire claim\n";
 }

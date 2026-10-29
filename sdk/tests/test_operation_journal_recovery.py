@@ -122,6 +122,27 @@ class DurableJournalRecoveryTest(unittest.TestCase):
             with self.assertRaises(JournalFault):
                 OperationJournal.reconcile(path, hardware_reconciled=True)
 
+    def test_bounded_restart_cycles_preserve_completed_session_dedup(self):
+        # Exercise repeated fsync/atomic replacements and process-independent
+        # reopen, without using a physical device or asserting durability
+        # under power loss. Bounded deliberately for Windows CI.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "restart-cycles.json"
+            for session in range(900, 924):
+                active = OperationJournal(path)
+                try:
+                    active.begin("Demo::EO::EngineControl", session, 1)
+                    active.resolved("Demo::EO::EngineControl", session, 1)
+                finally:
+                    active.release_owner()
+                reopened = OperationJournal(path)
+                try:
+                    self.assertEqual(len(reopened.settled), session - 899)
+                    with self.assertRaises(JournalFault):
+                        reopened.begin("Demo::EO::EngineControl", session, 1)
+                finally:
+                    reopened.release_owner()
+
     def test_quarantined_or_absent_worker_cannot_create_new_intent(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "quarantined.json"

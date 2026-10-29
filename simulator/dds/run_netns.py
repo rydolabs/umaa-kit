@@ -61,12 +61,17 @@ def confirm_isolation(nodes):
     print('DDS_NETNS_ISOLATION_PASS: ' + ', '.join(nodes), flush=True)
 
 
-def spawn(node, executable, *arguments, readers=1, recovery=False):
+def spawn(node, executable, *arguments, readers=1, recovery=False, impaired=False):
     env = dict(os.environ)
     env['CYCLONEDDS_URI'] = cyclone_config(node)
     env['UMAA_EXPECT_READERS'] = str(readers)
     if recovery:
         env['UMAA_NETEM_RECOVERY'] = '1'
+    # The independent Reader still must prove actual DATA and keyed Dispose.
+    # Retain the real Writer briefly after its final reliability ACK while
+    # the netem test subjects it to jitter, loss or discovery blackout.
+    if recovery or impaired:
+        env['UMAA_NETEM_RETAIN_FINAL'] = '1'
     return subprocess.Popen(command_for_node(node, executable, *arguments),
                             env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             text=True, start_new_session=True)
@@ -158,10 +163,12 @@ def main():
             set_netem(nodes, args.profile)
         for node in sim_nodes:
             sims.append(spawn(node, args.simulator, *(['--update'] if args.update else []),
-                              recovery=args.profile == 'outage-recover'))
+                              recovery=args.profile == 'outage-recover',
+                              impaired=args.profile != 'clean'))
         time.sleep(0.8)
         host = spawn('umaa_ci_pub', args.host, args.module, readers=args.subscribers,
-                     recovery=args.profile == 'outage-recover')
+                     recovery=args.profile == 'outage-recover',
+                     impaired=args.profile != 'clean')
         if args.profile == 'outage-recover':
             # During blackout all participating egress qdiscs drop every packet.
             # Heal while DDS processes are alive, not between test runs.

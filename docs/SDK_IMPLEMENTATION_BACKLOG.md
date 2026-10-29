@@ -340,3 +340,17 @@ Component Definition roles, Key identity rules, QoS GROUP Presentation,
 normative state-table traceability and independent conformance oracle
 are not approved. RTI Connext additionally needs a licensed SDK and Runner.
 No tests in this section prove official conformance.
+
+## 2026-10-29 lossy-netns Writer retirement hardening
+
+After the `6908153687` documentation-head network regression, the
+3-node official BatteryStatus degraded `tc netem` scenario (40ms±10ms,
+1% loss) observed 2/3 events: both data updates, but missing terminal
+Dispose on one Reader, despite the Writer-side ACK/stop returning success.
+The host's `ReportWriter` now accepts an explicit bounded Writer
+retirement grace (0–5000 ms; default **zero**), configured to 1000 ms only
+for opt-in impaired namespace tests. It retains the real DDS Writer after
+the final reliable ACK so late RTPS lifecycle repair remains possible;
+it never synthesizes Report data/Dispose or bypasses the independent
+subscriber's exact 3/3 event check. This is demo scheduling policy,
+not official UMAA QoS/recovery certification.

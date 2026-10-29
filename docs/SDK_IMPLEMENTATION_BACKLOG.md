@@ -130,3 +130,12 @@ Cyclone→FastDDS subscriber missed the required full data/Dispose condition.
 This must not be conflated with same-binary vendor *substitution*, which
 passed. Reproduction and exact scope:
 [Mixed network evidence](SDK_DDS_MIXED_NETWORK_LIMITS.md).
+
+## 2026-10-29 independent remote-only Report Consumer
+
+Removed the incorrect requirement that a network Consumer also load a local
+Provider device DLL. Real DDS Consumer fixtures now subscribe with the Backend
+plugin alone, and a new mock CTest guards remote-only subscription.
+Backend TypeBinding/QoS validation remains mandatory and fail-closed.
+Official per-service Provider/Consumer roles require reviewed generated
+ServiceTraits; this demo does not establish that acceptance.

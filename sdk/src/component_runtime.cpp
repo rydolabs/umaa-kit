@@ -115,19 +115,28 @@ std::unique_ptr<ReportSubscription> ComponentRuntime::subscribe_report_fixture(
  const std::string& service,const std::string& topic_name,
  const std::string& schema,const std::string& qos_profile){
   if(!state_->domain)throw std::runtime_error("DDS backend not installed");
-  std::shared_ptr<umaa::ComponentModule> module;
+  if(service.empty())throw std::invalid_argument("Report service ID is required");
+  // A Consumer need not load a local Provider device module. The backend's
+  // explicitly compiled TypeBinding must authorize Topic, schema and QoS.
+  // If this host ALSO provides the service, verify its local role/schema.
+  std::shared_ptr<umaa::ComponentModule> local_provider;
   {
     std::lock_guard<std::mutex> lock(state_->service_mutex);
     auto it=state_->services.find(service);
-    if(it==state_->services.end())throw std::runtime_error("unknown report service");
-    module=it->second;
-    if(state_->unloading.count(module->name()))
-      throw std::runtime_error("component unload is in progress");
+    if(it!=state_->services.end()){
+      local_provider=it->second;
+      if(state_->unloading.count(local_provider->name()))
+        throw std::runtime_error("component unload is in progress");
+    }
   }
-  bool permitted=false;
-  for(const auto& entry:module->services())
-    if(entry.service==service&&entry.schema==schema&&(entry.actions&4u))permitted=true;
-  if(!permitted)throw std::runtime_error("report type/role mismatch");
+  if(local_provider){
+    bool permitted=false;
+    for(const auto& entry:local_provider->services())
+      if(entry.service==service&&entry.schema==schema&&(entry.actions&4u))permitted=true;
+    if(!permitted)throw std::runtime_error("report type/role mismatch");
+  }
+  // Reject unknown TypeBinding and insufficient QoS by backend->reader().
+  // Production generation must also verify Provider/Consumer roles.
   auto slot=std::make_unique<ReportSubscription::State>(state_->backend,state_->domain);
   const UmaaDdsTopicV1 descriptor{topic_name.c_str(),schema.c_str(),qos_profile.c_str(),
     UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};

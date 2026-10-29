@@ -28,7 +28,8 @@ int main(int argc,char** argv) {
    const std::string mode=argv[1];
    if(mode=="subscriber"){
      umaa::Application app;
-     app.load_component(argv[3]);
+     // This subscriber represents an independent remote application.
+     // It deliberately does NOT load the publisher's device component DLL.
      app.use_backend(argv[2],44);
      auto battery=app.consume<BatteryStatus>();
      bool seen_data=false,seen_dispose=false;

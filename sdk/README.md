@@ -180,3 +180,14 @@ vertical slice; official UMAA bindings are not generated yet.
 `app.unload_component("vehicle-component")` returns false if a module has
 Pending commands or any retained ReportPublisher; it succeeds once those
 resources drain. This supports *cooperative*, not crash-safe, replacement.
+
+## Remote Report Consumer without local device module
+
+A Subscriber that only uses `Application::consume<ReportService>()` now
+loads **only** a DDS backend, not the remote Provider's Component DLL/SO.
+The backend `open_reader` strictly rejects unknown schema/Topic/QoS, while
+a locally registered Provider must additionally match its declared Report
+role/schema. Actual Cyclone and Fast DDS cross-process test fixtures now
+explicitly omit `load_component()` from Subscriber. This proves only the
+synthetic `demo:battery-v1` binding; official generated role verification
+remains open.

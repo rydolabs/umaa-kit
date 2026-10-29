@@ -172,3 +172,25 @@ blocks; neither is a completed official UMAA DDS runtime:
 New tests: `umaa_coherent_collection_receiver_test` and
 `umaa_remote_command_monitor_test` (C++17, Linux and Windows). These exercise
 transaction/recovery and correlation only, not normative UMAA wire behavior.
+
+## 2026-10-29 Command host bridge and DDS ABI event writer
+
+Additional development functionality:
+
+- `CommandEngine` provides identity-aware optional device callbacks.
+- `ComponentCommandProvider<Service>` drives the real Component v2
+  business callback through SDK-owned session, Status and Ack transitions.
+- `DdsCommandEventTransport<Service>` publishes a declared, explicitly
+  codec-bound status/ack stream through `UmaaDdsBackendV1`. It fences
+  unknown DDS delivery and refuses automatic replay.
+- A mock DDS Reader round-trip feeds timestamped Status/Ack into
+  `RemoteCommandMonitor`; terminal success cannot be inferred from Status
+  without a matching ACK.
+- Multi-key Report `latest()` correctly skips a disposed last-event key.
+
+**Acceptance remains PARTIAL** until the complete remotely issued Command
+writer/reader + reviewed official per-service TypeSupport + real Cyclone and
+Fast DDS CommandStatus/Ack session tests pass. The new tests are *host-local*
+and *mock-transport* evidence, not official UMAA protocol conformance.
+`CoherentCollectionReceiver` does not substitute for actual vendor
+GROUP-coherent and ordered access.

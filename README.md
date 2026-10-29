@@ -291,3 +291,16 @@ for reviewed UMAA TypeBindings, DDS coherent/ordered QoS, or the missing
 on-wire Command runtime. See
 [SDK implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md) for the
 remaining completion gates.
+
+### Modular SDK Command transport integration (development)
+
+The SDK now provides a host-side path from a user Component v2 business
+handler to `CommandEngine`, typed Status/Ack events, and a pluggable
+`UmaaDdsBackendV1` event writer. A separate mock-backend Reader test
+checks that a client does not report terminal success from Status alone.
+This **is not a completed network Command client**: official Command
+TypeSupport, incoming DDS Command readers, reviewed status/ack schemas,
+recovery policy and real Cyclone/Fast DDS Command wire tests remain open.
+The new `CoherentCollectionReceiver` similarly provides atomic, bounded
+revision processing but still requires vendor Coherent/Ordered DDS bindings.
+See [the implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md).

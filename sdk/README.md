@@ -226,3 +226,24 @@ for each provider/session. It never infers success from Status alone and treats
 unknown delivery or invalid state transitions as requiring recovery. These
 classes are transport-neutral components; the actual officially mapped
 on-wire Command adapter is still unimplemented.
+
+### Component Command → protocol → DDS backend (development-only integration)
+
+`component_command_provider.hpp` adapts a registered Component ABI v2
+Command handler to the vendor-independent `CommandEngine` transitions.
+The engine now passes source/destination/session identity into optional
+`Handler::execute_session`/`cancel_session` hooks (legacy hooks work).
+`dds_command_event_transport.hpp` publishes schema-encoded Status and Ack
+through the single Backend ABI, never retries ambiguous deliveries, and
+requires explicit checked ACK on flush. `remote_command_monitor.hpp`
+correlates the receive side and refuses synthesized terminal success.
+
+The CTest `umaa_command_dds_event_transport_test` exercises the entire
+host device→engine→writer→**mock** reader→client correlation pipeline;
+`umaa_component_command_provider_test` exercises business session draining.
+Neither test proves real DDS Command traffic or official UMAA conformance.
+A reviewer-approved service codec and Cyclone/Fast DDS TypeBinding must
+implement the Command, Status and Ack topics to clear that acceptance gate.
+
+`ReportSubscription::latest()` now returns the newest *live* instance
+instead of becoming empty whenever an unrelated key was disposed.

@@ -139,3 +139,12 @@ plugin alone, and a new mock CTest guards remote-only subscription.
 Backend TypeBinding/QoS validation remains mandatory and fail-closed.
 Official per-service Provider/Consumer roles require reviewed generated
 ServiceTraits; this demo does not establish that acceptance.
+
+## 2026-10-29 configuration facade
+
+Added `Application::from_config(path)` for a strict middleware/backend/domain
+plus optional Component DLL list. Consumer-only startup requires **no local
+Component**. Parser checks duplicates, input size, domain range, indentation,
+and unknown fields before loading. CTest tests valid and invalid configs.
+Official service mapping, richer YAML, security configuration and production
+supervision remain open.

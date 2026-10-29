@@ -191,3 +191,24 @@ role/schema. Actual Cyclone and Fast DDS cross-process test fixtures now
 explicitly omit `load_component()` from Subscriber. This proves only the
 synthetic `demo:battery-v1` binding; official generated role verification
 remains open.
+
+## Configuration-driven startup without DDS setup code
+
+`auto app = umaa::Application::from_config("runtime.yml");` accepts a
+**strict, documented YAML subset**, not general YAML aliases/evaluation:
+
+```yaml
+middleware:
+  backend: ./libumaa_dds_cyclone_demo.so
+  domain_id: 42
+modules:
+  - ./libvehicle_component.so
+```
+
+All paths are relative to the configuration file unless absolute.
+To switch supported middleware, change `backend` only.
+For a **remote-only Consumer**, use `modules:` with no entries; the
+Subscriber never loads the remote Provider DLL. The parser rejects unknown
+fields, invalid domain, duplicate settings and oversized inputs. The
+ServiceTraits/Topic mapping remains synthetic and checked by the backend;
+this is not normative UMAA configuration support.

@@ -3,7 +3,8 @@
 #pragma once
 #include "umaa/component.hpp"
 #include "umaa/internal/component_runtime.hpp"
-#include "umaa/internal/dds_backend.h" // vendor-neutral event kinds only
+#include "umaa/internal/dds_backend.h"
+#include "umaa/internal/runtime_config.hpp" // vendor-neutral event kinds only
 #include <cstdint>
 #include <functional>
 #include <exception>
@@ -217,6 +218,13 @@ private:
 class Application final {
 public:
   Application():host_(std::make_shared<internal::ComponentRuntime>()){}
+  static Application from_config(const std::string& config_path) {
+    auto config=internal::RuntimeConfig::read(config_path);
+    Application app;
+    app.use_backend(config.backend,config.domain_id);
+    for(const auto& module:config.modules)app.load_component(module);
+    return app;
+  }
   void load_component(const std::string& path){host_->load_component(path);}
   // Cooperative in-process reload; not a crash-safe hot-upgrade.
   bool unload_component(const std::string& id){return host_->unload_component(id);}

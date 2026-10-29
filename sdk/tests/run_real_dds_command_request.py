@@ -8,11 +8,11 @@ def main():
         return 2
     exe, backend, component = sys.argv[1:4]
     client_exe = sys.argv[4] if len(sys.argv) >= 5 else exe
-    cancel_mode = len(sys.argv) == 6 and sys.argv[5] == "cancel"
-    if len(sys.argv) == 6 and not cancel_mode:
+    mode = sys.argv[5] if len(sys.argv) == 6 else "normal"
+    if mode not in ("normal", "cancel", "update"):
         return 2
-    server_mode = "server-cancel" if cancel_mode else "server"
-    client_mode = "client-cancel" if cancel_mode else "client"
+    server_mode = "server-" + mode if mode != "normal" else "server"
+    client_mode = "client-" + mode if mode != "normal" else "client"
     server = subprocess.Popen([exe, server_mode, backend, component],
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               text=True)

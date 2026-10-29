@@ -44,7 +44,7 @@ static UmaaDdsTopicV1 binding(const char* topic,const char* schema) {
 struct ProviderReceiver {
  umaa::ComponentCommandProvider<Service>* provider{};
  bool received{false},completed{false},disposed{false},failed{false};
- bool cancel_mode{false};
+ bool cancel_mode{false},update_mode{false},updated{false};
  static void on_command(void* ctx,const UmaaDdsSampleV1* s) {
    auto* p=static_cast<ProviderReceiver*>(ctx);
    if(!s||!s->instance_key||std::string(s->instance_key)!="17") {
@@ -65,6 +65,14 @@ struct ProviderReceiver {
          {"controller","vehicle","17",s->source_timestamp_ns},{rpm});
        if(events.size()!=4)p->failed=true;
        p->received=true;
+     }else if(s->event_kind==UMAA_DDS_EVENT_DATA&&p->received&&
+              p->update_mode&&!p->updated&&s->payload&&
+              s->payload_size==sizeof(int32_t)){
+       int32_t rpm=0;std::memcpy(&rpm,s->payload,sizeof(rpm));
+       const auto events=p->provider->receive(
+         {"controller","vehicle","17",s->source_timestamp_ns},{rpm});
+       if(rpm!=1900||events.size()!=4)p->failed=true;
+       p->updated=true;
      }else p->failed=true;
    }catch(...){p->failed=true;}
  }
@@ -108,7 +116,7 @@ int main(int argc,char** argv){
    auto plugin=std::make_shared<umaa::DdsBackendPlugin>(argv[2]);
    auto domain=std::shared_ptr<umaa::DdsBackendPlugin::Domain>(
      plugin->open_domain(44).release());
-   if(mode=="server"||mode=="server-cancel"){
+   if(mode=="server"||mode=="server-cancel"||mode=="server-update"){
      auto runtime=std::make_shared<umaa::internal::ComponentRuntime>();
      runtime->load_component(argv[3]);
      // Synthetic fixture's consumer polls; keep terminal data available
@@ -118,21 +126,26 @@ int main(int argc,char** argv){
      umaa::ComponentCommandProvider<Service> provider("vehicle",runtime,wire);
      ProviderReceiver receiver{&provider};
      receiver.cancel_mode=(mode=="server-cancel");
+     receiver.update_mode=(mode=="server-update");
      auto* request_reader=domain->reader(binding(request_topic,request_schema),
                                          &ProviderReceiver::on_command,&receiver);
      for(int i=0;i<480&&!receiver.disposed&&!receiver.failed;i++){
        if(domain->poll(request_reader,20)<0){receiver.failed=true;break;}
-       if(receiver.received&&!receiver.completed&&!receiver.cancel_mode){
+       if(receiver.received&&!receiver.completed&&!receiver.cancel_mode&&
+          (!receiver.update_mode||receiver.updated)){
          auto events=provider.poll_device("17");
          if(!events.empty()&&events[0].detail=="COMPLETED")receiver.completed=true;
        }
        std::this_thread::sleep_for(std::chrono::milliseconds(15));
      }
-     bool ok=receiver.received&&receiver.completed&&receiver.disposed&&!receiver.failed;
+     bool ok=receiver.received&&receiver.completed&&receiver.disposed&&!receiver.failed&&
+             (!receiver.update_mode||receiver.updated);
      if(ok)wire.wait_for_acks(5000);
      std::this_thread::sleep_for(std::chrono::milliseconds(250));
      domain->close_reader(request_reader);
-     std::cout<<"SERVER cancel_mode="<<receiver.cancel_mode<<" command="<<receiver.received<<" completed="<<receiver.completed
+     std::cout<<"SERVER cancel_mode="<<receiver.cancel_mode
+              <<" update_mode="<<receiver.update_mode<<" updated="<<receiver.updated
+              <<" command="<<receiver.received<<" completed="<<receiver.completed
               <<" request_dispose="<<receiver.disposed<<"\n";
      return ok?0:3;
    }

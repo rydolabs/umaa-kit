@@ -42,13 +42,24 @@ struct AsyncEngine {
 };
 int main(int argc,char** argv){
   if(argc!=4 || (std::string(argv[1])!="client" &&
-                 std::string(argv[1])!="client-cancel"))return 2;
+                 std::string(argv[1])!="client-cancel" &&
+                 std::string(argv[1])!="client-update"))return 2;
   try{
     umaa::Application app;
     app.use_backend(argv[2],44);
     auto client=app.consume_remote<AsyncEngine>("controller","vehicle");
     client.send({1800},"17");
     const bool cancel_mode=std::string(argv[1])=="client-cancel";
+    const bool update_mode=std::string(argv[1])=="client-update";
+    if(update_mode) {
+      const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(8);
+      while(!client.ready_for_update("17")&&std::chrono::steady_clock::now()<deadline){
+        client.poll();
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+      }
+      if(!client.ready_for_update("17"))return 6;
+      client.update({1900},"17");
+    }
     if(cancel_mode) {
       const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(8);
       while(!client.acknowledged("17") && std::chrono::steady_clock::now()<deadline) {
@@ -67,7 +78,8 @@ int main(int argc,char** argv){
     }
     if(!cancel_mode)std::this_thread::sleep_for(std::chrono::milliseconds(150));
     client.finish("17",std::chrono::seconds(10));
-    std::cout<<"PASS typed remote Command "<<(cancel_mode?"cancellation":"completion")
+    std::cout<<"PASS typed remote Command "
+             <<(cancel_mode?"cancellation":update_mode?"revision update":"completion")
              <<" after real Status/Ack and Dispose\n";
     return 0;
   }catch(const std::exception& e){

@@ -80,3 +80,11 @@ add_test(NAME umaa_cyclone_typed_command_cancel_real_wire
  "$<TARGET_FILE:umaa_cyclone_vehicle_component>"
  "$<TARGET_FILE:umaa_cyclone_typed_command_client_cli>" cancel)
 set_tests_properties(umaa_cyclone_typed_command_cancel_real_wire PROPERTIES TIMEOUT 55)
+
+add_test(NAME umaa_cyclone_typed_command_update_real_wire
+ COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_command_request.py"
+ "$<TARGET_FILE:umaa_cyclone_command_request_cli>"
+ "$<TARGET_FILE:umaa_dds_cyclone_command_demo>"
+ "$<TARGET_FILE:umaa_cyclone_vehicle_component>"
+ "$<TARGET_FILE:umaa_cyclone_typed_command_client_cli>" update)
+set_tests_properties(umaa_cyclone_typed_command_update_real_wire PROPERTIES TIMEOUT 55)

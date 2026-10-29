@@ -85,6 +85,60 @@ class IsolatedWorkerTest(unittest.TestCase):
                 self.assertTrue(fresh.ping())
                 self.assertTrue(fresh.stop())
 
+    def test_journal_rejects_corruption_and_duplicate_replay(self):
+        import json
+        from umaa_operation_journal import JournalFault
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "intent.json"
+            path.write_text("corrupted and not JSON", encoding="utf-8")
+            with self.assertRaises(JournalFault):
+                self.make_journal(path)
+            path.write_text(json.dumps({"version": 99, "unresolved": []}),
+                            encoding="utf-8")
+            with self.assertRaises(JournalFault):
+                self.make_journal(path)
+            path.unlink()
+            with self.make_journal(path) as host:
+                self.assertEqual(host.call("Demo::EO::AsyncEngineControl", 1,
+                    struct.pack("=i", 1500), 601)[:2], (0, 2))
+                with self.assertRaises(JournalFault):
+                    host.call("Demo::EO::AsyncEngineControl", 1,
+                              struct.pack("=i", 1500), 601)
+                self.assertTrue(host.faulted)
+
+    def test_journal_verified_poll_clears_durable_intent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "intent.json"
+            with self.make_journal(path) as host:
+                self.assertEqual(host.call("Demo::EO::AsyncEngineControl", 1,
+                    struct.pack("=i", 1500), 811)[:2], (0, 2))
+                self.assertFalse(host.stop())
+                self.assertEqual(host.call("Demo::EO::AsyncEngineControl", 4,
+                    b"", 811)[:2], (0, 2))
+                self.assertEqual(host.call("Demo::EO::AsyncEngineControl", 4,
+                    b"", 811)[:2], (0, 2))
+                self.assertEqual(host.call("Demo::EO::AsyncEngineControl", 4,
+                    b"", 811)[:2], (0, 0))
+                self.assertTrue(host.stop())
+            with self.make_journal(path) as host:
+                self.assertTrue(host.ping())
+                self.assertTrue(host.stop())
+
+    def test_concurrent_calls_have_separate_reply_frames(self):
+        from concurrent.futures import ThreadPoolExecutor
+        with self.make() as host:
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                responses = list(pool.map(
+                    lambda rpm: host.call("Demo::EO::EngineControl", 1,
+                        struct.pack("=i", rpm), rpm),
+                    range(2000, 2040)))
+            self.assertEqual(responses, [(0, 0, b"")] * 40)
+            self.assertTrue(host.stop())
+
+    def make_journal(self, path):
+        return ComponentProcessSupervisor(self.worker, self.module,
+                                          timeout=5, journal_path=path)
+
     def test_pending_command_blocks_cooperative_stop(self):
         with self.make() as host:
             status, result, _ = host.call(

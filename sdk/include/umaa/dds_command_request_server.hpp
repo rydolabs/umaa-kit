@@ -5,6 +5,9 @@
 #include "umaa/component_command_provider.hpp"
 #include "umaa/dds_command_event_transport.hpp"
 #include <chrono>
+#include <atomic>
+#include <exception>
+#include <thread>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
@@ -49,15 +52,56 @@ public:
   DdsCommandRequestServer(const DdsCommandRequestServer&)=delete;
   DdsCommandRequestServer& operator=(const DdsCommandRequestServer&)=delete;
   ~DdsCommandRequestServer(){
+    stop_background();
     // Callback objects and writers must outlive the reader's final callback.
     if(reader_)domain_->close_reader(reader_);
     provider_.reset();wire_.reset();
+  }
+
+  // Polling, device session progression, and DDS callbacks can be owned
+  // entirely by the SDK. Explicit stop joins the thread before module unload.
+  void start_background(std::chrono::milliseconds interval=
+                        std::chrono::milliseconds(25)){
+    if(interval.count()<=0||interval>std::chrono::seconds(5))
+      throw std::invalid_argument("invalid background Command interval");
+    if(background_.joinable())
+      throw std::logic_error("Command server already has a background worker");
+    background_error_=nullptr;
+    stop_requested_.store(false);
+    background_=std::thread([this,interval]{
+      while(!stop_requested_.load()){
+        try{poll();}
+        catch(...){
+          faulted_.store(true);
+          background_error_=std::current_exception();
+          stop_requested_.store(true);
+          return;
+        }
+        std::this_thread::sleep_for(interval);
+      }
+    });
+  }
+  void stop_background() noexcept {
+    stop_requested_.store(true);
+    if(background_.joinable()&&
+       background_.get_id()!=std::this_thread::get_id())
+      background_.join();
+  }
+  void rethrow_background_error(){
+    stop_background();
+    if(background_error_)std::rethrow_exception(background_error_);
+  }
+  bool background_running() const noexcept {
+    return background_.joinable()&&!stop_requested_.load();
   }
 
   // Drive incoming DDS requests and pending device sessions. A cooperative
   // scheduler can temporarily disable device polling while still receiving
   // requests; the default always polls. No hidden DDS API in user code.
   int poll(std::uint32_t max_samples=16,bool poll_device=true) {
+    if(background_.joinable() &&
+       background_.get_id()!=std::this_thread::get_id())
+      throw std::logic_error("manual poll while background Command worker owns Reader");
     require_active();
     if(!max_samples)throw std::invalid_argument("invalid Command poll budget");
     const int seen=domain_->poll(reader_,max_samples);
@@ -82,21 +126,22 @@ public:
         }catch(...){faulted_=true;throw;}
       }
     }
+    active_count_.store(active_.size());
     return seen;
   }
   void wait_for_acks(std::uint32_t timeout_ms=5000) {
+    if(background_.joinable()&&background_running())
+      throw std::logic_error("stop Command worker before final ACK drain");
     require_active();
     try{wire_->wait_for_acks(timeout_ms);}
     catch(...){faulted_=true;throw;}
   }
-  std::size_t active_sessions() const noexcept{return active_.size();}
-  std::size_t accepted_requests() const noexcept{return accepted_count_;}
-  std::size_t retired_sessions() const noexcept{return retired_count_;}
-  std::size_t terminal_commands() const noexcept{return terminal_count_;}
-  std::size_t canceled_commands() const noexcept{return canceled_count_;}
-  bool faulted() const noexcept {
-    return faulted_||(provider_&&provider_->faulted())||(wire_&&wire_->faulted());
-  }
+  std::size_t active_sessions() const noexcept{return active_count_.load();}
+  std::size_t accepted_requests() const noexcept{return accepted_count_.load();}
+  std::size_t retired_sessions() const noexcept{return retired_count_.load();}
+  std::size_t terminal_commands() const noexcept{return terminal_count_.load();}
+  std::size_t canceled_commands() const noexcept{return canceled_count_.load();}
+  bool faulted() const noexcept {return faulted_.load();}
 private:
   static void receive(void* ctx,const UmaaDdsSampleV1* sample) noexcept {
     auto* self=static_cast<DdsCommandRequestServer*>(ctx);
@@ -159,7 +204,10 @@ private:
   std::unique_ptr<DdsCommandEventTransport<Service>> wire_;
   std::unique_ptr<ComponentCommandProvider<Service>> provider_;
   std::unordered_set<std::string> active_;
-  std::size_t accepted_count_{},retired_count_{},terminal_count_{},canceled_count_{};
-  bool faulted_{false};
+  std::atomic<std::size_t> accepted_count_{0},retired_count_{0},
+      terminal_count_{0},canceled_count_{0},active_count_{0};
+  std::atomic<bool> faulted_{false},stop_requested_{true};
+  std::thread background_;
+  std::exception_ptr background_error_;
 };
 } // namespace umaa

@@ -9,19 +9,27 @@ int main(int argc,char** argv) {
   if(argc!=4)return 2;
   try {
     const std::string mode=argv[1];
-    if(mode!="server"&&mode!="server-cancel"&&mode!="server-update")return 2;
+    if(mode!="server"&&mode!="server-cancel"&&
+       mode!="server-update"&&mode!="server-auto")return 2;
     umaa::Application app;
     app.load_component(argv[3]);
     app.use_backend(argv[2],44);
-    auto server=app.serve_remote<AsyncEngine>(
-       "controller","vehicle",std::chrono::milliseconds(180));
+    auto server=mode=="server-auto" ?
+      app.start_remote<AsyncEngine>("controller","vehicle",
+          std::chrono::milliseconds(180),std::chrono::milliseconds(15)):
+      app.serve_remote<AsyncEngine>("controller","vehicle",
+          std::chrono::milliseconds(180));
     const bool cancel_mode=mode=="server-cancel";
     const bool update_mode=mode=="server-update";
     for(int i=0;i<500&&server->retired_sessions()==0&&!server->faulted();++i){
       const bool device_poll=!cancel_mode &&
           (!update_mode||server->accepted_requests()>=2);
-      server->poll(20,device_poll);
+      if(mode!="server-auto")server->poll(20,device_poll);
       std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    }
+    if(mode=="server-auto"){
+      server->stop_background();
+      server->rethrow_background_error();
     }
     const bool ok=!server->faulted()&&server->accepted_requests()==
         (update_mode?2u:1u)&&server->retired_sessions()==1 &&

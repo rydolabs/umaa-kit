@@ -292,6 +292,16 @@ public:
     return std::make_unique<DdsCommandRequestServer<Service>>(
         backend_path_,domain_id_,host_,source,provider,retirement_delay);
   }
+  // The SDK owns the Command reader polling thread as well as the FSM.
+  template<class Service>
+  std::unique_ptr<DdsCommandRequestServer<Service>> start_remote(
+      const std::string& source,const std::string& provider,
+      std::chrono::milliseconds retirement_delay={},
+      std::chrono::milliseconds poll_interval=std::chrono::milliseconds(25)) const {
+    auto server=serve_remote<Service>(source,provider,retirement_delay);
+    server->start_background(poll_interval);
+    return server;
+  }
   // One-step typed asynchronous Command Handle. DDS channel lifetime belongs
   // to the Handle, not to this Application's ComponentRuntime.
   template<class Service>

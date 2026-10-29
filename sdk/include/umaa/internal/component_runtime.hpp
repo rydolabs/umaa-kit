@@ -60,6 +60,9 @@ public:
   ComponentRuntime(const ComponentRuntime&) = delete;
   ComponentRuntime& operator=(const ComponentRuntime&) = delete;
   void load_component(const std::string& filename);
+  // Cooperative unload. Rejects Pending command sessions and active publishers.
+  // Module administration must be serialized by the host orchestrator.
+  bool unload_component(const std::string& module_id);
   void load_backend(const std::string& filename, uint32_t domain_id);
   std::vector<std::string> services() const;
   std::unique_ptr<ReportSubscription> subscribe_report_fixture(const std::string& service,

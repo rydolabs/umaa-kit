@@ -14,8 +14,12 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <algorithm>
+#include <unordered_set>
 namespace umaa::internal {
 struct ComponentRuntime::State {
+  std::mutex service_mutex;
+  std::unordered_set<std::string> unloading;
   std::vector<std::shared_ptr<umaa::ComponentModule>> modules;
   std::unordered_map<std::string, std::shared_ptr<umaa::ComponentModule>> services;
   std::shared_ptr<umaa::DdsBackendPlugin> backend;
@@ -111,10 +115,17 @@ std::unique_ptr<ReportSubscription> ComponentRuntime::subscribe_report_fixture(
  const std::string& service,const std::string& topic_name,
  const std::string& schema,const std::string& qos_profile){
   if(!state_->domain)throw std::runtime_error("DDS backend not installed");
-  auto it=state_->services.find(service);
-  if(it==state_->services.end())throw std::runtime_error("unknown report service");
+  std::shared_ptr<umaa::ComponentModule> module;
+  {
+    std::lock_guard<std::mutex> lock(state_->service_mutex);
+    auto it=state_->services.find(service);
+    if(it==state_->services.end())throw std::runtime_error("unknown report service");
+    module=it->second;
+    if(state_->unloading.count(module->name()))
+      throw std::runtime_error("component unload is in progress");
+  }
   bool permitted=false;
-  for(const auto& entry:it->second->services())
+  for(const auto& entry:module->services())
     if(entry.service==service&&entry.schema==schema&&(entry.actions&4u))permitted=true;
   if(!permitted)throw std::runtime_error("report type/role mismatch");
   auto slot=std::make_unique<ReportSubscription::State>(state_->backend,state_->domain);
@@ -126,13 +137,54 @@ std::unique_ptr<ReportSubscription> ComponentRuntime::subscribe_report_fixture(
 ComponentRuntime::ComponentRuntime():state_(std::make_unique<State>()){}
 ComponentRuntime::~ComponentRuntime()=default;
 void ComponentRuntime::load_component(const std::string& filename){
+  // Do not load modules while replacing another module. Management operations
+  // are serialized; data calls may be concurrently serviced.
+  {
+    std::lock_guard<std::mutex> lock(state_->service_mutex);
+    if(!state_->unloading.empty())
+      throw std::runtime_error("component unload is in progress");
+  }
   auto mod=std::make_shared<umaa::ComponentModule>(filename);
+  std::lock_guard<std::mutex> lock(state_->service_mutex);
   for(const auto& service:mod->services())
     if(state_->services.count(service.service))
       throw std::runtime_error("duplicate service between components: "+service.service);
-  auto pointer=mod;
-  for(const auto& service:mod->services())state_->services.emplace(service.service,pointer);
+  for(const auto& service:mod->services())
+    state_->services.emplace(service.service,mod);
   state_->modules.push_back(std::move(mod));
+}
+bool ComponentRuntime::unload_component(const std::string& module_id){
+  std::shared_ptr<umaa::ComponentModule> module;
+  {
+    std::lock_guard<std::mutex> lock(state_->service_mutex);
+    auto found=std::find_if(state_->modules.begin(),state_->modules.end(),
+      [&](const auto& x){return x->name()==module_id;});
+    if(found==state_->modules.end() || state_->unloading.count(module_id))
+      return false;
+    module=*found;
+    // One vector ref, one temporary ref, and one ref per registered service.
+    // ReportPublisher holds an additional ref: do not unload underneath it.
+    if(module.use_count()>static_cast<long>(module->services().size()+2))
+      return false;
+    state_->unloading.insert(module_id);
+  }
+  bool stopped=false;
+  try{stopped=module->stop();}
+  catch(...){stopped=false;}
+  {
+    std::lock_guard<std::mutex> lock(state_->service_mutex);
+    if(stopped){
+      for(const auto& service:module->services()){
+        auto pos=state_->services.find(service.service);
+        if(pos!=state_->services.end()&&pos->second==module)
+          state_->services.erase(pos);
+      }
+      state_->modules.erase(std::remove(state_->modules.begin(),
+        state_->modules.end(),module),state_->modules.end());
+    }
+    state_->unloading.erase(module_id);
+  }
+  return stopped;
 }
 void ComponentRuntime::load_backend(const std::string& filename,uint32_t domain_id){
   if(state_->domain)throw std::runtime_error("DDS backend already installed");
@@ -142,6 +194,7 @@ void ComponentRuntime::load_backend(const std::string& filename,uint32_t domain_
   state_->domain=std::move(domain);
 }
 std::vector<std::string> ComponentRuntime::services()const{
+  std::lock_guard<std::mutex> lock(state_->service_mutex);
   std::vector<std::string> out;
   for(const auto& s:state_->services)out.push_back(s.first);
   return out;
@@ -149,9 +202,15 @@ std::vector<std::string> ComponentRuntime::services()const{
 int32_t ComponentRuntime::call(const std::string& service_id,uint32_t action,
   const std::vector<uint8_t>& payload,std::vector<uint8_t>& output,
   int32_t& business_result,uint64_t session_id){
-  const auto found=state_->services.find(service_id);
-  if(found==state_->services.end())return UMAA_COMPONENT_NOT_FOUND;
-  return found->second->call(service_id,action,payload,output,business_result,session_id);
+  std::shared_ptr<umaa::ComponentModule> module;
+  {
+    std::lock_guard<std::mutex> lock(state_->service_mutex);
+    auto found=state_->services.find(service_id);
+    if(found==state_->services.end())return UMAA_COMPONENT_NOT_FOUND;
+    module=found->second;
+    if(state_->unloading.count(module->name()))return UMAA_COMPONENT_NOT_ACTIVE;
+  }
+  return module->call(service_id,action,payload,output,business_result,session_id);
 }
 namespace {
 int64_t next_report_timestamp(){
@@ -272,10 +331,17 @@ std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
     const std::string& service_id,const std::string& topic_name,
     const std::string& schema_id,const std::string& instance_key){
   if(!state_->domain)throw std::runtime_error("DDS backend not loaded");
-  const auto found=state_->services.find(service_id);
-  if(found==state_->services.end())throw std::runtime_error("unknown report service");
+  std::shared_ptr<umaa::ComponentModule> module;
+  {
+    std::lock_guard<std::mutex> lock(state_->service_mutex);
+    const auto found=state_->services.find(service_id);
+    if(found==state_->services.end())throw std::runtime_error("unknown report service");
+    module=found->second;
+    if(state_->unloading.count(module->name()))
+      throw std::runtime_error("component unload is in progress");
+  }
   bool authorized=false;
-  for(const auto& d:found->second->services())
+  for(const auto& d:module->services())
     if(d.service==service_id&&d.schema==schema_id&&(d.actions&4u))authorized=true;
   if(!authorized)throw std::runtime_error("report schema or role mismatch");
   const UmaaDdsTopicV1 topic{topic_name.c_str(),schema_id.c_str(),"demo-reliable",
@@ -283,7 +349,7 @@ std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
   auto writer=state_->domain->writer(topic);
   return std::unique_ptr<ReportPublisher>(new ReportPublisher(
     std::make_unique<ReportPublisher::State>(state_->backend,state_->domain,
-      found->second,writer,service_id,instance_key)));
+      module,writer,service_id,instance_key)));
 }
 void ComponentRuntime::publish_report_fixture(const std::string& service_id,
   const std::string& topic_name,const std::string& schema_id,

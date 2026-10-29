@@ -98,3 +98,16 @@ updates from business-only `ReportSource::read()` and fail-closed async
 errors. Mock backend CTest verifies repeated updates and Dispose on teardown.
 **OPEN:** official service-specific scheduling policies, Startup/Recovery
 QoS and full multi-service performance qualification.
+
+## 2026-10-29 cooperative Component reload (development)
+
+`ComponentRuntime::unload_component(module_id)` now rejects active Pending
+device Command sessions and retained ReportPublisher ownership. It gates
+new service calls during the stop sequence and requires a successful
+`ComponentModule::stop()` before removing service registry entries.
+Afterwards the same DLL/SO can be reloaded as a fresh component instance.
+CTest covers negative pending/publisher gates, unload and reload.
+
+**Limit:** this is a cooperative in-process reload, not automatic hot-upgrade
+with zero downtime, process crash isolation or supervisor-controlled IPC.
+The module administrative API must be serialized by the host orchestrator.

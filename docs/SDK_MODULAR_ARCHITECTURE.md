@@ -30,7 +30,7 @@ UMAA_EXPORT_COMPONENT_V2("engine", register_services)
 `EngineControl` above is a generated service contract, **not** the sample fixture
 class. The module-export macro hides all C ABI boilerplate; a future build
 `ServiceBinding` generator will produce official schema codecs and type maps.
-The present demo under `sdk/examples/modules/vehicle_component.cpp` uses two
+The present demo under `sdk/examples/modules/vehicle_component.cpp` uses three
 synthetic, intentionally `demo:`-prefixed types, not genuine UMAA wire types.
 
 ## Binary responsibilities
@@ -45,8 +45,8 @@ umaa-host(.exe)                         process orchestration (planned)
   |-- vehicle-control(.dll/.so)         user Handler(s), no DDS headers (MVP built)
   |-- navigation(.dll/.so)              optional user component
   `-- umaa-dds-<vendor>(.dll/.so)       ONE backend active per runtime/domain
-        |-- cyclone                     legacy adapter exists; ABI plugin not yet migrated
-        |-- fastdds                     not yet implemented
+        |-- cyclone                     synthetic Report ABI plugin verified
+        |-- fastdds                     synthetic Report ABI plugin verified
         `-- rti                         requires SDK/license, not yet implemented
 ```
 
@@ -155,6 +155,29 @@ The consumer does not include Cyclone headers. Backend callback, domain and
 library lifetime are retained safely across the ReportSubscription lifetime.
 
 Only synthetic `demo:battery-v1` mapping is compiled into the new Cyclone
-plugin. No automatic official UMAA QoS binding, async CommandStatus correlation,
-or service-wide Report scheduling is implemented. Fast DDS and RTI adapter
-integration remains OPEN/BLOCKED as described in their vendor READMEs.
+and Fast DDS plugins. The identical device module and Consumer binary run
+against either vendor in CI. A synthetic Report callback/watch loop and
+periodic ReportSource scheduler are implemented in the common runtime;
+official UMAA QoS binding and DDS CommandStatus/Ack correlation remain OPEN.
+RTI Adapter validation remains BLOCKED pending licensed SDK/Runner.
+
+## Incremental user API and module safety evidence — 2026-10-29
+
+- **Application callback API:** `consume<Report>().on_change(data,dispose)`
+  dispatches keyed Report events on an SDK-managed Reader thread; no app
+  Reader/Writer code. Callback failures are exposed, and manual concurrent
+  polling is prohibited. Development TypeBinding only.
+- **Automatic Report Provider:** `ReportPublisher::start_periodic(interval)`
+  asks the registered business-only `ReportSource::read()` for updates.
+  The SDK owns the persistent writer, periodic thread and final ACK on close.
+- **ABI v2 safe stop:** `stop()` waits for active module calls; Pending
+  device Command sessions block unload until terminal. Failed stop remains
+  quarantined; the host does not retry unsafe shutdown. Process-level isolation
+  is NOT included.
+- **Vendor facade:** Cyclone DDS and Fast DDS real-wire synthetic
+  BatteryStatus testing and unchanged-binary parity have Actions evidence.
+  No official UMAA full-service conformance or mixed-vendor wire proof.
+
+The old milestones above are historical design targets; the
+[implementation ledger](SDK_IMPLEMENTATION_BACKLOG.md) is the current
+acceptance source of truth.

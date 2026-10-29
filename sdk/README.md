@@ -93,10 +93,10 @@ boundary is defined **once** in `include/umaa/internal/dds_backend.h`.
   **not** genuine DDS network communication.
 
 See [full architecture and vendor extension rules](../docs/SDK_MODULAR_ARCHITECTURE.md).
-The old Module ABI v1 remains for legacy test compatibility. Cyclone's
-existing real DDS adapters/tests remain unchanged and are not yet migrated
-under the new runtime's single vendor facade. Fast DDS/RTI Adapter and
-normative service bindings remain outstanding. Never infer official UMAA
+The old Module ABI v1 remains for legacy test compatibility. Synthetic
+BatteryStatus TypeBindings run over separate Cyclone and Fast DDS plugins;
+legacy official service hosts have not yet been fully migrated into the new
+facade. RTI Adapter and normative service bindings remain outstanding. Never infer official UMAA
 conformance from these development-only ABI tests.
 
 
@@ -108,8 +108,9 @@ For a synthetic Report schema whose reviewed contract declares
 `decode_report`, the consumer's `poll(1)`, `latest(out,key)`, and
 `disposed()` use the backend plugin through `ComponentRuntime`.
 For a synthetic Command schema with `is_command=true` and
-`encode_command`, `CommandHandle::wait()` currently supports **immediate
-host-local results only** and explicitly refuses `Pending`.
+`encode_command`, `CommandHandle::wait()` handles immediate terminal results and refuses
+`Pending`; `poll()`, `wait_for()` and `cancel()` handle host-local async
+business sessions. Real DDS CommandStatus/Ack is not yet connected.
 
 See `dds/vendors/cyclone/` for the **synthetic BatteryStatus-only** real-wire
 adapter, and `docs/SDK_FACADE_PHASE2.md` for limitations and CI reproduction.

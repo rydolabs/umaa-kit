@@ -123,8 +123,8 @@ int32_t send(void* handle,const UmaaDdsSampleV1* sample,uint32_t kind){
  auto* writer=static_cast<Writer*>(handle)->writer;
  ReturnCode_t rc=ReturnCode_t::RETCODE_BAD_PARAMETER;
  if(kind==UMAA_DDS_EVENT_DATA)rc=writer->write(&wire);
- else if(kind==UMAA_DDS_EVENT_DISPOSE)rc=writer->dispose(&wire);
- else if(kind==UMAA_DDS_EVENT_UNREGISTER)rc=writer->unregister_instance(&wire);
+ else if(kind==UMAA_DDS_EVENT_DISPOSE)rc=writer->dispose(&wire,rtps::HANDLE_NIL);
+ else if(kind==UMAA_DDS_EVENT_UNREGISTER)rc=writer->unregister_instance(&wire,rtps::HANDLE_NIL);
  return rc==ReturnCode_t::RETCODE_OK?UMAA_DDS_OK:UMAA_DDS_UNKNOWN_DELIVERY;
 }
 int32_t write(void* p,const UmaaDdsSampleV1* s){return send(p,s,UMAA_DDS_EVENT_DATA);}
@@ -147,8 +147,7 @@ int32_t poll(void* handle,uint32_t max_samples){
   if(kind){
    const std::string key=std::to_string(wire.source_id());
    int32_t value=wire.level_percent();
-   int64_t timestamp=static_cast<int64_t>(info.source_timestamp.seconds)*1000000000LL+
-                     info.source_timestamp.nanosec;
+   int64_t timestamp=info.source_timestamp.to_ns();
    UmaaDdsSampleV1 sample{
      kind==UMAA_DDS_EVENT_DATA?reinterpret_cast<uint8_t*>(&value):nullptr,
      kind==UMAA_DDS_EVENT_DATA?static_cast<uint32_t>(sizeof(value)):0,

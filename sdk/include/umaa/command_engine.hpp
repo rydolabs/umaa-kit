@@ -42,6 +42,10 @@ template <class Payload> struct Handler {
   // Return false if the device cannot safely cancel; terminal status isn't
   // synthesized until it truly cancels/completes.
   virtual bool cancel(const Payload&) = 0;
+  // Optional identity-aware hooks. Existing handlers remain source-compatible.
+  // Implement these when routing concurrent device sessions via Component ABI.
+  virtual Outcome execute_session(const Identity&,const Payload& p) {return execute(p);}
+  virtual bool cancel_session(const Identity&,const Payload& p) {return cancel(p);}
 };
 
 template <class Payload> class CommandEngine {
@@ -80,7 +84,7 @@ public:
       }
       // First request device to cancel previous activity; never claim an
       // update succeeded while old hardware work is still active.
-      if (!safe_cancel(current.payload)) {
+      if (!safe_cancel(current.identity,current.payload)) {
         events.push_back({Event::Kind::Ignored, id.session, "UPDATE_NOT_SAFE", ""});
         return events;
       }
@@ -121,7 +125,7 @@ public:
     auto it = sessions_.find(session);
     if (it == sessions_.end() || terminal(it->second.state))
       return {{Event::Kind::Ignored, session, "NOT_ACTIVE", ""}};
-    if (!safe_cancel(it->second.payload))
+    if (!safe_cancel(it->second.identity,it->second.payload))
       return {{Event::Kind::Ignored, session, "TIMEOUT_CANCEL_NOT_SAFE", ""}};
     transition(it->second, State::FAILED, "TIMEOUT", events);
     if (it->second.command_gone) {
@@ -140,7 +144,7 @@ public:
       return {{Event::Kind::Ignored, session, "UNKNOWN_SESSION", ""}};
     it->second.command_gone = true;
     if (!terminal(it->second.state)) {
-      if (!safe_cancel(it->second.payload)) {
+      if (!safe_cancel(it->second.identity,it->second.payload)) {
         return {{Event::Kind::Ignored, session, "CANCEL_NOT_SAFE", ""}};
       }
       transition(it->second, State::CANCELED, "CANCELED", events);
@@ -198,8 +202,8 @@ private:
     s.state = state;
     events.push_back({Event::Kind::Status, s.identity.session, to_string(state), reason});
   }
-  bool safe_cancel(const Payload& payload) {
-    try { return handler_.cancel(payload); }
+  bool safe_cancel(const Identity& id,const Payload& payload) {
+    try { return handler_.cancel_session(id,payload); }
     catch (...) { return false; } // Never claim cancellation if user code throws.
   }
   void execute(Session& s, std::vector<Event>& events) {
@@ -217,7 +221,7 @@ private:
     transition(s, State::COMMANDED, "SUCCEEDED", events);
     transition(s, State::EXECUTING, "SUCCEEDED", events);
     Outcome out = Outcome::Pending;
-    try { out = handler_.execute(s.payload); }
+    try { out = handler_.execute_session(s.identity,s.payload); }
     catch (...) { transition(s, State::FAILED, "SERVICE_FAILED", events); return; }
     if (out == Outcome::Completed) transition(s, State::COMPLETED, "SUCCEEDED", events);
     if (out == Outcome::Failed) transition(s, State::FAILED, "OBJECTIVE_FAILED", events);

@@ -41,7 +41,11 @@ int main(int argc,char** argv) {
        if(battery.disposed())seen_dispose=true;
        std::this_thread::sleep_for(std::chrono::milliseconds(25));
      }
-     if(!seen_data||!seen_dispose)return 3;
+     if(!seen_data||!seen_dispose){
+       std::cerr<<"Subscriber incomplete: seen_data="<<seen_data
+                <<" seen_dispose="<<seen_dispose<<" (vendor interoperability unverified)\n";
+       return 3;
+     }
      std::cout<<"PASS typed consume<BatteryStatus>() over real DDS vendor + Dispose\n";
      return 0;
    }

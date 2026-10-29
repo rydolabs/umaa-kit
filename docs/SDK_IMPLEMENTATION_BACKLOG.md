@@ -120,3 +120,13 @@ manual Topic strings for user-level Report publishing and cooperative reload.
 CTest covers background publish to typed consume and refuses to unload an
 active module publisher. **Scope:** synthetic `demo:battery-v1` only; no
 normative UMAA service mapping or lifecycle claim.
+
+## 2026-10-29 experimental mixed vendor results
+
+Strict cross-vendor network tests are **NOT PROVEN**:
+[Actions 40831127878](https://github.com/rydolabs/umaa-kit/actions/runs/40831127878)
+saw FastDDS→Cyclone data/Dispose but no confirmed writer final ACK, and
+Cyclone→FastDDS subscriber missed the required full data/Dispose condition.
+This must not be conflated with same-binary vendor *substitution*, which
+passed. Reproduction and exact scope:
+[Mixed network evidence](SDK_DDS_MIXED_NETWORK_LIMITS.md).

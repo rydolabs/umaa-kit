@@ -131,3 +131,33 @@ foreach(mode IN ITEMS normal cancel update)
     set_tests_properties("umaa_fastdds_typed_server_${mode}_real_wire" PROPERTIES TIMEOUT 55)
   endif()
 endforeach()
+
+# Synthetic one-frame atomic LargeSet/LargeList transaction; NOT GROUP QoS.
+set(COLLECTION_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated-collection")
+file(MAKE_DIRECTORY "${COLLECTION_ROOT}")
+execute_process(COMMAND "${FASTDDSGEN}" -replace -d "${COLLECTION_ROOT}"
+  "${CMAKE_CURRENT_LIST_DIR}/../../cyclone/idl/DemoCollectionBatch.idl"
+  RESULT_VARIABLE COLLECTION_GEN_RESULT OUTPUT_VARIABLE COLLECTION_GEN_OUT
+  ERROR_VARIABLE COLLECTION_GEN_ERR)
+if(NOT COLLECTION_GEN_RESULT EQUAL 0)
+  message(FATAL_ERROR "Fast DDS Collection generation failed: ${COLLECTION_GEN_ERR} ${COLLECTION_GEN_OUT}")
+endif()
+file(GLOB COLLECTION_SOURCES CONFIGURE_DEPENDS "${COLLECTION_ROOT}/*.cxx")
+if(NOT COLLECTION_SOURCES)
+  message(FATAL_ERROR "Fast DDS Collection generated no source")
+endif()
+add_library(umaa_dds_fastdds_collection_demo MODULE collection_adapter.cpp ${COLLECTION_SOURCES})
+target_compile_features(umaa_dds_fastdds_collection_demo PRIVATE cxx_std_17)
+target_include_directories(umaa_dds_fastdds_collection_demo PRIVATE "${SDK_ROOT}/include" "${COLLECTION_ROOT}")
+target_link_libraries(umaa_dds_fastdds_collection_demo PRIVATE fastrtps fastcdr)
+add_executable(umaa_fastdds_collection_cli "${SDK_ROOT}/tests/real_dds_collection_cli.cpp")
+target_compile_features(umaa_fastdds_collection_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_fastdds_collection_cli PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_fastdds_collection_cli PRIVATE UMAA::Runtime)
+foreach(collection_kind IN ITEMS set list)
+  add_test(NAME "umaa_fastdds_collection_${collection_kind}_real_wire"
+    COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_collection.py"
+    "$<TARGET_FILE:umaa_fastdds_collection_cli>"
+    "$<TARGET_FILE:umaa_dds_fastdds_collection_demo>" "${collection_kind}")
+  set_tests_properties("umaa_fastdds_collection_${collection_kind}_real_wire" PROPERTIES TIMEOUT 40)
+endforeach()

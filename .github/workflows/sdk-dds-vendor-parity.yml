@@ -92,6 +92,17 @@ jobs:
             python3 sdk/tests/run_real_dds_command_request.py "$server" "$vendor" "$module" "$client" update
           done
           sha256sum "$server" "$client" "$module"
+      - name: Same Collection Set/List client binary and both backends
+        run: |
+          set -euo pipefail
+          cli="$PWD/build/parity-cyclone/umaa_cyclone_collection_cli"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_collection_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_collection_demo.so"
+          for plugin in "$cyclone" "$fastdds"; do
+            python3 sdk/tests/run_real_dds_collection.py "$cli" "$plugin" set
+            python3 sdk/tests/run_real_dds_collection.py "$cli" "$plugin" list
+          done
+          sha256sum "$cli"
       - name: Evidence
         if: always()
         run: find build/parity-* \( -name CTestTestfile.cmake -o -name '*.so' \) | sort

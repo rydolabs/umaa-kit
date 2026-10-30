@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'dds/vendors/**'
+      - 'dds/fixtures/**'
       - 'sdk/**'
       - '.github/workflows/sdk-dds-backend-wire.yml'
   workflow_dispatch:

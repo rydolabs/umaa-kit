@@ -1,4 +1,12 @@
-# Real Cyclone DDS transport experiment (distinct from UMAA conformance)
+# Real Cyclone DDS verification harness (NOT the SDK plugin)
+
+This directory is a **historical, independent real-wire verification suite**;
+its programs are NOT loaded by `UmaaDdsBackendV1`. The supported SDK
+plugin implementation is exclusively at `dds/vendors/cyclone/`. Shared
+development IDL fixtures now live at `dds/fixtures/idl/`, alongside
+vendor-neutral tests. Avoid introducing new adapter implementations here.
+
+
 
 The two C binaries are in **separate OS processes** and use the Cyclone DDS
 wire transport and compiler-generated DDS TypeSupport from a **synthetic**

@@ -38,6 +38,11 @@ class ReviewedContractTest(unittest.TestCase):
         self.assertEqual(report["topics"][0]["direction"], "provider")
         self.assertNotIn("queryGlobalPose", report["operations"])
         self.assertFalse(report["evidence"]["ddsQosVerified"])
+        # The reviewed catalog really omits per-service source text for two
+        # EO records; do not forge an authoritative clause or provenance link.
+        missing = [s["id"] for s in snapshot["services"]
+                   if s["source"]["reference"] is None]
+        self.assertEqual(missing, ["UMAA::EO::BatteryStatus", "UMAA::EO::EngineControl"])
 
     def test_roundtrip_and_regeneration_with_user_owned_file_guard(self):
         path = self.root / "contracts.json"

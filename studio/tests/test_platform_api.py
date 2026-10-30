@@ -177,6 +177,75 @@ class StudioPlatformTests(unittest.TestCase):
                                          headers=self.bob).status_code,200)
         self.assertEqual(self.client.get(self.prefix+'/audit',headers=self.bob).status_code,404)
 
+    def test_service_contract_catalog_has_project_rbac_and_partial_scope(self):
+        route = self.prefix + '/service-contracts'
+        self.assertEqual(self.client.get(route).status_code, 401)
+        self.assertEqual(self.client.get(route, headers=self.bob).status_code, 404)
+        self.assertEqual(self.client.post(self.prefix+'/members', headers=self.alice,
+                          json={'userId':'bob','role':'viewer'}).status_code, 201)
+        result = self.client.get(route, headers=self.bob)
+        self.assertEqual(result.status_code, 200, result.text)
+        snapshot = result.json()
+        self.assertEqual(snapshot['kind'], 'umaa-reviewed-service-contract-snapshot')
+        self.assertEqual(len(snapshot['services']), 53)
+        self.assertEqual(sum(len(x['topics']) for x in snapshot['services']), 113)
+        self.assertEqual(snapshot['source']['scope'],
+                         'partial-reviewed-mapping-not-normative-runtime')
+        self.assertEqual([x['id'] for x in snapshot['services']
+                          if x['source']['reference'] is None],
+                         ['UMAA::EO::BatteryStatus', 'UMAA::EO::EngineControl'])
+        self.assertTrue(all(not x['evidence']['ddsQosVerified']
+                            for x in snapshot['services']))
+        # Studio does not persist a writable alternate official service catalog.
+        snapshot['services'].clear()
+        self.assertEqual(len(self.client.get(route, headers=self.alice).json()['services']), 53)
+        self.assertEqual(self.client.get(route, headers=self.charlie).status_code, 404)
+
+    def test_component_assembly_validation_uses_cli_gate_without_writes(self):
+        self.client.post(self.prefix+'/members', headers=self.alice,
+                         json={'userId':'bob','role':'viewer'})
+        route = self.prefix + '/assemblies/validate'
+        demo = {'schemaVersion':'1',
+                'component':{'id':'demo_engine','artifact':'shared-library'},
+                'services':[{'id':'Demo::EO::EngineControl','role':'provider'}]}
+        self.assertEqual(self.client.post(route, json=demo).status_code, 401)
+        self.assertEqual(self.client.post(route, headers=self.charlie, json=demo).status_code, 404)
+        result = self.client.post(route, headers=self.bob, json=demo)
+        self.assertEqual(result.status_code, 200, result.text)
+        self.assertTrue(result.json()['codegenReady'])
+        self.assertFalse(result.json()['officialRuntimeClaim'])
+        self.assertEqual(self.client.get(self.prefix+'/jobs', headers=self.alice).json(), [])
+
+        catalog = self.client.get(self.prefix+'/service-contracts',
+                                  headers=self.alice).json()
+        pin = catalog['source']['catalogSha256']
+        official = {'schemaVersion':'1',
+                    'component':{'id':'autopilot','artifact':'shared-library'},
+                    'catalogPin':{'kind':'reviewed-icd-catalog','sha256':pin},
+                    'services':[
+                        {'id':'UMAA::SA::GlobalPoseStatus','role':'provider'},
+                        {'id':'UMAA::SA::GlobalPoseStatus','role':'consumer'},
+                    ]}
+        result = self.client.post(route, headers=self.alice, json=official)
+        self.assertEqual(result.status_code, 200, result.text)
+        self.assertTrue(result.json()['catalogPinned'])
+        self.assertFalse(result.json()['codegenReady'])
+        self.assertFalse(result.json()['normativeQosClaim'])
+        mutated = json.loads(json.dumps(official))
+        mutated['catalogPin']['sha256'] = '0'*64
+        self.assertEqual(self.client.post(route, headers=self.alice,
+                                         json=mutated).status_code, 422)
+        official.pop('catalogPin')
+        self.assertEqual(self.client.post(route, headers=self.alice,
+                                         json=official).status_code, 422)
+        demo['services'][0]['id'] = 'UMAA::SA::ForgedService'
+        self.assertEqual(self.client.post(route, headers=self.alice,
+                                         json=demo).status_code, 422)
+        oversized = {'payload':'x' * (128 * 1024)}
+        self.assertEqual(self.client.post(route, headers=self.alice,
+                                         json=oversized).status_code, 413)
+        self.assertEqual(self.client.get(self.prefix+'/jobs', headers=self.alice).json(), [])
+
     def test_ui_served_on_same_origin(self):
         home=self.client.get('/studio/')
         self.assertEqual(home.status_code,200)

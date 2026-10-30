@@ -101,9 +101,9 @@ def new(name, target):
         "id": name, "artifact": "shared-library"}, "services": []})
 
 
-def check_project(project):
-    """Shared CLI/Studio assembly gate, separate from *runtime* readiness."""
-    doc = read(project)
+def check_assembly(doc):
+    """Pure shared CLI/Studio assembly gate; never creates files or executes code."""
+    doc = validate(doc)
     official = [s["id"] for s in doc["services"] if s["id"] not in DEMO]
     ready = all(s["role"] == "provider" and s["id"] in DEMO for s in doc["services"])
     current_pin = None
@@ -133,6 +133,10 @@ def check_project(project):
         "normativeQosClaim": False,
     }
 
+
+
+def check_project(project):
+    return check_assembly(read(project))
 
 def add(project, name, role):
     doc = read(project)

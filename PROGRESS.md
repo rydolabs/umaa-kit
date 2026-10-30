@@ -450,3 +450,26 @@ these normative review gates by itself.
 - The generator/ABI v2 and existing standalone Cyclone/Fast DDS milestones
   are otherwise unchanged. No official K-UMAA/UMAA conformance or real QEA
   acceptance is claimed.
+
+
+## 2026-10-30 — Studio UI/CLI contract parity API (bounded read-only slice)
+
+- Branch `feature/studio-component-contract-api-20261030` stacks on
+  unmerged Draft PR #20, then Draft PR #19. No merges or deployments.
+- Refactored CLI `check_assembly(doc)` into a **pure validator**; the CLI
+  still uses `check_project(path)`, and Studio API now reuses the exact same
+  contract/role/source-hash gate without filesystem or code generation.
+- New project-authenticated GET `/api/v1/projects/{id}/service-contracts`
+  returns the deterministic 53-service/113-Topic reviewed mapping with the
+  same source SHA and explicitly unknown source fields where missing.
+  POST `/api/v1/projects/{id}/assemblies/validate` checks typed JSON only.
+  Unauthorized calls fail 401/404; malformed/unknown/stale contracts 422;
+  >128 KiB payloads 413; no DB writes, job enqueue or native build execution.
+- Added Studio API tests for project RBAC, viewer access to non-mutating
+  contract inspection, absent source preservation, official provider+consumer
+  roles in one Assembly, forged/unpinned contracts, oversized bodies,
+  no queued jobs and CLI/Studio readiness parity. Studio V6 still uses
+  legacy React; **React Flow Component Designer is NOT implemented**.
+- Verified scope is **API/UI foundation only**, not full EA service
+  extraction, production authentication, native official DDS bindings or
+  formal UMAA compliance. Standalone Cyclone/Fast current milestone unchanged.

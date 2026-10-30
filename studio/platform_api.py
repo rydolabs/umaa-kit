@@ -14,6 +14,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from tools.umaa_component_cli import check_assembly, ProjectError
+from tools.umaa_service_contracts import create_snapshot, ContractError
 from .qea import extract, model_diff
 from .platform_db import (connect, Base, User, Project, Membership, ModelImport,
                           Job, Artifact, Audit, uid)
@@ -139,6 +141,32 @@ def create_app(*, database_url=None, storage_dir=None, identities=None, init_sch
             membership(db, project_id, user[0])
             rows = db.execute(select(Membership).where(Membership.project_id==project_id)).scalars().all()
             return [{'userId':m.user_id,'role':m.role} for m in rows]
+
+    @app.get('/api/v1/projects/{project_id}/service-contracts')
+    def get_service_contracts(project_id: str, user=Depends(principal)):
+        """Project-authorized read of reviewed catalog, not a native DDS binding."""
+        with factory() as db:
+            membership(db, project_id, user[0])
+        try:
+            snapshot = create_snapshot()
+        except (ContractError, OSError) as exc:
+            raise HTTPException(503, 'Reviewed Service Contract unavailable') from exc
+        return snapshot
+
+    @app.post('/api/v1/projects/{project_id}/assemblies/validate')
+    def validate_component_assembly(project_id: str, manifest: dict,
+                                    user=Depends(principal)):
+        """Stateless UI/CLI parity gate; no file access, job or generated code."""
+        with factory() as db:
+            membership(db, project_id, user[0])
+        # A Canvas should send only the Component Assembly, never a full EA
+        # snapshot or arbitrary CMake/IDL source in this endpoint.
+        if len(json.dumps(manifest, ensure_ascii=False)) > 128 * 1024:
+            raise HTTPException(413, 'Component Assembly exceeds 128 KiB')
+        try:
+            return check_assembly(manifest)
+        except (ProjectError, ContractError, OSError) as exc:
+            raise HTTPException(422, 'Component Assembly rejected: ' + str(exc)) from exc
 
     @app.post('/api/v1/projects/{project_id}/models', status_code=201)
     async def upload_model(project_id: str, file: UploadFile = File(...), user=Depends(principal)):

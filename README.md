@@ -121,6 +121,32 @@ The README and user Handlers are never overwritten.
 
 See the [full CLI and generation contract](docs/COMPONENT_PROJECT_GENERATION.md).
 
+### Compose against a pinned Service Contract
+
+The development CLI now also exposes a deterministic, **non-normative**
+catalog snapshot and a shared assembly validation gate:
+
+~~~bash
+python -m tools.umaa_component_cli contract export --output build/umaa-contracts.json
+python -m tools.umaa_component_cli contract verify --input build/umaa-contracts.json
+python -m tools.umaa_component_cli validate --project engine_demo
+~~~
+
+The export retains 53 reviewed service names / 113 Topic mappings and their
+available source references. Two existing EO records have explicitly unknown
+per-service provenance; the generator does not invent it. Standard UMAA
+services can be selected into a source-pinned assembly but cannot yet be
+generated as fully verified native DDS bindings.
+
+**Studio server foundation (Draft):** project-authenticated read-only
+Service Contract discovery and stateless Component Assembly validation now
+call the **same CLI validation code**. The React Flow canvas and production
+build sandbox remain planned, not shipped.
+
+[Service Contract schemas](schemas/) ·
+[Studio API status](studio/PLATFORM_V6.md)
+
+
 ## How the pieces fit
 
 ~~~mermaid

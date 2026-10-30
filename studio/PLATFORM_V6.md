@@ -67,3 +67,56 @@ cd studio/frontend && tsc -p .
 change detection, DOCX/IDL job lifecycle, draft-only manifest and tampered
 artifact rejection using a real SQLite database, FastAPI TestClient and the
 worker. Full PostgreSQL integration requires an external DB service and driver.
+
+
+## Component Designer backend foundation — 2026-10-30 (Draft)
+
+The future React Flow designer can use the **same vetted Service Contract
+catalog and assembly validator as the CLI**. The current V6 browser is
+still a model explorer, not a React Flow editor.
+
+New project-scoped, **read-only/stateless** endpoints (Bearer-token
+authentication and existing project membership checks apply):
+
+~~~http
+GET /api/v1/projects/{projectId}/service-contracts
+POST /api/v1/projects/{projectId}/assemblies/validate
+Content-Type: application/json
+Authorization: Bearer <project-user-token>
+~~~
+
+The GET response is a reviewed, source-SHA-pinned snapshot with 53 services,
+113 directional Topic identity records, Operation names and explicit evidence
+flags. This is **not** official key/QoS/runtime-complete evidence.
+
+The POST body is a **Component Assembly Manifest**, exactly matching
+`schemas/component-assembly-v1.schema.json`, not React Flow nodes or an
+entire EA/QEA snapshot. Successful validation returns:
+
+~~~json
+{
+  "status": "VALID_ASSEMBLY_NOT_NORMATIVE_RUNTIME",
+  "componentId": "demo_engine",
+  "services": 1,
+  "catalogPinned": true,
+  "codegenReady": true,
+  "officialRuntimeClaim": false,
+  "normativeQosClaim": false
+}
+~~~
+
+`codegenReady` refers **only to currently implemented synthetic Demo
+Provider** generation. Standard UMAA service selection with the correct
+catalogPin can pass assembly validation but returns
+`codegenReady: false` and still fails actual official service generation.
+Invalid/unknown/unpinned/stale assemblies return HTTP 422, oversized
+assemblies return HTTP 413, and unauthorized or nonmember requests never
+reveal project data (401/404). Existing project viewers can inspect and
+validate a draft because these calls do not mutate any resource.
+
+There is **no write endpoint**, no storage of a Component Assembly,
+no arbitrary CMake/IDL execution and no React Flow graph persistence.
+Model-derived normative Service Contracts, accepted real QEA files,
+production OIDC, sandboxed build worker and UI modernization remain OPEN.
+
+See [Component generation contract](../docs/COMPONENT_PROJECT_GENERATION.md).

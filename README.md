@@ -137,3 +137,44 @@ asserted AnchorControl Ack/Status, LOWER/RAISE/STOP Update, Cancel, COMPLETED,
 FAILED/OBJECTIVE_FAILED and terminal Dispose. COMPLETED/FAILED are explicitly
 injected **virtual-device outcomes**, not physical device proof; full normative
 ICD roles, QoS, security and RTI interoperability remain open.
+
+## Independent Verifier V1 (offline, 2026-10-28)
+
+`verifier/` is a **separate CLI verification orchestration product**, built
+around the existing external `simulator/` oracle and process supervisor, not
+a replacement for it. It supports registered test profiles, batch suites,
+scoped evidence, file digest consistency checks and an offline HTML results
+viewer. This increment verifies **four development-only stdio fixture scenarios**
+with the existing built C++ host; its results are **not official DDS or UMAA
+conformance**. See [Verifier quick start](verifier/README.md) and
+[acceptance matrix](docs/verifier/ACCEPTANCE_MATRIX.md).
+
+## Verifier V3 and Studio QEA PoC (local 2026-10-28)
+
+`verifier/` now re-evaluates independent simulator PASS markers and retains a
+self-contained stdio scenario snapshot for stronger offline evidence consistency.
+Five scoped DDS suite definitions are prepared, but **no local real DDS test
+was performed**. See [V3 acceptance scope](docs/verifier/V3_INCREMENT.md).
+
+`studio/` begins with a **read-only QEA SQLite model extractor and GUID-based
+diff prototype**. Tests use only synthetic EA-like repositories; real QEA,
+PostgreSQL, DOCX/IDL generation and Web UI remain unverified or unimplemented.
+See [Studio scope](studio/README.md) and [remaining gates](docs/UMAA_ROADMAP_STATUS_V3.md).
+
+## Local V4 extension — Studio documents and Verifier association (2026-10-28)
+
+New `studio/` is an **offline development prototype**, not a PostgreSQL/React
+Studio product. V4 adds draft DOCX model inventory generation and SHA-256
+manifests from a frozen QEA snapshot, plus a **non-normative administrative**
+model-to-Verifier-export association. See [Studio CLI](studio/README.md) and
+[V4 status/gates](docs/UMAA_ROADMAP_STATUS_V4.md). Verifier and Simulator
+continue to operate independently. No real Sparx QEA acceptance, live Cyclone
+DDS, normative conformance, or PostgreSQL operation is claimed for V4.
+
+## Local V5 increment — offline EA-snapshot project extension IDL draft
+
+`studio/` now includes a **limited, fail-closed** model-pinned IDL struct draft
+generator with deterministic regeneration checks and an optional Cyclone
+`idlc` syntax gate. It does **not** rewrite or supersede the official UMAA IDL.
+See [Studio scope and commands](studio/README.md) and
+[V5 acceptance scope](docs/UMAA_ROADMAP_STATUS_V5.md).

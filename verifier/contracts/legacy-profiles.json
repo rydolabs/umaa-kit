@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "registryId": "umaa-verifier-legacy-simulator",
+  "status": "development-unreviewed",
+  "normativeRequirementRefs": [],
+  "cases": [
+    {"profileId": "stdio-fixture", "contractId": "dev/stdio-line-trace", "basis": "simulator/src/verify.py and scenario expected_events", "conformanceEligible": false},
+    {"profileId": "dds-engine", "contractId": "dev/dds-engine-slice", "basis": "simulator/dds/run.py and independent DDS oracle", "conformanceEligible": false},
+    {"profileId": "dds-anchor", "contractId": "dev/dds-anchor-slice", "basis": "simulator/dds/run_anchor_control.py and independent DDS oracle", "conformanceEligible": false},
+    {"profileId": "dds-anchor-extended", "contractId": "dev/dds-anchor-extended-slice", "basis": "simulator/dds/run_anchor_control_extended.py and independent DDS oracle", "conformanceEligible": false},
+    {"profileId": "dds-anchor-specs", "contractId": "dev/dds-anchor-specs-slice", "basis": "simulator/dds/run_anchor_specs.py and independent DDS oracle", "conformanceEligible": false},
+    {"profileId": "dds-reviewed-discovery", "contractId": "dev/dds-discovery-slice", "basis": "simulator/dds/run_reviewed_discovery.py and independent DDS oracle", "conformanceEligible": false}
+  ]
+}

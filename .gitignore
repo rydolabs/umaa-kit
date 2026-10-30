@@ -27,3 +27,11 @@ Testing/
 /official-umaa-idl/
 /vendor-sdk/
 /generated-typesupport/
+
+# Studio local databases and private runtime workspace
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+/studio/runtime/
+/studio/frontend/node_modules/

@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "target": "ES2019", "module": "none", "lib": ["ES2019", "DOM"],
+    "jsx": "react", "strict": true, "outFile": "public/app.js",
+    "skipLibCheck": true, "noEmitOnError": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

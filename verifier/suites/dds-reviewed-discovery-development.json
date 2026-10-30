@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "suiteId": "dds-reviewed-discovery-development",
+  "description": "Development-only real Cyclone DDS suite using independent existing simulator runners. Requires prebuilt trusted official TypeSupport binaries and isolated authorized DDS test network; NOT UMAA conformance.",
+  "cases": [
+    {
+      "id": "discovery",
+      "profileId": "dds-reviewed-discovery",
+      "timeoutSec": 90
+    },
+    {
+      "id": "wire",
+      "profileId": "dds-reviewed-discovery",
+      "timeoutSec": 90,
+      "option": "--wire"
+    },
+    {
+      "id": "semantic",
+      "profileId": "dds-reviewed-discovery",
+      "timeoutSec": 90,
+      "option": "--semantic"
+    }
+  ]
+}

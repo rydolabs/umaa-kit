@@ -1,0 +1,67 @@
+name: Scoped independent verifier regression (no UMAA conformance claim)
+
+on:
+  push:
+    paths:
+      - 'verifier/**'
+      - 'simulator/**'
+      - 'sdk/**'
+      - 'studio/**'
+      - '.github/workflows/verifier.yml'
+  pull_request:
+    paths:
+      - 'verifier/**'
+      - 'simulator/**'
+      - 'sdk/**'
+      - 'studio/**'
+      - '.github/workflows/verifier.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifier-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Studio offline generator dependencies
+        run: python -m pip install -r studio/requirements.txt -r studio/requirements-platform.txt
+      - name: Independent verifier and legacy oracle unit tests
+        run: |
+          python -m unittest discover -s verifier/tests -v
+          python -m unittest discover -s studio/tests -v
+          python -m unittest discover -s simulator/tests -v
+          python -m unittest discover -s simulator/dds -p 'test*.py' -v
+      - name: Build existing C++ fixture SUT
+        run: |
+          cmake -S sdk -B build/verifier-fixture -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/verifier-fixture --target umaa_mock_engine_host --parallel 2
+      - name: Run 4 scoped stdio scenarios and verify evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m verifier run-suite --suite verifier/suites/stdio-regression.json \
+            --sut "$(realpath build/verifier-fixture/umaa_mock_engine_host)" \
+            --output-dir evidence/ci/verifier-stdio-suite
+          python -m verifier verify-evidence --evidence-dir evidence/ci/verifier-stdio-suite
+          python -m verifier export-results --evidence-dir evidence/ci/verifier-stdio-suite \
+            --output-file evidence/ci/verifier-stdio-studio-result.json
+          python -m verifier scope-report > evidence/ci/verifier-stdio-scope-report.json
+      - name: Preserve scoped evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verifier-stdio-development-evidence
+          path: |
+            evidence/ci/verifier-stdio-suite/
+            evidence/ci/verifier-stdio-studio-result.json
+            evidence/ci/verifier-stdio-scope-report.json
+          if-no-files-found: warn
+
+# No official DDS vendor runtime, Component/ICD approval, or third-party
+# UMAA compliance assessment is asserted by this CI job.

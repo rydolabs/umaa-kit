@@ -105,6 +105,24 @@ documentation:
 범위가 확인되기 전에는 원본 문서 전체를 저장소에 복제하지 않는다.
 원문 자산은 별도 관리하며 각 블록에 조항과 해시를 연결한다.
 
+## 두 번째 원문 보존 예시: Command/ACK/Status/ExecutionStatus
+
+[GlobalVectorControl.service.yaml](services/MO/GlobalVectorControl.service.yaml)
+— MO ICD 6.0 §6.1.5, Operations Table 22, 메시지 Tables 23~26.
+현재 검토된 4개 Topic에 더해 기존 단순 JSON 카탈로그에서 누락되기
+쉬운 `queryGlobalVectorCommandAck`, `queryGlobalVectorExecutionStatus`,
+`cancelGlobalVectorCommand`, `reportGlobalVectorCancelCommandStatus`를
+구분한다. Query는 구독으로 모델링하며, Cancel은 **기존 Command Topic
+인스턴스의 Dispose**로 연결하되 새 Cancel Topic을 만들지 않는다.
+Cancel에 따른 직접 DDS 결과 동작은 `dds-native`로 기록하고,
+최종 상태 전이·Key·QoS는 완전한 ICD/IDL 대조 전까지 미확정이다.
+
+Command/ACK/Status/ExecutionStatus의 기존 Type/Namespace는
+`spec.topics`에 **각각 한 번씩** 선언한다. Table 26의 Command
+필드 여섯 개 및 Table 25의 실행 상태 필드 세 개의 선택 여부·설명은
+`attributes`에 기록하되, 원본 IDL과 검증되기 전엔 타입 코드 생성에
+사용하지 않는다.
+
 ## 복합 패턴 — 단일 enum으로 서비스를 제한하지 않는다
 
 Service는 복수의 `flows`를 정의할 수 있고, 그 Flow가 여러 Topic을

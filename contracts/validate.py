@@ -51,7 +51,10 @@ def _validate_imports(doc: dict) -> None:
         relative = Path(item["path"])
         if relative.is_absolute() or ".." in relative.parts:
             raise ContractError("import escapes contracts root")
-        file = (CONTRACTS / relative).resolve()
+        candidate = CONTRACTS / relative
+        if candidate.is_symlink():
+            raise ContractError("symlink imports are not permitted")
+        file = candidate.resolve()
         if not file.is_relative_to(CONTRACTS.resolve()) or not file.is_file():
             raise ContractError("contract import missing or outside contracts root")
         if file.is_symlink() or file.stat().st_size > 262144:
@@ -115,8 +118,10 @@ def _validate_references(doc: dict) -> None:
 
 
 def validate_file(path: Path) -> dict:
+    if path.is_symlink():
+        raise ContractError("symbolic link to ServiceICD YAML is not permitted")
     path = path.resolve()
-    if not path.is_file() or path.is_symlink() or path.stat().st_size > 262144:
+    if not path.is_file() or path.stat().st_size > 262144:
         raise ContractError("missing, unsafe, or oversized ServiceICD YAML")
     try:
         data = yaml.load(path.read_text(encoding="utf-8"), Loader=StrictLoader)

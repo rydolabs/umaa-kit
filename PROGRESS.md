@@ -473,3 +473,56 @@ these normative review gates by itself.
 - Verified scope is **API/UI foundation only**, not full EA service
   extraction, production authentication, native official DDS bindings or
   formal UMAA compliance. Standalone Cyclone/Fast current milestone unchanged.
+
+---
+
+> **Historical checkpoint:** The following PR #18 record was authored before its integration into the mainline. Earlier Draft/unmerged statements below are historical, not the current project status.
+
+## 2026-10-30 — independent supervisor post-close owner fence
+
+**Separate Draft [PR #18](https://github.com/rydolabs/umaa-kit/pull/18)**,
+branch `fix/supervisor-closed-owner-guard-20261030` based on unmerged PR #16,
+implementation commit `1ec7f457a8789fd56f3988247bf60cac0250f487`.
+This does not depend on the unrelated PR #17 official catalog guard.
+
+- `OperationJournal.begin/resolved/resolved_all_after_reconciliation`
+  require its exclusive owner handle to remain held; a stale journal
+  object cannot write/settle intent after releasing the owner marker.
+- `ComponentProcessSupervisor.restart(hardware_reconciled=True)`
+  cannot resuscitate a closed supervisor after the journal marker was
+  released; lifecycle checks are serialized with `close()`.
+- `stop()` cannot return a clean success for an already faulted/closed
+  worker simply because the process handle was removed.
+- Two synthetic, hardware-free regressions cover released-object writes
+  and post-close restart. Exact implementation SHA's
+  [Linux SDK run 40983705423](https://github.com/rydolabs/umaa-kit/actions/runs/40983705423)
+  reports `Ran 53 tests` and a successful SDK/CTest/Simulator job.
+  Independent vendor CI and Windows results must be inspected for final
+  HEAD before claiming full regression pass.
+
+**Residual risks and blockers:** single trusted local filesystem, untrusted
+physical device state, power-loss resilience, authenticated IPC,
+long-duration crash/soak, and full official UMAA conformance remain OPEN;
+the code does NOT perform hardware reconciliation. Mixed Cyclone/Fast
+network and RTI remain explicitly future-only.
+
+### Follow-up: real Worker process integration for post-close policy
+
+Commit `fe4422f43b08b27433092e11a47b51eedf5a75f3` adds
+**two real worker-process CTest regression scenarios** to
+`sdk/tests/test_process_supervisor.py`:
+
+1. `close()` releases the journal owner; restart of the closed instance
+   refuses even with an explicit hardware attestation, while a new owner
+   with no pending Command can start safely.
+2. Closing an asynchronous pending Command does not falsely indicate a
+   clean stop, allow a stale-owner restart, or let a fresh process run
+   against the unresolved durable journal.
+
+[Linux GCC implementation CI](https://github.com/rydolabs/umaa-kit/actions/runs/40983969876):
+**PASS** on exact test commit, 53 Python SDK tests and 36/36 CTest
+(including isolated Worker scenarios). Check Windows/Clang + vendor plugin
+results and the final documentation SHA independently before declaring
+the complete PR verified.
+
+**Integration resolution (2026-10-30):** PR #18 Supervisor owner-release and post-close worker tests were reconciled with the SDK, catalog, CLI and Studio changes on main. This does not establish physical hardware reconciliation, production IPC security or formal UMAA conformance.

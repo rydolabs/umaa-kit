@@ -482,3 +482,49 @@ per-service official IDL wire types and independent real DDS runtime behavior.
 This task provides mechanical fail-closed validation of the *claimed*
 catalog, not source-of-truth normative vetting. RTI and mixed DDS networking
 remain future-only under [phase scope](CURRENT_PHASE_SCOPE.md).
+
+---
+
+> **Historical checkpoint:** The following PR #18 record was authored before its integration into the mainline. Earlier Draft/unmerged statements below are historical, not the current project status.
+
+## 2026-10-30 supervisor released-owner safety fence — narrow follow-up
+
+Independent Draft [PR #18](https://github.com/rydolabs/umaa-kit/pull/18),
+implementation SHA `1ec7f457a8789fd56f3988247bf60cac0250f487`:
+
+- No stale `OperationJournal` instance can write a new intent or settle
+  unknown outcomes after `release_owner()`.
+- A `close()`d `ComponentProcessSupervisor` refuses restart, including
+  after caller-supplied `hardware_reconciled=True`, because its owner
+  lease is gone. Faulted/force-closed devices cannot appear cleanly
+  stopped from a removed process handle.
+- 2 independent regression tests, no vendor dependency. Exact-source
+  [Linux SDK run](https://github.com/rydolabs/umaa-kit/actions/runs/40983705423)
+  passed Python SDK discovery (53 tests) and CMake/CTest on Ubuntu.
+  Cross-platform/final-head CI must be checked independently.
+
+The operator's external hardware reconciliation remains mandatory;
+`hardware_reconciled=True` never constitutes physical proof. Production
+IPC and long-duration crash/power-loss testing remain OPEN. Scope excludes
+mixed-vendor DDS networks and RTI independent verification for now.
+
+### Follow-up: real Worker process integration for post-close policy
+
+Commit `fe4422f43b08b27433092e11a47b51eedf5a75f3` adds
+**two real worker-process CTest regression scenarios** to
+`sdk/tests/test_process_supervisor.py`:
+
+1. `close()` releases the journal owner; restart of the closed instance
+   refuses even with an explicit hardware attestation, while a new owner
+   with no pending Command can start safely.
+2. Closing an asynchronous pending Command does not falsely indicate a
+   clean stop, allow a stale-owner restart, or let a fresh process run
+   against the unresolved durable journal.
+
+[Linux GCC implementation CI](https://github.com/rydolabs/umaa-kit/actions/runs/40983969876):
+**PASS** on exact test commit, 53 Python SDK tests and 36/36 CTest
+(including isolated Worker scenarios). Check Windows/Clang + vendor plugin
+results and the final documentation SHA independently before declaring
+the complete PR verified.
+
+**Integration resolution (2026-10-30):** PR #18 Supervisor owner-release and post-close worker tests were reconciled with the SDK, catalog, CLI and Studio changes on main. This does not establish physical hardware reconciliation, production IPC security or formal UMAA conformance.

@@ -188,5 +188,46 @@ class DurableJournalRecoveryTest(unittest.TestCase):
                 journal.release_owner()
 
 
+    def test_released_owner_cannot_mutate_stale_journal_object(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "released-owner.json"
+            journal = OperationJournal(path)
+            journal.begin("Demo::EO::EngineControl", 1101, 1)
+            journal.release_owner()
+            self.assertFalse(path.with_name(path.name + ".owner").exists())
+            with self.assertRaises(JournalFault):
+                journal.begin("Demo::EO::EngineControl", 1102, 1)
+            with self.assertRaises(JournalFault):
+                journal.resolved("Demo::EO::EngineControl", 1101, 1)
+            with self.assertRaises(JournalFault):
+                journal.resolved_all_after_reconciliation()
+            # No stale in-memory mutation or unowned on-disk rewrite.
+            self.assertEqual(len(journal.entries), 1)
+            with self.assertRaises(JournalFault):
+                OperationJournal(path)
+
+    def test_closed_supervisor_rejects_restart_even_if_hardware_attested(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "no-restart.json"
+            journal = OperationJournal(path)
+            host = object.__new__(ComponentProcessSupervisor)
+            host._lock = threading.RLock()
+            host._journal = journal
+            host._proc = None
+            host._faulted = True
+            host._closed = False
+            host.close()
+            self.assertTrue(host._closed)
+            self.assertFalse(path.with_name(path.name + ".owner").exists())
+            with self.assertRaisesRegex(WorkerFault, "closed supervisor"):
+                host.restart(hardware_reconciled=True)
+            self.assertFalse(host.stop())
+            fresh = OperationJournal(path)
+            try:
+                self.assertEqual(fresh.entries, [])
+            finally:
+                fresh.release_owner()
+
+
 if __name__ == "__main__":
     unittest.main()

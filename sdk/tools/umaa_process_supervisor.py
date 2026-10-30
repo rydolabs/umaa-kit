@@ -26,6 +26,7 @@ class ComponentProcessSupervisor:
         self._proc = None
         self._queue = None
         self._faulted = False
+        self._closed = False
         self._lock = threading.RLock()
         self._journal = OperationJournal(journal_path) if journal_path is not None else None
         try:
@@ -165,7 +166,11 @@ class ComponentProcessSupervisor:
     def stop(self):
         with self._lock:
             if self._proc is None:
-                return True
+                # A previously clean STOP may be idempotent. A crashed or
+                # force-closed supervisor is NOT a successful device stop,
+                # especially when an unresolved durable intent remains.
+                return (not self._faulted and
+                        not (self._journal and self._journal.entries))
             # A durable intent is not physical proof of a terminal state.
             # The operator must reconcile unknown outcomes before shutdown
             # is treated as a clean device lifecycle.
@@ -196,12 +201,16 @@ class ComponentProcessSupervisor:
 
     def restart(self, *, hardware_reconciled: bool = False):
         # Never restart a crashed module without operator/hardware policy.
-        # In particular, never repeat the last Command.
-        if not hardware_reconciled:
-            raise WorkerFault("explicit hardware reconciliation required")
-        if self._proc is not None and not self._faulted:
-            raise WorkerFault("cannot restart a running worker")
+        # Serialize lifecycle checks with close(): after release of the
+        # exclusive journal owner, a stale Python supervisor must not
+        # reconcile or spawn a fresh device worker.
         with self._lock:
+            if self._closed:
+                raise WorkerFault("closed supervisor cannot restart")
+            if not hardware_reconciled:
+                raise WorkerFault("explicit hardware reconciliation required")
+            if self._proc is not None and not self._faulted:
+                raise WorkerFault("cannot restart a running worker")
             self._kill()
             if self._journal:
                 self._journal.resolved_all_after_reconciliation()
@@ -212,6 +221,7 @@ class ComponentProcessSupervisor:
 
     def close(self):
         with self._lock:
+            self._closed = True
             if self._proc is not None:
                 self._kill()
                 self._proc = None

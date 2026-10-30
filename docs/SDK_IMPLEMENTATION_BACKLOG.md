@@ -458,3 +458,27 @@ network strict result remains **FAIL**, RTI remains **NOT VERIFIED**; neither
 is converted to PASS/N/A for a normative official conformance verdict.
 
 [Authoritative current-phase boundary](CURRENT_PHASE_SCOPE.md).
+
+## 2026-10-30 P0 fail-closed official contract owner/role guards — partial G6 progress
+
+Draft [PR #17](https://github.com/rydolabs/umaa-kit/pull/17), implementation
+`f1afcc5f5052ab57e6fa90974d8cfcab2c5fd363`:
+
+- Reuse a single manifest validator in both the official C++ service API
+  generator and reviewed runtime Topic registry generator; reject a
+  foreign-service Topic/TypeSupport/Collection, Provider/Consumer inversion,
+  invalid UMAA service root and malformed manifest/group/role/clauses.
+- Run deterministic negative ownership mutations against every one of
+  the 113 catalog records, plus refusal to write a C++ API header for
+  invalid input.
+- Registry C++ output unchanged for the already-reviewed 53 service /
+  113 Topic entries, with every `dds_qos_verified` still false.
+- [Linux SDK baseline](https://github.com/rydolabs/umaa-kit/actions/runs/40983077165)
+  on exact source: 61 SDK Python tests and reviewed registry `--check` PASS.
+
+**Still G6 OPEN:** authoritative cross-check of target Component
+provider/consumer, keyed-instance names, requested/offered QoS, exact
+per-service official IDL wire types and independent real DDS runtime behavior.
+This task provides mechanical fail-closed validation of the *claimed*
+catalog, not source-of-truth normative vetting. RTI and mixed DDS networking
+remain future-only under [phase scope](CURRENT_PHASE_SCOPE.md).

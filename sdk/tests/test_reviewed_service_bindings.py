@@ -95,5 +95,16 @@ class ReviewedServiceBindingTests(unittest.TestCase):
                 generate(self.catalog, [pathlib.Path(td)], pathlib.Path(td) / "out.hpp")
 
 
+    def test_foreign_topic_never_generates_official_cpp_api(self):
+        topic = self.catalog["services"][0]["provider_topics"][0]
+        topic["name"] = topic["type"] = "UMAA::EO::EngineStatus::EngineReportType"
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            output = root / "unsafe_api.hpp"
+            with self.assertRaises(ValueError):
+                generate(self.catalog, [root], output)
+            self.assertFalse(output.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

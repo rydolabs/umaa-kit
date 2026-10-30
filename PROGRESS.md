@@ -339,3 +339,39 @@ RTI remains unverified; full UMAA normative conformance is not claimed.
 This is an explicit scheduling/scope decision, not deletion or weakening
 of future technical requirements. Source of truth:
 [CURRENT_PHASE_SCOPE.md](docs/CURRENT_PHASE_SCOPE.md).
+
+## 2026-10-30 — P0 official service catalog fail-closed Topic ownership validation
+
+**Branch:** `feature/official-contract-guards-20261030`, an additive
+Draft PR #17 against unmerged scoped PR #16. **Source implementation SHA:**
+`f1afcc5f5052ab57e6fa90974d8cfcab2c5fd363`. Changes do not touch
+official UMAA on-wire topics or vendor backend/IPC behavior.
+
+- One shared validator now gates BOTH the official C++ service-binding
+  generator and the catalog-derived C++ runtime Topic allow-list.
+  It rejects a Topic/IDL/Collection belonging to another service,
+  Provider/Consumer direction inversion, forged/unsupported service
+  identity, malformed roles/groups/clauses, and non-object/list shapes.
+  This is a necessary G6 mapping integrity guard, **not** proof that
+  normative Component roles, Keys or QoS have been independently approved.
+- Regression mutations cover **all 113 currently catalogued Topic
+  records** for foreign-service ownership rejection. The official
+  C++ binding generator must refuse the foreign Topic **without writing
+  any generated header**. Invalid documents are rejected, not repaired
+  by guessing a DDS role or default QoS.
+- On the implementation SHA, [Ubuntu SDK/Simulator CI](https://github.com/rydolabs/umaa-kit/actions/runs/40983077165)
+  reports `REVIEWED_SERVICE_REGISTRY_PASS services=53 topics=113
+  normative_qos_claim=none` and `Ran 61 tests` in the SDK Python
+  discovery, with SDK build/CTest/simulator run SUCCESS. Other standalone
+  vendor and OS checks must be inspected at the exact final PR HEAD
+  before declaring full cross-platform regression PASS.
+- [PR #17](https://github.com/rydolabs/umaa-kit/pull/17) remains Draft,
+  unmerged. Mixed Cyclone↔Fast network and RTI independent verification
+  remain **future-only** and are excluded from this phase. The current
+  acceptance scope is [CURRENT_PHASE_SCOPE.md](docs/CURRENT_PHASE_SCOPE.md).
+
+**Remaining G6/implementation work:** reviewed official per-service key and
+DDS QoS evidence, Component Definition Provider/Consumer assignments,
+real TypeSupport mapping and independent physical/single-vendor runtime tests
+for every applicable service. Runtime identity validation does not satisfy
+these normative review gates by itself.

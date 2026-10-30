@@ -526,3 +526,37 @@ results and the final documentation SHA independently before declaring
 the complete PR verified.
 
 **Integration resolution (2026-10-30):** PR #18 Supervisor owner-release and post-close worker tests were reconciled with the SDK, catalog, CLI and Studio changes on main. This does not establish physical hardware reconciliation, production IPC security or formal UMAA conformance.
+
+## 2026-10-30 — source-annotated ICD YAML v1alpha1 design slice (Draft PR #25)
+
+- **Separate design branch:** `design/icd-yaml-v1alpha1-20261030` from main;
+  deliberately not merged, and does not alter any existing C++ SDK runtime
+  or component/manifest ABI.
+- Reviewed actual public SA §6.1.6/6.1.6.1, MO §6.1.5/6.1.5.1-4 and EO
+  §6.1.6 6.0 ICD transcriptions at pinned public revision
+  `ecb923646e7f3fe569b773c3946444e793d8a8be`. These are secondary
+  transcriptions; official AUVSI original ICD/IDL/Component Definitions remain
+  required for source-of-truth acceptance.
+- Implemented `contracts/services/SA/GlobalPoseStatus.service.yaml` and
+  `contracts/services/MO/GlobalVectorControl.service.yaml` as human-readable
+  annotated draft descriptions including *previously omitted* query-by-DDS-
+  subscription and cancellation-by-existing-Command-Dispose operations,
+  source clause/table refs, message attribute types/optionality/descriptions,
+  inherited common bases, four Command/ACK/Status/ExecutionStatus Topics and
+  explicit unverified original SHA, @key, QoS and native wire status.
+- `contracts/schemas/service-icd-v1alpha1.schema.json` plus
+  `contracts/validate.py` checks document structure, cross-ref integrity,
+  DDS query-less flow semantics, command/cancel existing Topic, duplicate
+  YAML keys, YAML aliases, unknown core fields, unsafe import paths and SHA.
+  Supported `x-*` extensions cannot change core protocol semantics.
+  Output marker is `STRUCTURAL_VALID_NOT_WIRE_APPROVED` **only**.
+- `contracts/README.md` documents Compose-like versioning, sources,
+  extension limitations, a separate future ComponentAssembly/Deployment
+  Kind, documentation table/figure content and pass/fail test gates.
+- Isolated `PyYAML`/`jsonschema` requirements and dedicated Linux/Windows
+  ICD schema CI. Design checks are separate from official native DDS proof.
+- **Still OPEN:** full original ICD body extraction, 53-service safe migration,
+  original IDL Key/QoS/TypeSupport cross-validation, normative source SHA
+  resolution, executable Assembly/Deployment overlays, and independent
+  Provider/Consumer real DDS generation and tests. This Draft PR does not
+  confer K-UMAA/UMAA conformance or merge permission.

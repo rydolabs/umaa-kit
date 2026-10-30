@@ -14,6 +14,8 @@ import subprocess
 import sys
 import tempfile
 
+from tools import umaa_service_contracts as contracts
+
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "catalog/umaa6-six-icd-reviewed.json"
 MANIFEST = "umaa.component.json"
@@ -31,7 +33,7 @@ class ProjectError(ValueError):
 
 
 def validate(doc, *, nonempty=False):
-    if not isinstance(doc, dict) or set(doc) != {"schemaVersion", "component", "services"}:
+    if not isinstance(doc, dict) or not {"schemaVersion", "component", "services"} <= set(doc) or set(doc) - {"schemaVersion", "component", "services", "catalogPin"}:
         raise ProjectError("invalid component manifest fields")
     if doc["schemaVersion"] != "1":
         raise ProjectError("unsupported manifest version")
@@ -40,6 +42,13 @@ def validate(doc, *, nonempty=False):
         raise ProjectError("invalid component id (expected lowercase C++ identifier)")
     if c["artifact"] != "shared-library":
         raise ProjectError("only shared-library artifact supported")
+    if "catalogPin" in doc:
+        pin = doc["catalogPin"]
+        if (not isinstance(pin, dict) or set(pin) != {"kind", "sha256"}
+                or pin["kind"] != "reviewed-icd-catalog"
+                or not isinstance(pin["sha256"], str)
+                or not re.fullmatch(r"[0-9a-f]{64}", pin["sha256"])):
+            raise ProjectError("invalid versioned catalog pin")
     items = doc["services"]
     if not isinstance(items, list) or len(items) > 128 or (nonempty and not items):
         raise ProjectError("expected 1..128 services for generation")
@@ -92,13 +101,55 @@ def new(name, target):
         "id": name, "artifact": "shared-library"}, "services": []})
 
 
-def add(project, name, role):
-    if name not in DEMO:
-        from tools.verify_official_service_types import inspect
-        catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
-        if inspect(catalog)["status"] != "PASS" or name not in {s["name"] for s in catalog["services"]}:
-            raise ProjectError("unknown service or invalid reviewed catalog")
+def check_project(project):
+    """Shared CLI/Studio assembly gate, separate from *runtime* readiness."""
     doc = read(project)
+    official = [s["id"] for s in doc["services"] if s["id"] not in DEMO]
+    ready = all(s["role"] == "provider" and s["id"] in DEMO for s in doc["services"])
+    current_pin = None
+    if official:
+        try:
+            names, current_pin = contracts.catalog_names()
+        except contracts.ContractError as exc:
+            raise ProjectError(str(exc)) from exc
+        if any(name not in names for name in official):
+            raise ProjectError("assembly references unknown official service")
+        declared = doc.get("catalogPin", {}).get("sha256")
+        if not declared:
+            raise ProjectError("unpinned official service assembly: explicit catalog pin required")
+        if declared != current_pin:
+            raise ProjectError("reviewed catalog changed: explicit contract revision is required")
+    elif "catalogPin" in doc:
+        _, current_pin = contracts.catalog_names()
+        if doc["catalogPin"]["sha256"] != current_pin:
+            raise ProjectError("reviewed catalog changed: explicit contract revision is required")
+    return {
+        "status": "VALID_ASSEMBLY_NOT_NORMATIVE_RUNTIME",
+        "componentId": doc["component"]["id"],
+        "services": len(doc["services"]),
+        "catalogPinned": not official or doc.get("catalogPin", {}).get("sha256") == current_pin,
+        "codegenReady": bool(doc["services"]) and ready,
+        "officialRuntimeClaim": False,
+        "normativeQosClaim": False,
+    }
+
+
+def add(project, name, role):
+    doc = read(project)
+    if name not in DEMO:
+        try:
+            names, digest = contracts.catalog_names()
+        except contracts.ContractError as exc:
+            raise ProjectError(str(exc)) from exc
+        if name not in names:
+            raise ProjectError("unknown service or invalid reviewed catalog")
+        existing = doc.get("catalogPin", {}).get("sha256")
+        if existing and existing != digest:
+            raise ProjectError("reviewed catalog changed: explicit contract revision is required")
+        doc["catalogPin"] = {"kind": "reviewed-icd-catalog", "sha256": digest}
+    # Other existing official names must also match the pinned contract.
+    if any(s["id"] not in DEMO for s in doc["services"]):
+        check_project(project)
     doc["services"].append({"id": name, "role": role})
     save(project, doc)
 
@@ -165,6 +216,7 @@ def handler_header(name, kind):
 
 
 def generate(project):
+    check_project(project)
     doc = validate(read(project), nonempty=True)
     services = doc["services"]
     for item in services:
@@ -258,6 +310,14 @@ def main(argv=None):
     a.add_argument("--project", type=Path, default=Path("."))
     l = actions.add_parser("list")
     l.add_argument("--project", type=Path, default=Path("."))
+    validate_cmd = commands.add_parser("validate", help="validate a Component assembly")
+    validate_cmd.add_argument("--project", type=Path, default=Path("."))
+    ct = commands.add_parser("contract", help="inspect/export reviewed partial Service Contracts")
+    ct_actions = ct.add_subparsers(dest="contract_action", required=True)
+    export = ct_actions.add_parser("export")
+    export.add_argument("--output", required=True, type=Path)
+    verify = ct_actions.add_parser("verify")
+    verify.add_argument("--input", required=True, type=Path)
     g = commands.add_parser("generate")
     g.add_argument("--project", type=Path, default=Path("."))
     b = commands.add_parser("build")
@@ -275,13 +335,23 @@ def main(argv=None):
             else:
                 for item in read(args.project)["services"]:
                     print(item["role"], item["id"])
+        elif args.cmd == "validate":
+            print(json.dumps(check_project(args.project), sort_keys=True, indent=2))
+        elif args.cmd == "contract":
+            if args.contract_action == "export":
+                snapshot = contracts.create_snapshot()
+                contracts.write_snapshot(args.output, snapshot)
+                print(json.dumps(contracts.validate_snapshot(snapshot), sort_keys=True))
+            else:
+                snapshot = contracts.read_snapshot(args.input)
+                print(json.dumps(contracts.validate_snapshot(snapshot), sort_keys=True))
         elif args.cmd == "generate":
             generate(args.project)
         elif args.cmd == "build":
             run_cmake(args.project, args.sdk_prefix)
         elif args.cmd == "test":
             run_test(args.project)
-    except (ProjectError, OSError, subprocess.CalledProcessError) as exc:
+    except (ProjectError, contracts.ContractError, OSError, subprocess.CalledProcessError) as exc:
         print("UMAA COMPONENT CLI ERROR:", exc, file=sys.stderr)
         return 2
     return 0

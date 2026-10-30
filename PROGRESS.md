@@ -420,3 +420,33 @@ these normative review gates by itself.
 - Standalone Cyclone and standalone Fast DDS with same built modules remain
   current; mixed-vendor network interoperability and licensed RTI
   Connext validation remain later-only. G6 full normative conformance OPEN.
+
+## 2026-10-30 — reviewed Service Contract snapshot and assembly catalog pin
+
+- **Next isolated development branch:** `feature/component-contract-provenance-20261030`
+  on top of the unmerged Draft PR #19; no merge or deployment.
+- Added `tools/umaa_service_contracts.py`, a deterministic, SHA-256
+  source-pinned projection of the existing independently reviewed 53-service
+  / 113-Topic partial catalog. Snapshot records original Operation lists,
+  Topic ID/type/provider/consumer directions, Collection type names,
+  explicit Command families, ICD clause references, ledger revision and
+  per-service `officialIdlVerified` / `ddsQosVerified` / `ddsBehaviorVerified`.
+- Added standalone JSON Schemas for Component Assembly v1 and reviewed
+  Service Contract Snapshot v1. CLI `contract export/verify` independently
+  recreates the snapshot and rejects forged role/QoS claims, Topic changes
+  and stale catalog revision. CLI `validate` checks assembly identity,
+  role syntax, catalog source pin and actual *synthetic-only* generation readiness.
+- New official entries added to an assembly get an explicit catalog SHA
+  lock. Unpinned/stale/unknown official service entries are rejected;
+  old Demo-only v1 manifests remain valid. Official-service code generation
+  still remains blocked by unreviewed TypeSupport/key/QoS/runtime gates.
+- Review found **two existing catalog rows without a per-service `source`
+  string**: EO BatteryStatus and EngineControl. Exporting those now records
+  `reference: null` explicitly rather than inventing a canonical source;
+  source completeness remains OPEN. Tests assert this.
+- New negative tests include mutated source digest, forged normative QoS
+  approval, inverted Topic direction, invented Operation, stale source,
+  unpinned manual assembly, role duplicates and CLI export/verify paths.
+- The generator/ABI v2 and existing standalone Cyclone/Fast DDS milestones
+  are otherwise unchanged. No official K-UMAA/UMAA conformance or real QEA
+  acceptance is claimed.

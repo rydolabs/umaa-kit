@@ -120,3 +120,51 @@ See [SDK modular architecture](SDK_MODULAR_ARCHITECTURE.md),
 [current phase scope](CURRENT_PHASE_SCOPE.md),
 [official ICD catalog audit](specification/ICD_CATALOG_AUDIT.md)
 and [delivery gates](DELIVERY_GATES.md).
+
+## Contract snapshot and pinned assembly gate — added 2026-10-30
+
+The **Service Contract snapshot is an export artifact**, not another
+authoritative source to edit. It projects the already validated reviewed
+catalog, retaining every recorded explicit Operation, directional Topic,
+TypeSupport identity, Command group, source clause and current evidence flag.
+All 53 reviewed services / 113 Topic records remain a *partial mapping*.
+The original catalog bytes are SHA-256 pinned; `contract verify` independently
+recreates and compares the entire projection, rejecting altered roles, forged
+QoS claims or a changed catalog.
+
+~~~sh
+# From repository root: deterministic reviewed mapping export
+python -m tools.umaa_component_cli contract export --output build/reviewed-contracts.json
+python -m tools.umaa_component_cli contract verify --input build/reviewed-contracts.json
+
+# Same assembly gate used by future Studio; not a runtime conformance verdict
+python -m tools.umaa_component_cli validate --project engine_demo
+~~~
+
+- Schemas: [Component Assembly v1](../schemas/component-assembly-v1.schema.json)
+  and [reviewed Service Contract snapshot v1](../schemas/reviewed-service-contract-snapshot-v1.schema.json).
+- `umaa.component.json` remains the source of truth for **user assembly**.
+  Standard services added through the CLI now include a `catalogPin` with
+  SHA-256 of the validated source file. Stale or missing pins are rejected
+  by the assembly gate. This does not silently migrate a user project to a
+  changed ICD/catalog; future explicit upgrade/approval UX remains OPEN.
+- **Provider/Consumer at assembly level is not the Topic writer direction.**
+  The snapshot records per-Topic directions from the service ICD and the
+  assembly chooses which whole-service role the Component will play.
+- The existing partial catalogue lacks a per-service `source` field for
+  EO `BatteryStatus` and `EngineControl`. Their exported source reference is
+  explicitly **null**, rather than invented. The top-level reviewed basis
+  and pinned ledger revision are preserved, but detailed per-service
+  provenance still needs authoritative confirmation.
+- `codegenReady=true` means **synthetic Demo Provider MODULE generator only**.
+  The gate always returns `officialRuntimeClaim=false` and
+  `normativeQosClaim=false`; official service selection is allowable as an
+  assembly draft but will not produce an official DLL/SO binding.
+- The source repository catalog is pinned, **not** a validated Sparx EA
+  model revision. EA GUID/MDG profile + service contract extraction from
+  real EA model and formal conformance proof remain separate next steps.
+
+The current CLI/JSON Schema layer has no extra runtime dependency; if a
+third-party editor uses the JSON Schema independently, it still must
+invoke the Python contract and assembly gate for catalog provenance,
+cross-record Topic ownership and normative safety restrictions.

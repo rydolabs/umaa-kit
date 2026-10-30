@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rydolabs/umaa-kit/blob/main/schemas/reviewed-service-contract-snapshot-v1.schema.json",
+  "title": "UMAA Kit partial reviewed Service Contract Snapshot v1",
+  "description": "Derived evidence-preserving catalog projection, never a normative QoS, key, Component Definition or runtime approval.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "schemaVersion",
+    "source",
+    "services"
+  ],
+  "properties": {
+    "kind": {
+      "const": "umaa-reviewed-service-contract-snapshot"
+    },
+    "schemaVersion": {
+      "const": "1"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalogPath",
+        "catalogSha256",
+        "catalogVersion",
+        "scope",
+        "basis",
+        "ledgerSourceRevision"
+      ],
+      "properties": {
+        "catalogPath": {
+          "const": "catalog/umaa6-six-icd-reviewed.json"
+        },
+        "catalogSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "catalogVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "const": "partial-reviewed-mapping-not-normative-runtime"
+        },
+        "basis": {
+          "type": "object",
+          "required": [
+            "document",
+            "version",
+            "sha256"
+          ],
+          "properties": {
+            "document": {
+              "type": "string"
+            },
+            "version": {
+              "const": "6.0"
+            },
+            "date": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "ledgerSourceRevision": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "services": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "pattern",
+          "operations",
+          "topics",
+          "collectionTypes",
+          "commandGroups",
+          "source",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^UMAA::"
+          },
+          "pattern": {
+            "enum": [
+              "request_reply_without_query_data",
+              "command_response",
+              "publish_subscribe"
+            ]
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "topics": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "type",
+                "direction",
+                "role"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "type": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "direction": {
+                  "enum": [
+                    "provider",
+                    "consumer"
+                  ]
+                },
+                "role": {
+                  "enum": [
+                    "command",
+                    "ack",
+                    "status",
+                    "execution_status",
+                    "report"
+                  ]
+                }
+              }
+            }
+          },
+          "collectionTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "commandGroups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "command",
+                "ack",
+                "status"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "command": {
+                  "type": "string"
+                },
+                "ack": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "clauses",
+              "reference"
+            ],
+            "properties": {
+              "clauses": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "reference": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "description": "null when curated source lacks a per-service reference; not an approval"
+              }
+            }
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "icdMappingReviewed",
+              "officialIdlVerified",
+              "ddsQosVerified",
+              "ddsBehaviorVerified"
+            ],
+            "properties": {
+              "icdMappingReviewed": {
+                "type": "boolean"
+              },
+              "officialIdlVerified": {
+                "type": "boolean"
+              },
+              "ddsQosVerified": {
+                "type": "boolean"
+              },
+              "ddsBehaviorVerified": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

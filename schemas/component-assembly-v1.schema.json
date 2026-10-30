@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rydolabs/umaa-kit/blob/main/schemas/component-assembly-v1.schema.json",
+  "title": "UMAA Kit Component Assembly Manifest v1",
+  "description": "UI and CLI common component-role composition. Does not certify DDS or normative UMAA conformance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "component",
+    "services"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1"
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "artifact"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,62}$"
+        },
+        "artifact": {
+          "const": "shared-library"
+        }
+      }
+    },
+    "services": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]*(::[A-Za-z][A-Za-z0-9_]*){2,5}$"
+          },
+          "role": {
+            "enum": [
+              "provider",
+              "consumer"
+            ]
+          }
+        }
+      }
+    },
+    "catalogPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "sha256"
+      ],
+      "properties": {
+        "kind": {
+          "const": "reviewed-icd-catalog"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

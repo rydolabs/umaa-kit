@@ -1,5 +1,6 @@
 // Fast DDS adapter for synthetic BatteryStatus ONLY. No official UMAA QoS claim.
 #include "umaa/internal/dds_backend.h"
+#include "../common/demo_type_binding_rules.hpp"
 #include "DemoBattery.h"
 #include "DemoBatteryPubSubTypes.h"
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -26,16 +27,12 @@ namespace {
 using namespace eprosima::fastdds::dds;
 using Wire=Demo::EO::BatteryReportType;
 using WirePubSub=Demo::EO::BatteryReportTypePubSubType;
-constexpr uint64_t supported=UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE;
+constexpr uint64_t supported=umaa::vendor::demo::capabilities;
 struct Domain {DomainParticipant* p;TypeSupport type;};
 struct Writer {Domain* d;Topic* t;Publisher* pub;DataWriter* writer;};
 struct Reader {Domain* d;Topic* t;Subscriber* sub;DataReader* reader;UmaaDdsOnSampleV1 callback;void* user;std::unordered_map<std::string,std::string> instance_keys;};
-bool approved(const UmaaDdsTopicV1* topic){
- return topic && topic->topic_name && topic->schema_id && topic->qos_profile &&
- !std::strcmp(topic->topic_name,"demo/BatteryStatus") &&
- !std::strcmp(topic->schema_id,"demo:battery-v1") &&
- !std::strcmp(topic->qos_profile,"demo-reliable") &&
- !(topic->required_features & ~supported);
+bool approved(const UmaaDdsTopicV1* topic) {
+ return umaa::vendor::demo::accepts(topic, umaa::vendor::demo::Family::Report);
 }
 bool decode_key(const char* s,int32_t& key){
  if(!s||!*s)return false;

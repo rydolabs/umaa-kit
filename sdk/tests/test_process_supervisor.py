@@ -214,6 +214,41 @@ class IsolatedWorkerTest(unittest.TestCase):
         return ComponentProcessSupervisor(self.worker, self.module,
                                           timeout=5, journal_path=path)
 
+
+    def test_closed_host_cannot_restart_after_owner_release_real_worker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = pathlib.Path(tmp) / "closed-real-worker.json"
+            host = self.make_journal(journal)
+            try:
+                self.assertTrue(host.ping())
+                host.close()
+                with self.assertRaisesRegex(WorkerFault, "closed supervisor"):
+                    host.restart(hardware_reconciled=True)
+                # No issued Command: a fresh exclusive owner can start.
+                with self.make_journal(journal) as fresh:
+                    self.assertTrue(fresh.ping())
+                    self.assertTrue(fresh.stop())
+            finally:
+                host.close()
+
+    def test_forced_close_with_pending_command_is_not_clean_stop(self):
+        from umaa_operation_journal import JournalFault
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = pathlib.Path(tmp) / "closed-pending-real-worker.json"
+            host = self.make_journal(journal)
+            try:
+                self.assertEqual(host.call("Demo::EO::AsyncEngineControl", 1,
+                    struct.pack("=i", 1350), 1201)[:2], (0, 2))
+                host.close()
+                self.assertFalse(host.stop())
+                with self.assertRaises(WorkerFault):
+                    host.restart(hardware_reconciled=True)
+                # Unknown physical outcome remains fenced across workers.
+                with self.assertRaises(JournalFault):
+                    self.make_journal(journal)
+            finally:
+                host.close()
+
     def test_pending_command_blocks_cooperative_stop(self):
         with self.make() as host:
             status, result, _ = host.call(

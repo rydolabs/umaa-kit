@@ -339,3 +339,31 @@ RTI remains unverified; full UMAA normative conformance is not claimed.
 This is an explicit scheduling/scope decision, not deletion or weakening
 of future technical requirements. Source of truth:
 [CURRENT_PHASE_SCOPE.md](docs/CURRENT_PHASE_SCOPE.md).
+
+## 2026-10-30 — independent supervisor post-close owner fence
+
+**Separate Draft [PR #18](https://github.com/rydolabs/umaa-kit/pull/18)**,
+branch `fix/supervisor-closed-owner-guard-20261030` based on unmerged PR #16,
+implementation commit `1ec7f457a8789fd56f3988247bf60cac0250f487`.
+This does not depend on the unrelated PR #17 official catalog guard.
+
+- `OperationJournal.begin/resolved/resolved_all_after_reconciliation`
+  require its exclusive owner handle to remain held; a stale journal
+  object cannot write/settle intent after releasing the owner marker.
+- `ComponentProcessSupervisor.restart(hardware_reconciled=True)`
+  cannot resuscitate a closed supervisor after the journal marker was
+  released; lifecycle checks are serialized with `close()`.
+- `stop()` cannot return a clean success for an already faulted/closed
+  worker simply because the process handle was removed.
+- Two synthetic, hardware-free regressions cover released-object writes
+  and post-close restart. Exact implementation SHA's
+  [Linux SDK run 40983705423](https://github.com/rydolabs/umaa-kit/actions/runs/40983705423)
+  reports `Ran 53 tests` and a successful SDK/CTest/Simulator job.
+  Independent vendor CI and Windows results must be inspected for final
+  HEAD before claiming full regression pass.
+
+**Residual risks and blockers:** single trusted local filesystem, untrusted
+physical device state, power-loss resilience, authenticated IPC,
+long-duration crash/soak, and full official UMAA conformance remain OPEN;
+the code does NOT perform hardware reconciliation. Mixed Cyclone/Fast
+network and RTI remain explicitly future-only.

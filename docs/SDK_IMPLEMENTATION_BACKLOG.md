@@ -458,3 +458,24 @@ network strict result remains **FAIL**, RTI remains **NOT VERIFIED**; neither
 is converted to PASS/N/A for a normative official conformance verdict.
 
 [Authoritative current-phase boundary](CURRENT_PHASE_SCOPE.md).
+
+## 2026-10-30 supervisor released-owner safety fence — narrow follow-up
+
+Independent Draft [PR #18](https://github.com/rydolabs/umaa-kit/pull/18),
+implementation SHA `1ec7f457a8789fd56f3988247bf60cac0250f487`:
+
+- No stale `OperationJournal` instance can write a new intent or settle
+  unknown outcomes after `release_owner()`.
+- A `close()`d `ComponentProcessSupervisor` refuses restart, including
+  after caller-supplied `hardware_reconciled=True`, because its owner
+  lease is gone. Faulted/force-closed devices cannot appear cleanly
+  stopped from a removed process handle.
+- 2 independent regression tests, no vendor dependency. Exact-source
+  [Linux SDK run](https://github.com/rydolabs/umaa-kit/actions/runs/40983705423)
+  passed Python SDK discovery (53 tests) and CMake/CTest on Ubuntu.
+  Cross-platform/final-head CI must be checked independently.
+
+The operator's external hardware reconciliation remains mandatory;
+`hardware_reconciled=True` never constitutes physical proof. Production
+IPC and long-duration crash/power-loss testing remain OPEN. Scope excludes
+mixed-vendor DDS networks and RTI independent verification for now.

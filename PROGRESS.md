@@ -375,3 +375,48 @@ DDS QoS evidence, Component Definition Provider/Consumer assignments,
 real TypeSupport mapping and independent physical/single-vendor runtime tests
 for every applicable service. Runtime identity validation does not satisfy
 these normative review gates by itself.
+
+
+## 2026-10-30 — first common Component Manifest/CLI + CMake DLL/SO project slice
+
+- [Draft PR #19](https://github.com/rydolabs/umaa-kit/pull/19) on
+  `feature/component-manifest-cli-generator-20261030` (based on Draft PR #17),
+  **not merged**. No production deployment.
+- Added `tools/umaa_component_cli.py` with `new component`, `service add/list`,
+  `generate`, `build` and `test` using a shared versioned JSON assembly
+  manifest. This is the future CLI/UI common input, but the React Flow
+  designer itself is NOT implemented.
+- Generator emits CMake MODULE, ABI v2 entry/registration, demo-only
+  EngineControl/BatteryStatus service DTO codecs, per-service user Handler
+  skeletons and native module loader CTest. Existing user handler files
+  and README are never overwritten; unmarked CMake files are protected.
+  Default user Command implementation rejects; Report throws rather than
+  claiming successful device operation.
+- Official reviewed catalog identities may be selected but **cannot be
+  generated** without vetted TypeSupport, key, normative DDS QoS, role
+  and protocol bindings. Module-side Consumer binding, custom IDL and
+  official fully conformant runtime remain OPEN. Only **synthetic demo
+  Provider** module generation is supported.
+- New SDK Python tests include negative/duplicate role paths, injection
+  guard, protected regeneration, CLI subprocess, and real installed-SDK
+  CMake build + generated ABI-v2 module loader CTest.
+- [Exact implementation source CI 41006782102](https://github.com/rydolabs/umaa-kit/actions/runs/41006782102):
+  Linux GCC, Linux Clang and Windows MSVC SUCCESS, **69 SDK Python tests**
+  (1 skipped) and **36/36 CTest** in inspected Linux and Windows job logs.
+  [Cyclone plugin CI 41006782035](https://github.com/rydolabs/umaa-kit/actions/runs/41006782035)
+  SUCCESS and [scoped Verifier CI 41006782045](https://github.com/rydolabs/umaa-kit/actions/runs/41006782045)
+  SUCCESS at that same implementation source SHA.
+- Root README now highlights the platform through Mermaid architecture
+  diagrams, a copyable CLI demo and a factual current-vs-planned capability
+  table. The former detailed README is retained at
+  `docs/README_IMPLEMENTATION_HISTORY_2026-10-30.md`, and the
+  common assembly/React Flow roadmap is documented in
+  `docs/COMPONENT_PROJECT_GENERATION.md`.
+- **Next acceptance gates:** formal Service Contract + Manifest schema,
+  pinned EA/IDL/ICD provenance, vetted official SA GlobalPoseStatus
+  Report Provider/Consumer vertical slice, later MO GlobalVectorControl
+  Command/Status/Dispose, then supported React + React Flow Studio
+  using exactly the same validator/CLI generator.
+- Standalone Cyclone and standalone Fast DDS with same built modules remain
+  current; mixed-vendor network interoperability and licensed RTI
+  Connext validation remain later-only. G6 full normative conformance OPEN.

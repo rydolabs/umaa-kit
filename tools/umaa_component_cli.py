@@ -115,7 +115,9 @@ def check_project(project):
         if any(name not in names for name in official):
             raise ProjectError("assembly references unknown official service")
         declared = doc.get("catalogPin", {}).get("sha256")
-        if declared and declared != current_pin:
+        if not declared:
+            raise ProjectError("unpinned official service assembly: explicit catalog pin required")
+        if declared != current_pin:
             raise ProjectError("reviewed catalog changed: explicit contract revision is required")
     elif "catalogPin" in doc:
         _, current_pin = contracts.catalog_names()

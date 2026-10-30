@@ -367,3 +367,22 @@ physical device state, power-loss resilience, authenticated IPC,
 long-duration crash/soak, and full official UMAA conformance remain OPEN;
 the code does NOT perform hardware reconciliation. Mixed Cyclone/Fast
 network and RTI remain explicitly future-only.
+
+### Follow-up: real Worker process integration for post-close policy
+
+Commit `fe4422f43b08b27433092e11a47b51eedf5a75f3` adds
+**two real worker-process CTest regression scenarios** to
+`sdk/tests/test_process_supervisor.py`:
+
+1. `close()` releases the journal owner; restart of the closed instance
+   refuses even with an explicit hardware attestation, while a new owner
+   with no pending Command can start safely.
+2. Closing an asynchronous pending Command does not falsely indicate a
+   clean stop, allow a stale-owner restart, or let a fresh process run
+   against the unresolved durable journal.
+
+[Linux GCC implementation CI](https://github.com/rydolabs/umaa-kit/actions/runs/40983969876):
+**PASS** on exact test commit, 53 Python SDK tests and 36/36 CTest
+(including isolated Worker scenarios). Check Windows/Clang + vendor plugin
+results and the final documentation SHA independently before declaring
+the complete PR verified.

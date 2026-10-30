@@ -1,0 +1,3 @@
+# Isolated ICD YAML design validation; does not affect native C++ SDK.
+PyYAML==6.0.3
+jsonschema==4.26.0

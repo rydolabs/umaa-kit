@@ -59,6 +59,13 @@ class OperationJournal:
                 pass
 
 
+    def _require_owner(self):
+        # A stopped supervisor must not continue writing through its stale
+        # Python journal object after the O_EXCL marker has been released.
+        # Only the current exclusive owner can mutate durable state.
+        if self._owner_fd is None:
+            raise JournalFault("operation journal ownership already released")
+
     def _load(self):
         if self.path.is_symlink():
             raise JournalFault("refuse symlink journal")
@@ -144,6 +151,7 @@ class OperationJournal:
                     pass
 
     def begin(self, service: str, session: int, action: int):
+        self._require_owner()
         if not service or len(service) > 256 or any(c in service for c in "\r\n\t"):
             raise ValueError("invalid durable command service")
         if type(session) is not int or type(action) is not int or not 0 < session < 2**64 or action not in (1, 2):
@@ -166,6 +174,7 @@ class OperationJournal:
             raise
 
     def resolved(self, service: str, session: int, action=None):
+        self._require_owner()
         # Only an unambiguous terminal result can clear an unresolved intent.
         # Keep a bounded durable deduplication ledger of completed sessions;
         # even a new Python process must never replay one by accident.
@@ -187,6 +196,7 @@ class OperationJournal:
                 raise
 
     def resolved_all_after_reconciliation(self):
+        self._require_owner()
         # Hardware reconciliation does NOT give permission to replay an old
         # session identifier. Transfer every unknown session to dedup history.
         before, old_settled = list(self.entries), list(self.settled)

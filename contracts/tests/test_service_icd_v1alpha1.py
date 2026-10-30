@@ -53,6 +53,49 @@ class ServiceIcdYamlTest(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises(ContractError):
                 self.check_object(wrong)
 
+    def test_mo_command_response_preserves_icd_query_cancel_and_execution_status(self):
+        path = CONTRACTS / "services/MO/GlobalVectorControl.service.yaml"
+        doc = validate_file(path)
+        self.assertEqual(doc["metadata"]["namespace"], "UMAA::MO::GlobalVectorControl")
+        self.assertEqual(len(doc["spec"]["topics"]), 4)
+        self.assertEqual(len(doc["spec"]["operations"]), 8)
+        self.assertEqual(doc["spec"]["documentation"]["operationsTable"], 22)
+        self.assertEqual(
+            {t["number"] for t in doc["spec"]["documentation"]["messageTables"]},
+            {23, 24, 25, 26})
+        flow = doc["spec"]["flows"]["mainCommand"]
+        self.assertEqual(flow["kind"], "command-response")
+        self.assertEqual(flow["commandTopicRef"], "command")
+        self.assertEqual(flow["ackTopicRef"], "ack")
+        self.assertEqual(flow["statusTopicRef"], "status")
+        self.assertEqual(flow["executionStatusTopicRef"], "executionStatus")
+        self.assertEqual(doc["spec"]["operations"]["cancelGlobalVectorCommand"]["transport"], "dds-dispose")
+        self.assertEqual(doc["spec"]["operations"]["cancelGlobalVectorCommand"]["topicRef"], "command")
+        self.assertEqual(doc["spec"]["operations"]["reportGlobalVectorCancelCommandStatus"]["transport"], "dds-native")
+        self.assertIsNone(doc["provenance"]["icd"]["officialSha256"])
+        self.assertFalse(doc["verification"]["keysAndQos"])
+        self.assertEqual(len(doc["spec"]["topics"]["command"]["attributes"]), 6)
+        self.assertEqual(len(doc["spec"]["topics"]["executionStatus"]["attributes"]), 3)
+
+    def test_invalid_command_cancel_and_nonnative_response_are_rejected(self):
+        doc = validate_file(CONTRACTS / "services/MO/GlobalVectorControl.service.yaml")
+        variants = []
+        invalid = copy.deepcopy(doc)
+        invalid["spec"]["operations"]["setGlobalVector"]["topicRef"] = "ack"
+        variants.append(invalid)
+        invalid = copy.deepcopy(doc)
+        invalid["spec"]["operations"]["cancelGlobalVectorCommand"].pop("topicRef")
+        variants.append(invalid)
+        invalid = copy.deepcopy(doc)
+        invalid["spec"]["operations"]["cancelGlobalVectorCommand"]["topicRef"] = "status"
+        variants.append(invalid)
+        invalid = copy.deepcopy(doc)
+        invalid["spec"]["operations"]["reportGlobalVectorCancelCommandStatus"]["topicRef"] = "status"
+        variants.append(invalid)
+        for wrong in variants:
+            with self.subTest(example=wrong["spec"]["operations"]), self.assertRaises(ContractError):
+                self.check_object(wrong)
+
     def test_unknown_fields_are_not_silently_ignored_but_x_are_allowed(self):
         doc = validate_file(EXAMPLE)
         valid = copy.deepcopy(doc)

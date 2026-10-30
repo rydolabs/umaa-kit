@@ -459,42 +459,26 @@ is converted to PASS/N/A for a normative official conformance verdict.
 
 [Authoritative current-phase boundary](CURRENT_PHASE_SCOPE.md).
 
-## 2026-10-30 supervisor released-owner safety fence — narrow follow-up
+## 2026-10-30 P0 fail-closed official contract owner/role guards — partial G6 progress
 
-Independent Draft [PR #18](https://github.com/rydolabs/umaa-kit/pull/18),
-implementation SHA `1ec7f457a8789fd56f3988247bf60cac0250f487`:
+Draft [PR #17](https://github.com/rydolabs/umaa-kit/pull/17), implementation
+`f1afcc5f5052ab57e6fa90974d8cfcab2c5fd363`:
 
-- No stale `OperationJournal` instance can write a new intent or settle
-  unknown outcomes after `release_owner()`.
-- A `close()`d `ComponentProcessSupervisor` refuses restart, including
-  after caller-supplied `hardware_reconciled=True`, because its owner
-  lease is gone. Faulted/force-closed devices cannot appear cleanly
-  stopped from a removed process handle.
-- 2 independent regression tests, no vendor dependency. Exact-source
-  [Linux SDK run](https://github.com/rydolabs/umaa-kit/actions/runs/40983705423)
-  passed Python SDK discovery (53 tests) and CMake/CTest on Ubuntu.
-  Cross-platform/final-head CI must be checked independently.
+- Reuse a single manifest validator in both the official C++ service API
+  generator and reviewed runtime Topic registry generator; reject a
+  foreign-service Topic/TypeSupport/Collection, Provider/Consumer inversion,
+  invalid UMAA service root and malformed manifest/group/role/clauses.
+- Run deterministic negative ownership mutations against every one of
+  the 113 catalog records, plus refusal to write a C++ API header for
+  invalid input.
+- Registry C++ output unchanged for the already-reviewed 53 service /
+  113 Topic entries, with every `dds_qos_verified` still false.
+- [Linux SDK baseline](https://github.com/rydolabs/umaa-kit/actions/runs/40983077165)
+  on exact source: 61 SDK Python tests and reviewed registry `--check` PASS.
 
-The operator's external hardware reconciliation remains mandatory;
-`hardware_reconciled=True` never constitutes physical proof. Production
-IPC and long-duration crash/power-loss testing remain OPEN. Scope excludes
-mixed-vendor DDS networks and RTI independent verification for now.
-
-### Follow-up: real Worker process integration for post-close policy
-
-Commit `fe4422f43b08b27433092e11a47b51eedf5a75f3` adds
-**two real worker-process CTest regression scenarios** to
-`sdk/tests/test_process_supervisor.py`:
-
-1. `close()` releases the journal owner; restart of the closed instance
-   refuses even with an explicit hardware attestation, while a new owner
-   with no pending Command can start safely.
-2. Closing an asynchronous pending Command does not falsely indicate a
-   clean stop, allow a stale-owner restart, or let a fresh process run
-   against the unresolved durable journal.
-
-[Linux GCC implementation CI](https://github.com/rydolabs/umaa-kit/actions/runs/40983969876):
-**PASS** on exact test commit, 53 Python SDK tests and 36/36 CTest
-(including isolated Worker scenarios). Check Windows/Clang + vendor plugin
-results and the final documentation SHA independently before declaring
-the complete PR verified.
+**Still G6 OPEN:** authoritative cross-check of target Component
+provider/consumer, keyed-instance names, requested/offered QoS, exact
+per-service official IDL wire types and independent real DDS runtime behavior.
+This task provides mechanical fail-closed validation of the *claimed*
+catalog, not source-of-truth normative vetting. RTI and mixed DDS networking
+remain future-only under [phase scope](CURRENT_PHASE_SCOPE.md).

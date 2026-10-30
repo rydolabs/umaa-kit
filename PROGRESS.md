@@ -340,49 +340,136 @@ This is an explicit scheduling/scope decision, not deletion or weakening
 of future technical requirements. Source of truth:
 [CURRENT_PHASE_SCOPE.md](docs/CURRENT_PHASE_SCOPE.md).
 
-## 2026-10-30 — independent supervisor post-close owner fence
+## 2026-10-30 — P0 official service catalog fail-closed Topic ownership validation
 
-**Separate Draft [PR #18](https://github.com/rydolabs/umaa-kit/pull/18)**,
-branch `fix/supervisor-closed-owner-guard-20261030` based on unmerged PR #16,
-implementation commit `1ec7f457a8789fd56f3988247bf60cac0250f487`.
-This does not depend on the unrelated PR #17 official catalog guard.
+**Branch:** `feature/official-contract-guards-20261030`, an additive
+Draft PR #17 against unmerged scoped PR #16. **Source implementation SHA:**
+`f1afcc5f5052ab57e6fa90974d8cfcab2c5fd363`. Changes do not touch
+official UMAA on-wire topics or vendor backend/IPC behavior.
 
-- `OperationJournal.begin/resolved/resolved_all_after_reconciliation`
-  require its exclusive owner handle to remain held; a stale journal
-  object cannot write/settle intent after releasing the owner marker.
-- `ComponentProcessSupervisor.restart(hardware_reconciled=True)`
-  cannot resuscitate a closed supervisor after the journal marker was
-  released; lifecycle checks are serialized with `close()`.
-- `stop()` cannot return a clean success for an already faulted/closed
-  worker simply because the process handle was removed.
-- Two synthetic, hardware-free regressions cover released-object writes
-  and post-close restart. Exact implementation SHA's
-  [Linux SDK run 40983705423](https://github.com/rydolabs/umaa-kit/actions/runs/40983705423)
-  reports `Ran 53 tests` and a successful SDK/CTest/Simulator job.
-  Independent vendor CI and Windows results must be inspected for final
-  HEAD before claiming full regression pass.
+- One shared validator now gates BOTH the official C++ service-binding
+  generator and the catalog-derived C++ runtime Topic allow-list.
+  It rejects a Topic/IDL/Collection belonging to another service,
+  Provider/Consumer direction inversion, forged/unsupported service
+  identity, malformed roles/groups/clauses, and non-object/list shapes.
+  This is a necessary G6 mapping integrity guard, **not** proof that
+  normative Component roles, Keys or QoS have been independently approved.
+- Regression mutations cover **all 113 currently catalogued Topic
+  records** for foreign-service ownership rejection. The official
+  C++ binding generator must refuse the foreign Topic **without writing
+  any generated header**. Invalid documents are rejected, not repaired
+  by guessing a DDS role or default QoS.
+- On the implementation SHA, [Ubuntu SDK/Simulator CI](https://github.com/rydolabs/umaa-kit/actions/runs/40983077165)
+  reports `REVIEWED_SERVICE_REGISTRY_PASS services=53 topics=113
+  normative_qos_claim=none` and `Ran 61 tests` in the SDK Python
+  discovery, with SDK build/CTest/simulator run SUCCESS. Other standalone
+  vendor and OS checks must be inspected at the exact final PR HEAD
+  before declaring full cross-platform regression PASS.
+- [PR #17](https://github.com/rydolabs/umaa-kit/pull/17) remains Draft,
+  unmerged. Mixed Cyclone↔Fast network and RTI independent verification
+  remain **future-only** and are excluded from this phase. The current
+  acceptance scope is [CURRENT_PHASE_SCOPE.md](docs/CURRENT_PHASE_SCOPE.md).
 
-**Residual risks and blockers:** single trusted local filesystem, untrusted
-physical device state, power-loss resilience, authenticated IPC,
-long-duration crash/soak, and full official UMAA conformance remain OPEN;
-the code does NOT perform hardware reconciliation. Mixed Cyclone/Fast
-network and RTI remain explicitly future-only.
+**Remaining G6/implementation work:** reviewed official per-service key and
+DDS QoS evidence, Component Definition Provider/Consumer assignments,
+real TypeSupport mapping and independent physical/single-vendor runtime tests
+for every applicable service. Runtime identity validation does not satisfy
+these normative review gates by itself.
 
-### Follow-up: real Worker process integration for post-close policy
 
-Commit `fe4422f43b08b27433092e11a47b51eedf5a75f3` adds
-**two real worker-process CTest regression scenarios** to
-`sdk/tests/test_process_supervisor.py`:
+## 2026-10-30 — first common Component Manifest/CLI + CMake DLL/SO project slice
 
-1. `close()` releases the journal owner; restart of the closed instance
-   refuses even with an explicit hardware attestation, while a new owner
-   with no pending Command can start safely.
-2. Closing an asynchronous pending Command does not falsely indicate a
-   clean stop, allow a stale-owner restart, or let a fresh process run
-   against the unresolved durable journal.
+- [Draft PR #19](https://github.com/rydolabs/umaa-kit/pull/19) on
+  `feature/component-manifest-cli-generator-20261030` (based on Draft PR #17),
+  **not merged**. No production deployment.
+- Added `tools/umaa_component_cli.py` with `new component`, `service add/list`,
+  `generate`, `build` and `test` using a shared versioned JSON assembly
+  manifest. This is the future CLI/UI common input, but the React Flow
+  designer itself is NOT implemented.
+- Generator emits CMake MODULE, ABI v2 entry/registration, demo-only
+  EngineControl/BatteryStatus service DTO codecs, per-service user Handler
+  skeletons and native module loader CTest. Existing user handler files
+  and README are never overwritten; unmarked CMake files are protected.
+  Default user Command implementation rejects; Report throws rather than
+  claiming successful device operation.
+- Official reviewed catalog identities may be selected but **cannot be
+  generated** without vetted TypeSupport, key, normative DDS QoS, role
+  and protocol bindings. Module-side Consumer binding, custom IDL and
+  official fully conformant runtime remain OPEN. Only **synthetic demo
+  Provider** module generation is supported.
+- New SDK Python tests include negative/duplicate role paths, injection
+  guard, protected regeneration, CLI subprocess, and real installed-SDK
+  CMake build + generated ABI-v2 module loader CTest.
+- [Exact implementation source CI 41006782102](https://github.com/rydolabs/umaa-kit/actions/runs/41006782102):
+  Linux GCC, Linux Clang and Windows MSVC SUCCESS, **69 SDK Python tests**
+  (1 skipped) and **36/36 CTest** in inspected Linux and Windows job logs.
+  [Cyclone plugin CI 41006782035](https://github.com/rydolabs/umaa-kit/actions/runs/41006782035)
+  SUCCESS and [scoped Verifier CI 41006782045](https://github.com/rydolabs/umaa-kit/actions/runs/41006782045)
+  SUCCESS at that same implementation source SHA.
+- Root README now highlights the platform through Mermaid architecture
+  diagrams, a copyable CLI demo and a factual current-vs-planned capability
+  table. The former detailed README is retained at
+  `docs/README_IMPLEMENTATION_HISTORY_2026-10-30.md`, and the
+  common assembly/React Flow roadmap is documented in
+  `docs/COMPONENT_PROJECT_GENERATION.md`.
+- **Next acceptance gates:** formal Service Contract + Manifest schema,
+  pinned EA/IDL/ICD provenance, vetted official SA GlobalPoseStatus
+  Report Provider/Consumer vertical slice, later MO GlobalVectorControl
+  Command/Status/Dispose, then supported React + React Flow Studio
+  using exactly the same validator/CLI generator.
+- Standalone Cyclone and standalone Fast DDS with same built modules remain
+  current; mixed-vendor network interoperability and licensed RTI
+  Connext validation remain later-only. G6 full normative conformance OPEN.
 
-[Linux GCC implementation CI](https://github.com/rydolabs/umaa-kit/actions/runs/40983969876):
-**PASS** on exact test commit, 53 Python SDK tests and 36/36 CTest
-(including isolated Worker scenarios). Check Windows/Clang + vendor plugin
-results and the final documentation SHA independently before declaring
-the complete PR verified.
+## 2026-10-30 — reviewed Service Contract snapshot and assembly catalog pin
+
+- **Next isolated development branch:** `feature/component-contract-provenance-20261030`
+  on top of the unmerged Draft PR #19; no merge or deployment.
+- Added `tools/umaa_service_contracts.py`, a deterministic, SHA-256
+  source-pinned projection of the existing independently reviewed 53-service
+  / 113-Topic partial catalog. Snapshot records original Operation lists,
+  Topic ID/type/provider/consumer directions, Collection type names,
+  explicit Command families, ICD clause references, ledger revision and
+  per-service `officialIdlVerified` / `ddsQosVerified` / `ddsBehaviorVerified`.
+- Added standalone JSON Schemas for Component Assembly v1 and reviewed
+  Service Contract Snapshot v1. CLI `contract export/verify` independently
+  recreates the snapshot and rejects forged role/QoS claims, Topic changes
+  and stale catalog revision. CLI `validate` checks assembly identity,
+  role syntax, catalog source pin and actual *synthetic-only* generation readiness.
+- New official entries added to an assembly get an explicit catalog SHA
+  lock. Unpinned/stale/unknown official service entries are rejected;
+  old Demo-only v1 manifests remain valid. Official-service code generation
+  still remains blocked by unreviewed TypeSupport/key/QoS/runtime gates.
+- Review found **two existing catalog rows without a per-service `source`
+  string**: EO BatteryStatus and EngineControl. Exporting those now records
+  `reference: null` explicitly rather than inventing a canonical source;
+  source completeness remains OPEN. Tests assert this.
+- New negative tests include mutated source digest, forged normative QoS
+  approval, inverted Topic direction, invented Operation, stale source,
+  unpinned manual assembly, role duplicates and CLI export/verify paths.
+- The generator/ABI v2 and existing standalone Cyclone/Fast DDS milestones
+  are otherwise unchanged. No official K-UMAA/UMAA conformance or real QEA
+  acceptance is claimed.
+
+
+## 2026-10-30 — Studio UI/CLI contract parity API (bounded read-only slice)
+
+- Branch `feature/studio-component-contract-api-20261030` stacks on
+  unmerged Draft PR #20, then Draft PR #19. No merges or deployments.
+- Refactored CLI `check_assembly(doc)` into a **pure validator**; the CLI
+  still uses `check_project(path)`, and Studio API now reuses the exact same
+  contract/role/source-hash gate without filesystem or code generation.
+- New project-authenticated GET `/api/v1/projects/{id}/service-contracts`
+  returns the deterministic 53-service/113-Topic reviewed mapping with the
+  same source SHA and explicitly unknown source fields where missing.
+  POST `/api/v1/projects/{id}/assemblies/validate` checks typed JSON only.
+  Unauthorized calls fail 401/404; malformed/unknown/stale contracts 422;
+  >128 KiB payloads 413; no DB writes, job enqueue or native build execution.
+- Added Studio API tests for project RBAC, viewer access to non-mutating
+  contract inspection, absent source preservation, official provider+consumer
+  roles in one Assembly, forged/unpinned contracts, oversized bodies,
+  no queued jobs and CLI/Studio readiness parity. Studio V6 still uses
+  legacy React; **React Flow Component Designer is NOT implemented**.
+- Verified scope is **API/UI foundation only**, not full EA service
+  extraction, production authentication, native official DDS bindings or
+  formal UMAA compliance. Standalone Cyclone/Fast current milestone unchanged.

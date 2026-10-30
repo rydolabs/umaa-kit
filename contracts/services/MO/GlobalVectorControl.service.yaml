@@ -1,0 +1,204 @@
+# DRAFT MO ICD 6.0 GlobalVectorControl: preserves four DDS Topic mappings
+# plus direct-DDS query/cancel operations from ICD Table 22.
+# Field comments are annotations only: original official IDL is authoritative.
+apiVersion: kumaa.dev/v1alpha1
+kind: ServiceICD
+
+metadata:
+  name: GlobalVectorControl
+  namespace: UMAA::MO::GlobalVectorControl
+  domain: MO
+  description: Control vehicle speed, direction and depth or altitude
+  labels:
+    standard: umaa-6.0
+    domain: maneuver-operations
+
+spec:
+  purpose: >-
+    Direct vehicle speed, direction and depth or altitude. Tolerances, where
+    supplied, influence command evaluation; details must be verified against
+    the complete ICD and any applicable compliance requirements.
+
+  operations:
+    setGlobalVector:
+      actor: consumer
+      transport: command
+      topicRef: command
+      clause: "6.1.5.4"
+      description: Issue a global vector command
+    reportGlobalVectorCommandStatus:
+      actor: provider
+      transport: publish
+      topicRef: status
+      clause: "6.1.5.2"
+      description: Publish command flow-control state
+    queryGlobalVectorCommandAck:
+      actor: consumer
+      transport: subscribe
+      topicRef: ack
+      clause: "6.1.5"
+      description: Subscribe to the command acknowledgement
+    reportGlobalVectorCommandAck:
+      actor: provider
+      transport: publish
+      topicRef: ack
+      clause: "6.1.5.1"
+      description: Publish the accepted command values
+    queryGlobalVectorExecutionStatus:
+      actor: consumer
+      transport: subscribe
+      topicRef: executionStatus
+      clause: "6.1.5"
+      description: Subscribe to command execution progress
+    reportGlobalVectorExecutionStatus:
+      actor: provider
+      transport: publish
+      topicRef: executionStatus
+      clause: "6.1.5.3"
+      description: Publish achieved speed, elevation and direction indicators
+    cancelGlobalVectorCommand:
+      actor: consumer
+      transport: dds-dispose
+      clause: "6.1.5"
+      description: DDS-native cancellation; no independent cancel Topic
+    reportGlobalVectorCancelCommandStatus:
+      actor: provider
+      transport: dds-native
+      clause: "6.1.5"
+      description: ICD direct-DDS cancellation result; no separate Topic declared
+
+  topics:
+    command:
+      catalogIdentity: UMAA::MO::GlobalVectorControl::GlobalVectorCommandType
+      idlType: UMAA::MO::GlobalVectorControl::GlobalVectorCommandType
+      idlPath: UMAA/MO/GlobalVectorControl/GlobalVectorCommandType.idl
+      ddsTopicName: null
+      writer: consumer
+      reader: provider
+      role: command
+      keyFields: null
+      qosProfileRef: null
+      inherits: [UMAA::UMAACommand]
+      attributes:
+        depthChangePitch:
+          typeRef: PitchYNEDRequirement
+          optional: true
+          description: Requested pitch while changing underwater elevation
+        direction:
+          typeRef: DirectionRequirementVariantType
+          optional: false
+          description: Requested direction of vehicle movement
+        directionMode:
+          typeRef: DirectionModeEnumType
+          optional: false
+          description: Vehicle directional reference mode
+        elevation:
+          typeRef: ElevationRequirementVariantType
+          optional: true
+          description: Requested depth or altitude
+        endTime:
+          typeRef: DateTime
+          optional: true
+          description: End of the command execution period if specified
+        speed:
+          typeRef: SpeedRequirementVariantType
+          optional: false
+          description: Requested speed of vehicle movement
+    ack:
+      catalogIdentity: UMAA::MO::GlobalVectorControl::GlobalVectorCommandAckReportType
+      idlType: UMAA::MO::GlobalVectorControl::GlobalVectorCommandAckReportType
+      idlPath: UMAA/MO/GlobalVectorControl/GlobalVectorCommandAckReportType.idl
+      ddsTopicName: null
+      writer: provider
+      reader: consumer
+      role: ack
+      keyFields: null
+      qosProfileRef: null
+      inherits: [UMAA::UMAACommandStatusBase]
+      attributes:
+        command:
+          typeRef: GlobalVectorCommandType
+          optional: false
+          description: Reference to the issued command
+    status:
+      catalogIdentity: UMAA::MO::GlobalVectorControl::GlobalVectorCommandStatusType
+      idlType: UMAA::MO::GlobalVectorControl::GlobalVectorCommandStatusType
+      idlPath: UMAA/MO/GlobalVectorControl/GlobalVectorCommandStatusType.idl
+      ddsTopicName: null
+      writer: provider
+      reader: consumer
+      role: status
+      keyFields: null
+      qosProfileRef: null
+      inherits: [UMAA::UMAACommandStatus]
+    executionStatus:
+      catalogIdentity: UMAA::MO::GlobalVectorControl::GlobalVectorExecutionStatusReportType
+      idlType: UMAA::MO::GlobalVectorControl::GlobalVectorExecutionStatusReportType
+      idlPath: UMAA/MO/GlobalVectorControl/GlobalVectorExecutionStatusReportType.idl
+      ddsTopicName: null
+      writer: provider
+      reader: consumer
+      role: execution_status
+      keyFields: null
+      qosProfileRef: null
+      inherits: [UMAA::UMAACommandStatusBase]
+      attributes:
+        directionAchieved:
+          typeRef: boolean
+          optional: false
+          description: Whether the requested direction has been achieved
+        elevationAchieved:
+          typeRef: boolean
+          optional: false
+          description: Whether the requested elevation has been achieved
+        speedAchieved:
+          typeRef: boolean
+          optional: false
+          description: Whether the requested speed has been achieved
+
+  flows:
+    mainCommand:
+      kind: command-response
+      commandTopicRef: command
+      ackTopicRef: ack
+      statusTopicRef: status
+      executionStatusTopicRef: executionStatus
+      cancelOperation: cancelGlobalVectorCommand
+
+  documentation:
+    serviceSection: "6.1.5"
+    operationsTable: 22
+    messageTables:
+      - {number: 23, topicRef: ack}
+      - {number: 24, topicRef: status}
+      - {number: 25, topicRef: executionStatus}
+      - {number: 26, topicRef: command}
+    notes:
+      - Optional tolerances affect how a maintained command is evaluated.
+      - The ICD operation table includes direct-DDS query and cancellation.
+      - Command duration, Update and Cancel require formal runtime review.
+
+provenance:
+  icd:
+    document: UMAA-SPEC-MOICD
+    version: "6.0"
+    clauses: ["6.1.5", "6.1.5.1", "6.1.5.2", "6.1.5.3", "6.1.5.4"]
+    officialSha256: null
+    transcription:
+      repository: rticommunity/rticonnextdds-usecases-umaa
+      revision: ecb923646e7f3fe569b773c3946444e793d8a8be
+  idl:
+    originalRootSha256: null
+  catalog:
+    path: catalog/umaa6-six-icd-reviewed.json
+
+verification:
+  stage: mapping-reviewed
+  officialIdlTypes: false
+  keysAndQos: false
+  nativeDdsWire: false
+
+x-rydolabs:
+  display:
+    group: Maneuver Operations
+    icon: compass

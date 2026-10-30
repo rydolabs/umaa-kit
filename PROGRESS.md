@@ -288,3 +288,54 @@
 - Official conformance scope remains BLOCKED (0 approved normative requirements);
   no fresh real DDS / RTI test or real Sparx QEA acceptance was possible.
 - See `docs/UMAA_ROADMAP_STATUS_V4.md`. No GitHub remote push or Actions run.
+
+## 2026-10-30 — Repository-derived handoff + durable supervisor admission/recovery hardening
+
+- Previous-session handoff was unavailable. Reconstructed the actual working
+  ancestry from canonical GitHub: `main` `e6ba98d`; Draft Studio PR #14
+  `9c1a779`; Draft modular SDK PR #15 `041a0f6`. Current continuation
+  branch `fix/supervisor-journal-recovery-20261030` starts at the exact
+  PR #15 source head, without any merge or deployment.
+- **Exact tested implementation commit:**
+  `3746c12d20a463ae07d97876cc01540c39d17269`. Recovery obtains the
+  journal's exclusive owner marker during the entire read-modify-fsync
+  transaction, closing a reconciliation-versus-new-owner TOCTOU race. A
+  quarantined/absent/exited Worker is rejected before a fresh durable
+  Command intent is persisted. Journal schema boolean version and
+  non-integer action/session identities are rejected.
+- Seven additional independent Python regression cases cover owner races,
+  corrupt journal recovery, durable settled-session dedup, 24 bounded
+  close/reopen cycles and dead-worker admission. These are synthetic /
+  development safety checks, **not** power-loss or physical device tests.
+- [Cross-platform SDK/Simulator run 40976805937](https://github.com/rydolabs/umaa-kit/actions/runs/40976805937):
+  **SUCCESS** on Ubuntu 24.04 GCC, Ubuntu Clang + UBSan, and Windows MSVC.
+  SDK discovery ran **51 Python tests** on each platform; the pipeline also
+  built and ran CTest, installed SDK, and checked external consumers.
+- [Cyclone plugin synthetic real-wire run 40976805660](https://github.com/rydolabs/umaa-kit/actions/runs/40976805660):
+  **SUCCESS**; standalone plugin/process scenario, not mixed-network.
+- [Independent scoped Verifier run 40976805791](https://github.com/rydolabs/umaa-kit/actions/runs/40976805791):
+  **SUCCESS**; development fixtures only. Results are for the exact
+  `3746c12` implementation snapshot; documentation-only follow-up commits
+  require their own CI check and are not silently treated as the same SHA.
+- [Current handoff](HANDOFF/CURRENT_2026-10-30.md) names exact ancestry,
+  code/test entry points, unfinished approval gates, next actions and
+  cross-session recovery limitations. `STATUS.md` now marks its V4 summary
+  historical. All official TypeSupport/Key/QoS, native GROUP, mixed
+  Cyclone/Fast network, RTI and independent conformance gates remain
+  **OPEN/BLOCKED/DEFERRED**, never PASS.
+
+## 2026-10-30 — approved current milestone scope reduction
+
+The current development milestone is **standalone Cyclone DDS** and
+**standalone Fast DDS** operation (tested separately), one compiled
+business Component/client binary reusable with either backend, and
+the scoped SDK/simulator/service-binding/supervisor safety work.
+Mixed Cyclone↔Fast DDS network operation and RTI Connext DDS adapter /
+licensed independent RTI tests are reclassified as **FUTURE / DEFERRED**.
+They are excluded from this phase's required work and pass/fail gates.
+The known strict mixed-network failures remain FAIL in historical evidence;
+RTI remains unverified; full UMAA normative conformance is not claimed.
+
+This is an explicit scheduling/scope decision, not deletion or weakening
+of future technical requirements. Source of truth:
+[CURRENT_PHASE_SCOPE.md](docs/CURRENT_PHASE_SCOPE.md).

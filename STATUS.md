@@ -1,3 +1,11 @@
+> **Current continuation (2026-10-30):** The status below is historical
+> (primarily 2026-10-23 and local V4 notes); it is NOT the current release
+> verdict. For the latest committed SDK/Studio/Verifier ancestry, targeted
+> supervisor changes, verification state, blockers and restart instructions,
+> read [the 2026-10-30 handoff](HANDOFF/CURRENT_2026-10-30.md) and
+> [the SDK implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md).
+> PR #14 and PR #15 remain Draft; formal UMAA conformance is NOT attained.
+
 # Project status — 2026-10-23
 
 **Milestone: entire existing SDK and independent Simulator prototype integrated to GitHub and passing native Windows/Linux CI — PASS.**

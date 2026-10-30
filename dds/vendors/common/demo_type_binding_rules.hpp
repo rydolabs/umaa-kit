@@ -6,6 +6,7 @@
 // Keep this header in dds/vendors/common, never in application or SDK code.
 #pragma once
 #include "umaa/internal/dds_backend.h"
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 

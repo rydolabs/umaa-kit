@@ -1,0 +1,138 @@
+# DRAFT ServiceICD: content-annotated view of UMAA SA ICD 6.0.
+# Query is a DDS subscription, not a new Query Topic. No native SDK generation
+# until the separately pinned original IDL, keys, QoS, and roles are approved.
+apiVersion: kumaa.dev/v1alpha1
+kind: ServiceICD
+
+metadata:
+  name: GlobalPoseStatus
+  namespace: UMAA::SA::GlobalPoseStatus
+  domain: SA
+  description: Global position and orientation status of the vehicle
+  labels:
+    standard: umaa-6.0
+    domain: situational-awareness
+
+spec:
+  # Human-readable ICD meaning is preserved alongside machine-readable data.
+  purpose: >-
+    Provide the vehicle's current position and orientation in the
+    global coordinate system.
+  operations:
+    queryGlobalPose:
+      actor: consumer
+      transport: subscribe
+      topicRef: pose
+      description: Retrieve the correlated GlobalPose report by DDS subscription.
+      clause: "6.1.6"
+    reportGlobalPose:
+      actor: provider
+      transport: publish
+      topicRef: pose
+      description: Publish the current vehicle global pose.
+      clause: "6.1.6.1"
+
+  topics:
+    pose:
+      # These identifiers come from the existing reviewed 53/113 catalog.
+      catalogIdentity: UMAA::SA::GlobalPoseStatus::GlobalPoseReportType
+      idlType: UMAA::SA::GlobalPoseStatus::GlobalPoseReportType
+      idlPath: UMAA/SA/GlobalPoseStatus/GlobalPoseReportType.idl
+      ddsTopicName: null   # NOT inferred from type name
+      writer: provider
+      reader: consumer
+      role: report
+      keyFields: null     # official IDL @key evidence still required
+      qosProfileRef: null # no arbitrary 'recommended' QoS becomes normative
+      inherits:
+        - UMAA::UMAAStatus
+      # Documentation from SA ICD Table 19, paraphrased. Native field layout
+      # is obtained from original official IDL, not generated from this table.
+      attributes:
+        altitude:
+          typeRef: MSLAltitude
+          optional: true
+          description: Height of the vehicle relative to mean sea level.
+        altitudeAGL:
+          typeRef: DistanceAGL
+          optional: true
+          description: Vehicle height relative to ground.
+        altitudeASF:
+          typeRef: DistanceASF
+          optional: true
+          description: Vehicle height above the sea floor.
+        altitudeGeodetic:
+          typeRef: GeodeticAltitude
+          optional: true
+          description: Geodetic height relative to the reference ellipsoid.
+        attitude:
+          typeRef: Orientation3DNEDType
+          optional: false
+          description: Vehicle roll, pitch and yaw orientation.
+        attitudeCovariance:
+          typeRef: CovarianceOrientationNEDType
+          optional: true
+          description: Estimated uncertainty of attitude.
+        course:
+          typeRef: CourseTrueNorth
+          optional: false
+          description: Course referenced to true north.
+        depth:
+          typeRef: DistanceBSL
+          optional: true
+          description: Current maritime vehicle depth.
+        navigationSolution:
+          typeRef: NavigationSolutionEnumType
+          optional: false
+          description: Navigation solution classification.
+        position:
+          typeRef: GeoPosition2D
+          optional: false
+          description: Current geographic position.
+        positionCovariance:
+          typeRef: CovariancePositionNEDType
+          optional: true
+          description: Estimated uncertainty of position.
+
+  flows:
+    report:
+      kind: request-reply-without-query-data
+      queryOperation: queryGlobalPose
+      reportOperation: reportGlobalPose
+      topicRef: pose
+      queryUsesDdsTopic: false
+
+  documentation:
+    serviceSection: "6.1.6"
+    operationsTable: 18
+    messageTables:
+      - number: 19
+        topicRef: pose
+    notes:
+      - Query is implemented by subscribing to the correlated report Topic.
+
+provenance:
+  icd:
+    document: UMAA-SPEC-SAICD
+    version: "6.0"
+    clauses: ["6.1.6", "6.1.6.1"]
+    officialSha256: null
+    transcription:
+      repository: rticommunity/rticonnextdds-usecases-umaa
+      revision: ecb923646e7f3fe569b773c3946444e793d8a8be
+  idl:
+    originalRootSha256: null
+  catalog:
+    path: catalog/umaa6-six-icd-reviewed.json
+
+verification:
+  stage: mapping-reviewed
+  officialIdlTypes: false
+  keysAndQos: false
+  nativeDdsWire: false
+
+# Docker Compose-style extension metadata: MUST NOT alter UMAA wire semantics.
+x-rydolabs:
+  display:
+    group: Situational Awareness
+    icon: navigation

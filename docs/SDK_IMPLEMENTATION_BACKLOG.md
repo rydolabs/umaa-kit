@@ -1,7 +1,10 @@
 # UMAA SDK implementation ledger — PR #15
 
-**As-of:** 2026-10-29. This document records development-scope results and
-required acceptance gates, never a conformance certificate.
+**As-of:** 2026-10-29 implementation, with 2026-10-30 scope decision. This
+document records development-scope results and required acceptance gates,
+never a conformance certificate. The **current-phase acceptance contract**
+is [CURRENT_PHASE_SCOPE.md](CURRENT_PHASE_SCOPE.md); mixed Cyclone/Fast
+networks and RTI validation are future-only, not present blockers.
 
 | Capability | State | Evidence and unresolved gate |
 |---|---|---|
@@ -14,8 +17,8 @@ required acceptance gates, never a conformance certificate.
 | Identical binaries across vendors | PASS (synthetic) | Command provider/client and Collection Set/List same binaries on Cyclone or Fast DDS; not mixed network |
 | LargeSet / LargeList | PASS (single-sample development fallback); BLOCKED native GROUP | Bounded frame codec, Set/List snapshot/revision/Dispose, explicit recovery, both vendors real wire; native multi-writer coherent/ordered absent |
 | Official UMAA 6.0 TypeBindings | BLOCKED ON CONTRACT REVIEW | source IDLs compiled previously; no approved all-service roles, keys and QoS |
-| Cross-vendor mixed-network operation | FAIL (strict) | [Mixed Collection test 40885883191](https://github.com/rydolabs/umaa-kit/actions/runs/40885883191): Fast writer ACK unconfirmed and Fast reader cannot recover foreign Dispose key |
-| RTI Connext backend | BLOCKED | licensed SDK, runner, TypeSupport and policy verification required |
+| Cross-vendor mixed-network operation | **FUTURE / DEFERRED** (historical strict **FAIL**, not PASS) | Excluded from current phase acceptance. [Mixed Collection test 40885883191](https://github.com/rydolabs/umaa-kit/actions/runs/40885883191): Fast writer ACK unconfirmed and Fast reader cannot recover foreign Dispose key |
+| RTI Connext backend + independent validation | **FUTURE / DEFERRED** (not verified) | Excluded from current phase acceptance; licensed SDK, independent Runner, TypeSupport and policy verification needed in future |
 | Safe module stop/reload | PASS development isolation; PARTIAL production | Cooperatively drain in-flight calls; isolated worker/supervisor with crash quarantine, explicit restart and no automatic command replay; secure durable supervision open |
 | Linux/Windows regressions | PASS in prior validated head; recheck final commit | CMake CTest and Python on Linux GCC/Clang/Windows MSVC; final CI must pass |
 | Formal UMAA compliance | BLOCKED | reviewer-approved profile, normative SHALL traceability, independent oracle and acceptance |
@@ -438,3 +441,20 @@ true hardware reconciliation, long-running production chaos, native GROUP,
 strict mixed DDS networks, RTI or official UMAA conformance. Complete
 handoff and precise limitations:
 [`HANDOFF/CURRENT_2026-10-30.md`](../HANDOFF/CURRENT_2026-10-30.md).
+
+## 2026-10-30 approved phase-scope change (scheduling only)
+
+**In scope:** independently operated Cyclone DDS and Fast DDS, unchanged
+Component/client binary backend substitution in separate vendor-only
+deployments, selected official service bindings, and development-scope
+SDK/Simulator/Verifier/safety regression. Standalone backend wire verification
+remains required.
+
+**Future only / excluded now:** mixed Cyclone↔Fast DDS communication and
+RTI Connext adapter + licensed independent verification (including any
+RTI cross-vendor trials). They are NOT current acceptance gates. Existing
+manual experiments and failure evidence are retained unmodified. The mixed
+network strict result remains **FAIL**, RTI remains **NOT VERIFIED**; neither
+is converted to PASS/N/A for a normative official conformance verdict.
+
+[Authoritative current-phase boundary](CURRENT_PHASE_SCOPE.md).

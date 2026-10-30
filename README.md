@@ -1,5 +1,14 @@
 # UMAA Kit — C++ SDK and Independent Simulator
 
+**Active milestone scope (2026-10-30):** independent **Cyclone DDS** and
+**Fast DDS** deployments, including unchanged-binary plugin substitution.
+Mixed Cyclone↔Fast DDS network communication and RTI Connext adapter /
+independent validation are **future objectives only**, excluded from current
+implementation and acceptance. Historical mixed-network failures remain
+recorded (not silently passed); RTI is not verified. This change does not
+establish formal UMAA compliance or production readiness.
+[Current-phase scope and acceptance](docs/CURRENT_PHASE_SCOPE.md).
+
 **Canonical repository:** https://github.com/rydolabs/umaa-kit  
 **Status:** experimental UMAA 6.0 implementation subset; **not** official
 UMAA/K-MOSA conformance or a complete 53-service runtime. Prior

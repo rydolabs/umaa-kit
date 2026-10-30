@@ -14,11 +14,25 @@ Do **not** invent a separate on-wire RPC or Query-Data Request/Reply where the
 UMAA 6.0 ICD does not define one. Service contracts may have multiple Report
 Topics and cannot be safely inferred from type-name conventions alone.
 
-The intended delivery includes native C++17+ Linux (GCC/Clang) and Windows
+The **long-term** intended delivery includes native C++17+ Linux (GCC/Clang) and Windows
 (MSVC), independent Simulator processes, Cyclone DDS and RTI Connext 7.7
 adapters, cross-vendor interoperability and K-MOSA-aligned independently
-loadable service modules. The custom demo module ABI is **not** claimed to
-be an official K-MOSA ABI.
+loadable service modules. RTI and mixed-vendor interoperation are **later
+objectives**, explicitly excluded from the current milestone. The custom
+demo module ABI is **not** claimed to be an official K-MOSA ABI.
+
+## Active milestone scope (approved 2026-10-30)
+
+The **current phase** targets independent standalone Cyclone DDS and Fast DDS
+backends, same compiled Component/client binaries against either plugin in
+separate vendor-only deployments, and the SDK safety/official-service work
+described in [CURRENT_PHASE_SCOPE.md](docs/CURRENT_PHASE_SCOPE.md).
+**Cyclone↔Fast DDS mixed-network functionality and RTI Connext DDS adapter /
+independent verification are future milestones only**, excluded from current
+phase implementation, CI acceptance and release-blocker calculations.
+Historical mixed-vendor failures remain FAIL; RTI remains unverified.
+This is a phased development target, **not** a reduction of normative UMAA
+conformance obligations or a claim of finished/production-grade software.
 
 ## Current evidence and limits (2026-10-25)
 

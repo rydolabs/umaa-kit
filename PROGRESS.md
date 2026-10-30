@@ -323,3 +323,19 @@
   historical. All official TypeSupport/Key/QoS, native GROUP, mixed
   Cyclone/Fast network, RTI and independent conformance gates remain
   **OPEN/BLOCKED/DEFERRED**, never PASS.
+
+## 2026-10-30 — approved current milestone scope reduction
+
+The current development milestone is **standalone Cyclone DDS** and
+**standalone Fast DDS** operation (tested separately), one compiled
+business Component/client binary reusable with either backend, and
+the scoped SDK/simulator/service-binding/supervisor safety work.
+Mixed Cyclone↔Fast DDS network operation and RTI Connext DDS adapter /
+licensed independent RTI tests are reclassified as **FUTURE / DEFERRED**.
+They are excluded from this phase's required work and pass/fail gates.
+The known strict mixed-network failures remain FAIL in historical evidence;
+RTI remains unverified; full UMAA normative conformance is not claimed.
+
+This is an explicit scheduling/scope decision, not deletion or weakening
+of future technical requirements. Source of truth:
+[CURRENT_PHASE_SCOPE.md](docs/CURRENT_PHASE_SCOPE.md).

@@ -1,5 +1,11 @@
 # Mixed Cyclone / Fast DDS network interoperability — NOT COMPLETE
 
+**Planning note, 2026-10-30:** this is now a **future-only objective**, not a
+gate for the [current standalone-vendor milestone](CURRENT_PHASE_SCOPE.md).
+Keep this document, failed test artifacts and opt-in strict workflows intact
+for later investigation; do not report the failures as current-phase blockers
+or change their historical verdict to PASS.
+
 **As of 2026-10-29**. This document separates two different goals:
 
 1. **Same-binary adapter substitution (PASS, synthetic Report)**: one

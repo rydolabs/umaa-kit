@@ -70,14 +70,21 @@ def _validate_references(doc: dict) -> None:
     ops = spec["operations"]
     for name, op in ops.items():
         ref = op.get("topicRef")
-        if op["transport"] in {"publish", "subscribe", "command"} and ref is None:
-            raise ContractError("operation requires Topic: " + name)
+        if op["transport"] in {"publish", "subscribe", "command", "dds-dispose"} and ref is None:
+            raise ContractError("operation requires existing Topic: " + name)
         if ref is not None and ref not in topics:
             raise ContractError("operation references unknown Topic: " + name)
         if op["transport"] == "subscribe" and op["actor"] != "consumer":
             raise ContractError("subscribe must be a Consumer operation: " + name)
         if op["transport"] == "publish" and op["actor"] != "provider":
             raise ContractError("Report publish must be a Provider operation: " + name)
+        if op["transport"] in {"command", "dds-dispose"}:
+            if (op["actor"] != "consumer" or topics[ref]["role"] != "command"
+                    or topics[ref]["writer"] != "consumer"
+                    or topics[ref]["reader"] != "provider"):
+                raise ContractError("Command and Cancel must target an existing Consumer-written command Topic: " + name)
+        if op["transport"] == "dds-native" and ref is not None:
+            raise ContractError("Direct DDS operation cannot invent another Topic: " + name)
         if ref and op["transport"] in {"publish", "subscribe"}:
             endpoint = "writer" if op["transport"] == "publish" else "reader"
             if topics[ref][endpoint] != op["actor"]:

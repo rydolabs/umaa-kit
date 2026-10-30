@@ -7,6 +7,7 @@ It emits *catalog-level identities*, not normative DDS runtime Topic/QoS keys.
 import argparse
 import json
 from pathlib import Path
+from verify_official_service_types import inspect
 
 HEADER = '''// GENERATED from catalog/umaa6-six-icd-reviewed.json; do not edit.
 // This is an ICD literal topic allow-list, NOT Component Definition/QoS proof.
@@ -72,6 +73,12 @@ ROLE = {"report": "Report", "ack": "Ack", "status": "Status",
 
 
 def entries(catalog):
+    # Share the checked service/Topic/role/provenance validator with the
+    # generated official C++ API. A malformed catalog must not be accepted
+    # by one generator while rejected by the other.
+    audit = inspect(catalog)
+    if audit["status"] != "PASS":
+        raise ValueError("invalid reviewed catalog: " + repr(audit["errors"]))
     result, names = [], set()
     services = catalog["services"]
     if not services or catalog.get("complete") is not False:

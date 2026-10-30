@@ -73,5 +73,23 @@ class ReviewedRegistryTests(unittest.TestCase):
             entries(cat)
 
 
+    def test_registry_rejects_foreign_service_topic(self):
+        cat = copy.deepcopy(self.catalog)
+        one = cat["services"][0]["provider_topics"][0]
+        one["name"] = one["type"] = "UMAA::EO::BatteryStatus::BatteryReportType"
+        with self.assertRaises(ValueError):
+            entries(cat)
+
+    def test_registry_requires_audited_basis_and_service_clauses(self):
+        cat = copy.deepcopy(self.catalog)
+        cat["basis"]["sha256"] = "not-an-icd-digest"
+        with self.assertRaises(ValueError):
+            entries(cat)
+        cat = copy.deepcopy(self.catalog)
+        cat["services"][0]["clauses"] = []
+        with self.assertRaises(ValueError):
+            entries(cat)
+
+
 if __name__ == '__main__':
     unittest.main()

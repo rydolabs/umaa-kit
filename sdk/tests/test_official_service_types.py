@@ -63,5 +63,64 @@ class OfficialCatalogProofTests(unittest.TestCase):
         self.assertEqual(inspect(self.doc)["status"], "FAIL")
 
 
+    def test_rejects_foreign_service_topic_even_with_valid_official_type(self):
+        topic = self.doc["services"][0]["provider_topics"][0]
+        original = topic["name"], topic["type"]
+        try:
+            topic["name"] = topic["type"] = "UMAA::EO::EngineStatus::EngineReportType"
+            result = inspect(self.doc)
+            self.assertEqual(result["status"], "FAIL")
+            self.assertTrue(any("foreign" in e for e in result["errors"]))
+        finally:
+            topic["name"], topic["type"] = original
+
+    def test_rejects_foreign_type_with_local_topic(self):
+        topic = self.doc["services"][0]["provider_topics"][0]
+        original = topic["type"]
+        try:
+            topic["type"] = "UMAA::EO::EngineStatus::EngineReportType"
+            self.assertEqual(inspect(self.doc)["status"], "FAIL")
+        finally:
+            topic["type"] = original
+
+    def test_rejects_reversed_direction_or_foreign_command(self):
+        topic = self.doc["services"][0]["provider_topics"].pop()
+        try:
+            self.doc["services"][0]["consumer_topics"].append(topic)
+            self.assertEqual(inspect(self.doc)["status"], "FAIL")
+        finally:
+            self.doc["services"][0]["consumer_topics"].pop()
+            self.doc["services"][0]["provider_topics"].append(topic)
+
+    def test_malformed_json_shapes_fail_without_unhandled_exception(self):
+        topic = self.doc["services"][0]["provider_topics"][0]
+        original = topic["name"]
+        try:
+            for invalid in ([], {}, None, True):
+                topic["name"] = invalid
+                self.assertEqual(inspect(self.doc)["status"], "FAIL")
+        finally:
+            topic["name"] = original
+        original = self.doc["services"][0]["collection_topics"] if "collection_topics" in self.doc["services"][0] else []
+        try:
+            self.doc["services"][0]["collection_topics"] = None
+            self.assertEqual(inspect(self.doc)["status"], "FAIL")
+        finally:
+            self.doc["services"][0]["collection_topics"] = original
+        original = self.doc["services"][0]["provider_topics"]
+        try:
+            self.doc["services"][0]["provider_topics"] = "not-a-list"
+            self.assertEqual(inspect(self.doc)["status"], "FAIL")
+        finally:
+            self.doc["services"][0]["provider_topics"] = original
+
+    def test_rejects_foreign_collection_type(self):
+        self.doc["services"][0]["collection_topics"] = [
+            "UMAA::EO::EngineStatus::EngineReportTypeCellsListElement"]
+        result = inspect(self.doc)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("foreign" in e for e in result["errors"]))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -42,16 +42,20 @@ def inspect(catalog, official_root=None, require_complete=False):
             errors.append("service contract must be an object")
             continue
         name = record.get("name")
-        if not isinstance(name, str) or not FQ.fullmatch(name):
-            errors.append("invalid service identity"); continue
+        if (not isinstance(name, str) or not FQ.fullmatch(name)
+                or not name.startswith("UMAA::") or len(name.split("::")) < 3):
+            errors.append("invalid UMAA service identity"); continue
         if name in seen:
             errors.append("duplicate service identity: " + name)
         seen.add(name)
         pattern = record.get("pattern")
-        if pattern not in PATTERNS or record.get("icd_reviewed") is not True:
+        if (not isinstance(pattern, str) or pattern not in PATTERNS
+                or record.get("icd_reviewed") is not True):
             errors.append(name + ": unreviewed interaction contract")
         clauses = record.get("clauses", [])
-        if not clauses or not all(isinstance(c, str) and re.fullmatch("[0-9]+(?:[.][0-9]+)*", c) for c in clauses):
+        if (not isinstance(clauses, list) or not clauses
+                or not all(isinstance(c, str) and re.fullmatch(
+                    "[0-9]+(?:[.][0-9]+)*", c) for c in clauses)):
             errors.append(name + ": missing valid ICD clause references")
         roles = []
         topic_names = set()
@@ -78,7 +82,7 @@ def inspect(catalog, official_root=None, require_complete=False):
                 if topic_name in topic_names:
                     errors.append(name + ": duplicate topic name: " + topic_name)
                 topic_names.add(topic_name)
-                if role not in ROLES:
+                if not isinstance(role, str) or role not in ROLES:
                     errors.append(name + ": invalid role: " + str(role))
                     continue
                 if (side == "consumer_topics" and role != "command"
@@ -124,7 +128,9 @@ def inspect(catalog, official_root=None, require_complete=False):
                     if not isinstance(group, dict):
                         errors.append(name + ": invalid command group"); continue
                     label = group.get("name")
-                    if not isinstance(label, str) or not re.fullmatch("[A-Za-z_][A-Za-z0-9_]*", label) or label in group_names:
+                    if (not isinstance(label, str)
+                            or not re.fullmatch("[A-Za-z_][A-Za-z0-9_]*", label)
+                            or label in group_names):
                         errors.append(name + ": invalid/duplicate command group name")
                     if isinstance(label, str):
                         group_names.add(label)

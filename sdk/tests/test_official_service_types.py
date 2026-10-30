@@ -122,5 +122,34 @@ class OfficialCatalogProofTests(unittest.TestCase):
         self.assertTrue(any("foreign" in e for e in result["errors"]))
 
 
+    def test_rejects_malformed_provenance_pattern_and_clause_shapes(self):
+        original = self.doc["services"][0]["pattern"]
+        try:
+            self.doc["services"][0]["pattern"] = []
+            self.assertEqual(inspect(self.doc)["status"], "FAIL")
+        finally:
+            self.doc["services"][0]["pattern"] = original
+        original = self.doc["services"][0]["clauses"]
+        try:
+            self.doc["services"][0]["clauses"] = "5"
+            self.assertEqual(inspect(self.doc)["status"], "FAIL")
+        finally:
+            self.doc["services"][0]["clauses"] = original
+        original = self.doc["services"][0]["provider_topics"][0]["role"]
+        try:
+            self.doc["services"][0]["provider_topics"][0]["role"] = []
+            self.assertEqual(inspect(self.doc)["status"], "FAIL")
+        finally:
+            self.doc["services"][0]["provider_topics"][0]["role"] = original
+        original = self.doc["services"][0]["name"]
+        try:
+            self.doc["services"][0]["name"] = "Foreign::EO::BatteryStatus"
+            self.assertEqual(inspect(self.doc)["status"], "FAIL")
+        finally:
+            self.doc["services"][0]["name"] = original
+        self.assertEqual(inspect({"basis": None, "services": []})["status"], "FAIL")
+        self.assertEqual(inspect(None)["status"], "FAIL")
+
+
 if __name__ == "__main__":
     unittest.main()

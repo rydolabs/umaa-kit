@@ -91,5 +91,21 @@ class ReviewedRegistryTests(unittest.TestCase):
             entries(cat)
 
 
+    def test_every_reviewed_topic_rejects_foreign_service_ownership(self):
+        inspected = 0
+        for service_index, service in enumerate(self.catalog["services"]):
+            for side in ("provider_topics", "consumer_topics"):
+                for topic_index, _ in enumerate(service[side]):
+                    with self.subTest(service=service["name"],
+                                      side=side, index=topic_index):
+                        cat = copy.deepcopy(self.catalog)
+                        topic = cat["services"][service_index][side][topic_index]
+                        topic["name"] = topic["type"] = "UMAA::Other::Foreign::Type"
+                        with self.assertRaises(ValueError):
+                            entries(cat)
+                        inspected += 1
+        self.assertEqual(inspected, 113)
+
+
 if __name__ == '__main__':
     unittest.main()

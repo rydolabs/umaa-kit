@@ -125,6 +125,7 @@
                   "subscribe",
                   "publish",
                   "dds-dispose",
+                  "dds-native",
                   "command",
                   "local"
                 ]

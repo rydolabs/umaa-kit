@@ -415,3 +415,26 @@ guarantees where the vendor supports them, a cryptographically
 authenticated production IPC/provisioning model, long-running
 durability/chaos tests and independent formal conformance validation.
 The RTI and mixed-network gates remain deferred by scope, not PASS.
+
+## 2026-10-30 scoped durable journal and supervisor admission follow-up
+
+Implementation commit `3746c12d20a463ae07d97876cc01540c39d17269`
+on `fix/supervisor-journal-recovery-20261030` (based on Draft PR #15,
+not merged). A reconciliation transaction now exclusively owns the local
+journal marker from read through fsync, preventing the old existence-check
+race with a newly started supervisor. An already quarantined, absent or
+exited worker cannot record a fresh hardware Command intent before a
+known-impossible call. Boolean schema versions and boolean action/session
+identities are rejected. Stale owner markers are **not** automatically
+stolen. Seven dedicated deterministic regressions include concurrent
+reconcile/start, corruption, settled ID reuse, and 24 bounded reopen cycles.
+
+Exact-source [Linux GCC/Clang + Windows MSVC SDK run](https://github.com/rydolabs/umaa-kit/actions/runs/40976805937),
+[synthetic Cyclone real-wire run](https://github.com/rydolabs/umaa-kit/actions/runs/40976805660)
+and [scoped Verifier run](https://github.com/rydolabs/umaa-kit/actions/runs/40976805791)
+all completed **SUCCESS** on the `3746c12` implementation snapshot.
+This is **not** a test of abrupt power removal, malicious local filesystem,
+true hardware reconciliation, long-running production chaos, native GROUP,
+strict mixed DDS networks, RTI or official UMAA conformance. Complete
+handoff and precise limitations:
+[`HANDOFF/CURRENT_2026-10-30.md`](../HANDOFF/CURRENT_2026-10-30.md).

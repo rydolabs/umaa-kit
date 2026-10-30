@@ -1,0 +1,119 @@
+name: SDK same binary / Cyclone and Fast DDS parity (synthetic)
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  vendor-parity-synthetic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install both genuine DDS libraries and IDL compilers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
+      - name: Build one device module and both adapters
+        run: |
+          cmake -S dds/vendors/cyclone -B build/parity-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/parity-cyclone --parallel 2
+          cmake -S dds/vendors/fastdds -B build/parity-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/parity-fastdds --parallel 2
+      - name: Execute identical client and identical device module against both backends
+        run: |
+          set -euo pipefail
+          cli="$PWD/build/parity-cyclone/umaa_cyclone_backend_cli"
+          module="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_demo.so"
+          test -f "$cli" && test -f "$module" && test -f "$cyclone" && test -f "$fastdds"
+          python3 sdk/tests/run_real_dds_backend.py "$cli" "$cyclone" "$module"
+          python3 sdk/tests/run_real_dds_backend.py "$cli" "$fastdds" "$module"
+          sha256sum "$cli" "$module"
+      - name: Execute identical Command client and device module against both DDS backends
+        run: |
+          set -euo pipefail
+          cli="$PWD/build/parity-cyclone/umaa_cyclone_command_cli"
+          module="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_command_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_command_demo.so"
+          test -f "$cli" && test -f "$module" && test -f "$cyclone" && test -f "$fastdds"
+          python3 sdk/tests/run_real_dds_backend.py "$cli" "$cyclone" "$module"
+          python3 sdk/tests/run_real_dds_backend.py "$cli" "$fastdds" "$module"
+          sha256sum "$cli" "$module"
+      - name: Test identical remote Command client and device module with each backend
+        run: |
+          set -euo pipefail
+          cli="$PWD/build/parity-cyclone/umaa_cyclone_command_request_cli"
+          module="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_command_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_command_demo.so"
+          test -f "$cli" && test -f "$module" && test -f "$cyclone" && test -f "$fastdds"
+          python3 sdk/tests/run_real_dds_command_request.py "$cli" "$cyclone" "$module"
+          python3 sdk/tests/run_real_dds_command_request.py "$cli" "$fastdds" "$module"
+          sha256sum "$cli" "$module"
+      - name: Run one typed Command client binary and Component against both backends
+        run: |
+          set -euo pipefail
+          server="$PWD/build/parity-cyclone/umaa_cyclone_command_request_cli"
+          client="$PWD/build/parity-cyclone/umaa_cyclone_typed_command_client_cli"
+          module="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_command_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_command_demo.so"
+          test -f "$server" && test -f "$client" && test -f "$module"
+          python3 sdk/tests/run_real_dds_command_request.py "$server" "$cyclone" "$module" "$client"
+          python3 sdk/tests/run_real_dds_command_request.py "$server" "$fastdds" "$module" "$client"
+          sha256sum "$server" "$client" "$module"
+      - name: Identical typed Command binaries for cancel and update
+        run: |
+          set -euo pipefail
+          server="$PWD/build/parity-cyclone/umaa_cyclone_command_request_cli"
+          client="$PWD/build/parity-cyclone/umaa_cyclone_typed_command_client_cli"
+          module="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_command_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_command_demo.so"
+          for vendor in "$cyclone" "$fastdds"; do
+            python3 sdk/tests/run_real_dds_command_request.py "$server" "$vendor" "$module" "$client" cancel
+            python3 sdk/tests/run_real_dds_command_request.py "$server" "$vendor" "$module" "$client" update
+          done
+          sha256sum "$server" "$client" "$module"
+      - name: Same typed Command server/client binaries over both vendors
+        run: |
+          set -euo pipefail
+          server="$PWD/build/parity-cyclone/umaa_cyclone_typed_command_server_cli"
+          client="$PWD/build/parity-cyclone/umaa_cyclone_typed_command_client_cli"
+          module="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_command_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_command_demo.so"
+          for vendor in "$cyclone" "$fastdds"; do
+            python3 sdk/tests/run_real_dds_command_request.py "$server" "$vendor" "$module" "$client"
+            python3 sdk/tests/run_real_dds_command_request.py "$server" "$vendor" "$module" "$client" cancel
+            python3 sdk/tests/run_real_dds_command_request.py "$server" "$vendor" "$module" "$client" update
+          done
+          sha256sum "$server" "$client" "$module"
+      - name: Same Collection Set/List client binary and both backends
+        run: |
+          set -euo pipefail
+          cli="$PWD/build/parity-cyclone/umaa_cyclone_collection_cli"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_collection_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_collection_demo.so"
+          for plugin in "$cyclone" "$fastdds"; do
+            python3 sdk/tests/run_real_dds_collection.py "$cli" "$plugin" set
+            python3 sdk/tests/run_real_dds_collection.py "$cli" "$plugin" list
+          done
+          sha256sum "$cli"
+      - name: Same binaries using SDK autonomous Command server polling
+        run: |
+          set -euo pipefail
+          server="$PWD/build/parity-cyclone/umaa_cyclone_typed_command_server_cli"
+          client="$PWD/build/parity-cyclone/umaa_cyclone_typed_command_client_cli"
+          component="$PWD/build/parity-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/parity-cyclone/libumaa_dds_cyclone_command_demo.so"
+          fastdds="$PWD/build/parity-fastdds/libumaa_dds_fastdds_command_demo.so"
+          python3 sdk/tests/run_real_dds_command_request.py "$server" "$cyclone" "$component" "$client" auto
+          python3 sdk/tests/run_real_dds_command_request.py "$server" "$fastdds" "$component" "$client" auto
+      - name: Evidence
+        if: always()
+        run: find build/parity-* \( -name CTestTestfile.cmake -o -name '*.so' \) | sort
+# Same-binary per-vendor parity ONLY; see separate opt-in mixed-network workflow.

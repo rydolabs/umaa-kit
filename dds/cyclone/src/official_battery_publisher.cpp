@@ -67,9 +67,15 @@ int main(int argc, char** argv) {
     dds_qset_reliability(qos.get(), DDS_RELIABILITY_RELIABLE, DDS_SECS(1));
     dds_qset_history(qos.get(), DDS_HISTORY_KEEP_LAST, 16);
     const int attempts = std::getenv("UMAA_NETEM_RECOVERY") ? 1600 : 200;
+    // Netns-only fault-injection policy. A reliable Writer can be deleted
+    // after ACK while a late-repaired final Dispose is not yet observable by
+    // the independent application-level reader under 1% packet loss.
+    const bool impaired = std::getenv("UMAA_NETEM_RETAIN_FINAL");
+    const std::uint32_t grace_ms = impaired ? 1000u : 0u;
     umaa::cyclone::ReportWriter<double, UMAA_EO_BatteryStatus_BatteryReportType,
                                 BatteryMapper> transport(
-        "battery-demo", participant, topic, qos.get(), BatteryMapper{}, readers, attempts);
+        "battery-demo", participant, topic, qos.get(), BatteryMapper{},
+        readers, attempts, grace_ms);
     umaa::BoundReportProvider<double> provider("battery-demo", handler, transport);
     provider.start(1);
     dds_sleepfor(DDS_MSECS(150));

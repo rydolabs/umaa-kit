@@ -20,6 +20,28 @@ class ReviewedRegistryTests(unittest.TestCase):
         topics, services = entries(self.catalog)
         self.assertEqual((len(topics), services), (113, 53))
 
+    def test_explicit_command_families_exhaustive(self):
+        from generate_reviewed_runtime_registry import command_families
+        families = command_families(self.catalog)
+        self.assertEqual(len(families), 24)
+        self.assertTrue(all(not x[5] for x in families))
+        self.assertEqual(len({(x[0],x[2]) for x in families}), len(families))
+
+    def test_command_group_must_be_complete_and_correct(self):
+        from generate_reviewed_runtime_registry import command_families
+        cat = copy.deepcopy(self.catalog)
+        svc = next(s for s in cat["services"]
+                   if s["name"] == "UMAA::MM::ConditionalControl")
+        svc["command_groups"][0]["ack"] = svc["command_groups"][1]["ack"]
+        with self.assertRaises(ValueError):
+            command_families(cat)
+        cat = copy.deepcopy(self.catalog)
+        svc = next(s for s in cat["services"]
+                   if s["name"] == "UMAA::MM::ConditionalControl")
+        svc["command_groups"].pop()
+        with self.assertRaises(ValueError):
+            command_families(cat)
+
     def test_reject_unknown_or_wrong_role(self):
         cat = copy.deepcopy(self.catalog)
         cat['services'][0]['consumer_topics'][0]['role'] = 'unknown'

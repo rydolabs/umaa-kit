@@ -1,0 +1,35 @@
+name: SDK DDS Cyclone plugin real-wire (synthetic)
+on:
+  pull_request:
+  push:
+    paths:
+      - 'dds/vendors/**'
+      - 'sdk/**'
+      - '.github/workflows/sdk-dds-backend-wire.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cyclone-plugin-synthetic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Cyclone DDS C and IDL compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev
+      - name: Configure independent DDS plugin
+        run: cmake -S dds/vendors/cyclone -B build/sdk-plugin -DCMAKE_BUILD_TYPE=Release
+      - name: Build plugin and device module
+        run: cmake --build build/sdk-plugin --parallel 2
+      - name: Separate-process real DDS test
+        run: ctest --test-dir build/sdk-plugin --output-on-failure -V
+      - name: Preserve logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-dds-cyclone-plugin-real-wire-evidence
+          path: build/sdk-plugin/Testing/Temporary/
+          if-no-files-found: warn
+# Synthetic Battery type only, no UMAA conformance claim.

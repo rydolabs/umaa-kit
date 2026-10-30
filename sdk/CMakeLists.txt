@@ -41,6 +41,9 @@ if(UMAA_BUILD_TESTS)
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
     "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
   add_test(NAME umaa_cyclone_service_context_test COMMAND umaa_cyclone_service_context_test)
+  add_executable(umaa_command_identity_routing_test tests/test_command_identity_routing.cpp)
+  target_link_libraries(umaa_command_identity_routing_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_command_identity_routing_test COMMAND umaa_command_identity_routing_test)
   add_executable(umaa_command_engine_test tests/test_engine.cpp)
   target_link_libraries(umaa_command_engine_test PRIVATE UMAA::Core)
   add_test(NAME umaa_command_engine_test COMMAND umaa_command_engine_test)
@@ -75,9 +78,15 @@ if(UMAA_BUILD_TESTS)
   add_executable(umaa_command_deadline_test tests/test_command_deadline.cpp)
   target_link_libraries(umaa_command_deadline_test PRIVATE UMAA::Core)
   add_test(NAME umaa_command_deadline_test COMMAND umaa_command_deadline_test)
+  add_executable(umaa_remote_command_monitor_test tests/test_remote_command_monitor.cpp)
+  target_link_libraries(umaa_remote_command_monitor_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_remote_command_monitor_test COMMAND umaa_remote_command_monitor_test)
   add_executable(umaa_command_transport_test tests/test_command_transport.cpp)
   target_link_libraries(umaa_command_transport_test PRIVATE UMAA::Core)
   add_test(NAME umaa_command_transport_test COMMAND umaa_command_transport_test)
+  add_executable(umaa_coherent_collection_receiver_test tests/test_coherent_collection_receiver.cpp)
+  target_link_libraries(umaa_coherent_collection_receiver_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_coherent_collection_receiver_test COMMAND umaa_coherent_collection_receiver_test)
   add_executable(umaa_report_collection_test tests/test_report_collection.cpp)
   target_link_libraries(umaa_report_collection_test PRIVATE UMAA::Core)
   add_test(NAME umaa_report_collection_test COMMAND umaa_report_collection_test)
@@ -148,4 +157,72 @@ if(UMAA_BUILD_TESTS)
     target_include_directories(${t} PRIVATE "${UMAA_TEST_GENERATED_DIR}/include")
   endforeach()
   add_test(NAME umaa_generated_report_smoke COMMAND umaa_mock_report_host)
+endif()
+
+# Device component ABI v2 and DDS-vendor plugin ABI contract tests.
+# Mock backend is deliberately NOT a real DDS middleware implementation.
+if(UMAA_BUILD_TESTS)
+  include(cmake/module_v2_tests.cmake)
+endif()
+
+# Shared, vendor-neutral host orchestrator: a single runtime loaded by host.
+# The user module's C++ business code does not link any DDS vendor library.
+add_library(umaa_sdk_runtime SHARED src/component_runtime.cpp)
+add_library(UMAA::Runtime ALIAS umaa_sdk_runtime)
+set_target_properties(umaa_sdk_runtime PROPERTIES EXPORT_NAME Runtime)
+target_compile_definitions(umaa_sdk_runtime PRIVATE UMAA_RUNTIME_BUILD)
+find_package(Threads REQUIRED)
+target_link_libraries(umaa_sdk_runtime PUBLIC UMAA::Core PRIVATE ${CMAKE_DL_LIBS} Threads::Threads)
+target_compile_features(umaa_sdk_runtime PUBLIC cxx_std_17)
+install(TARGETS umaa_sdk_runtime EXPORT UMAASDKTargets
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_runtime_v2_test tests/test_runtime_v2.cpp)
+  target_link_libraries(umaa_runtime_v2_test PRIVATE UMAA::Runtime)
+  add_test(NAME umaa_runtime_v2_test COMMAND umaa_runtime_v2_test
+    "$<TARGET_FILE:umaa_demo_vehicle_v2>" "$<TARGET_FILE:umaa_mock_dds_backend>")
+endif()
+
+# Build a separate deployable Worker without fault injection. This is an
+# optional development process-isolation executable, not an authenticated
+# hardened production RPC. Tests build a second fault-injection-only binary.
+option(UMAA_BUILD_PROCESS_WORKER "Build and install isolated Component worker" ON)
+if(UMAA_BUILD_PROCESS_WORKER)
+  add_executable(umaa_component_worker tools/umaa_component_worker.cpp)
+  target_link_libraries(umaa_component_worker PRIVATE UMAA::Core ${CMAKE_DL_LIBS})
+  target_compile_features(umaa_component_worker PRIVATE cxx_std_17)
+  install(TARGETS umaa_component_worker RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/tools/umaa_process_supervisor.py"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tools/umaa_operation_journal.py"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/umaa/tools")
+endif()
+
+# Optional child-process Component isolation experiment. Device DLL/SO
+# loads ONLY inside the subprocess; supervisor never auto-replays Commands.
+if(UMAA_BUILD_TESTS AND UMAA_BUILD_MODULE_DEMO)
+  add_executable(umaa_component_ipc_worker tools/umaa_component_worker.cpp)
+  target_link_libraries(umaa_component_ipc_worker PRIVATE UMAA::Core ${CMAKE_DL_LIBS})
+  target_compile_definitions(umaa_component_ipc_worker PRIVATE UMAA_WORKER_TEST_FAULT_INJECTION)
+  add_test(NAME umaa_component_process_supervisor_test
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_process_supervisor.py"
+      "$<TARGET_FILE:umaa_component_ipc_worker>"
+      "$<TARGET_FILE:umaa_demo_vehicle_v2>")
+  set_tests_properties(umaa_component_process_supervisor_test PROPERTIES TIMEOUT 35)
+endif()
+
+# SDK LargeCollection atomic batch sender+receiver unit validation.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_collection_batch_builder_test tests/test_collection_batch_builder.cpp)
+  target_link_libraries(umaa_collection_batch_builder_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_collection_batch_builder_test COMMAND umaa_collection_batch_builder_test)
+endif()
+
+# Vendor-independent bounded binary Collection envelope and corruption tests.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_collection_frame_codec_test tests/test_collection_frame_codec.cpp)
+  target_link_libraries(umaa_collection_frame_codec_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_collection_frame_codec_test COMMAND umaa_collection_frame_codec_test)
 endif()

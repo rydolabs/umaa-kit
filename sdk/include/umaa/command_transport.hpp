@@ -20,6 +20,9 @@ template<class Payload> struct CommandTransport {
   virtual ~CommandTransport() = default;
   virtual void publish_status(const Identity& command, const Event& status) = 0;
   virtual void publish_ack(const Identity& command, const Payload& payload) = 0;
+  // Optional delivery barrier before retiring response instances. Real DDS
+  // backends ensure the terminal Status and initial ACK were confirmed first.
+  virtual void before_dispose(const Identity&) {}
   virtual void dispose_status(const Identity& command) = 0;
   virtual void dispose_ack(const Identity& command, const Payload& payload) = 0;
 };
@@ -130,6 +133,7 @@ private:
         case Event::Kind::Ack:
           transport_.publish_ack(it->second.identity, it->second.payload); break;
         case Event::Kind::DisposeStatus:
+          transport_.before_dispose(it->second.identity);
           transport_.dispose_status(it->second.identity); break;
         case Event::Kind::DisposeAck:
           transport_.dispose_ack(it->second.identity, it->second.payload); break;

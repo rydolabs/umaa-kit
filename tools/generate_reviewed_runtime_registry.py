@@ -28,6 +28,28 @@ inline constexpr std::array<Topic, @COUNT@> topics{{
 }};
 inline constexpr std::size_t service_count = @SERVICES@;
 
+struct CommandFamily {
+  std::string_view service, family, command_topic, ack_topic, status_topic;
+  bool qos_verified;
+};
+inline constexpr std::array<CommandFamily, @FAMILYCOUNT@> command_families{{
+@FAMILYENTRIES@
+}};
+// Only catalog-reviewed identities: never a substitute for a DDS Topic/Key
+// binding or Component Definition QoS evidence.
+inline const CommandFamily& require_command_family(
+    std::string_view service, std::string_view command_topic,
+    bool require_normative_qos = true) {
+  for (const auto& f : command_families) {
+    if (f.service == service && f.command_topic == command_topic) {
+      if (require_normative_qos && !f.qos_verified)
+        throw std::logic_error("UMAA Command family QoS not yet reviewed");
+      return f;
+    }
+  }
+  throw std::invalid_argument("Command family missing from reviewed ICD catalog");
+}
+
 inline const Topic& require_topic(std::string_view service,
      std::string_view topic, std::string_view type, Role role,
      bool require_normative_qos = true) {
@@ -83,18 +105,74 @@ def entries(catalog):
     return result, len(service_names)
 
 
+
+def command_families(catalog):
+    """Return only explicit ICD Command/Ack/Status families, never inferred QoS.
+
+    Services with one Command family and no group label are accepted when the
+    catalog exposes exactly one Command, ACK and Status topic. Multi-command
+    services MUST provide exhaustive named command_groups.
+    """
+    entries(catalog)  # Validate every service and every topic first.
+    output = []
+    for service in catalog["services"]:
+        if service["pattern"] != "command_response":
+            if any(t["role"] in ("command", "ack", "status")
+                   for group in ("provider_topics", "consumer_topics")
+                   for t in service.get(group, [])):
+                raise ValueError("Command role in non-Command service")
+            continue
+        roles = {role: {t["name"] for group in ("provider_topics", "consumer_topics")
+                        for t in service.get(group, []) if t["role"] == role}
+                 for role in ("command", "ack", "status")}
+        groups = service.get("command_groups")
+        if groups is None:
+            if any(len(roles[role]) != 1 for role in roles):
+                raise ValueError("ambiguous unnamed Command families in "+service["name"])
+            groups = [{"name": service["name"].split("::")[-1],
+                       **{role: next(iter(roles[role])) for role in roles}}]
+        if not isinstance(groups, list) or not groups:
+            raise ValueError("missing Command families in "+service["name"])
+        used = {role: set() for role in roles}
+        labels = set()
+        for group in groups:
+            label = group.get("name")
+            if not isinstance(label, str) or not label or label in labels:
+                raise ValueError("duplicate or empty Command family label")
+            labels.add(label)
+            for role in roles:
+                topic = group.get(role)
+                if topic not in roles[role] or topic in used[role]:
+                    raise ValueError("Command family missing, duplicate or wrong role: "+role)
+                used[role].add(topic)
+            output.append((service["name"], label, group["command"],
+                           group["ack"], group["status"], False))
+        if used != roles:
+            raise ValueError("unmapped Command/Ack/Status topics in "+service["name"])
+    return output
+
+
 def quote(s):
     return json.dumps(s, ensure_ascii=True)
 
 
 def generate(catalog):
     records, count = entries(catalog)
+    families = command_families(catalog)
+    family_lines = [
+        "  CommandFamily{" + ", ".join(
+            (quote(service), quote(label), quote(command), quote(ack),
+             quote(status), "false")) + "},"
+        for service, label, command, ack, status, _ in families
+    ]
     lines = ["  Topic{" + ", ".join((quote(a), quote(b), quote(c),
               "Role::" + role, "true" if qos else "false")) + "},"
              for a, b, c, role, qos in records]
     return (HEADER.replace("@COUNT@", str(len(records)))
                   .replace("@SERVICES@", str(count))
-                  .replace("@ENTRIES@", "\n".join(lines)))
+                  .replace("@ENTRIES@", "\n".join(lines))
+                  .replace("@FAMILYCOUNT@", str(len(families)))
+                  .replace("@FAMILYENTRIES@", "\n".join(family_lines)))
 
 
 def main():

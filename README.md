@@ -8,6 +8,53 @@ repository. See [release gates](docs/DELIVERY_GATES.md), [the SDK quick start](d
 and the [open implementation roadmap](https://github.com/rydolabs/umaa-kit/issues/2).
 
 
+## Current modular SDK development gates — 2026-10-29
+
+**Verified synthetic real DDS:** a user Component DLL/SO implements only
+`provide<Service>(handler)`. `Application::start_remote<Service>()`
+automatically polls incoming Command requests and drives the SDK-owned
+Status/Ack FSM on a background worker. `Application::issue_remote<Service>()`
+returns a typed `RemoteCommandHandle` with completion, cancellation and
+guarded update. The typed `publish_collection/consume_collection` paths
+transfer a **whole bounded Set/List revision in one reliable DDS sample**,
+validating generation, sequence, disposal and resync. Both Cyclone DDS and
+Fast DDS vendor plugins have real-wire, independent-process tests; the
+same physical client, provider and device modules run on either vendor.
+
+**Not complete:** the Collection frame is an application-level atomic
+fallback, **not** DDS native GROUP Coherent/Ordered Presentation. Reviewed
+official UMAA 6.0 TypeSupport plus role/key/QoS contract remains a separate
+approval gate. Mixed Cyclone/Fast network interoperation failed strict
+ACK/Dispose checks on actual GitHub-hosted Runners, and RTI Connext requires
+a licensed SDK. Optional process isolation is a development IPC tool,
+not production-grade durable hardware recovery.
+
+See [current implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md),
+[mixed-network failures](docs/SDK_DDS_MIXED_NETWORK_LIMITS.md) and
+[how to implement another backend](dds/vendors/ADDING_A_BACKEND.md).
+
+## Modular SDK architecture (MVP, 2026-10-29)
+
+**Design rule:** applications only register UMAA service handlers. DDS Reader/Writer,
+Command/Ack/Status and QoS belong to the internal runtime, not device code.
+A module can expose several services through one DLL/SO; vendor backends are
+separate DLL/SO plugins behind a single versioned C ABI.
+
+| Binary / source | Responsibility | Current implementation |
+| --- | --- | --- |
+| `UMAA::Core` | command/report/collection protocol core | Existing C++17 INTERFACE library |
+| `UMAA::Runtime` | shared host runtime and ABI loaders | **Built DLL/SO**, development orchestration |
+| `vehicle_component` DLL/SO | user-created Engine/Battery typed Handler(s) | **Built** from synthetic fixture |
+| `dds_backend.h` | **single DDS vendor contract** | Versioned C ABI, capabilities/fail-closed |
+| `mock_backend` DLL/SO | ABI/loader contract regression | **Test-only**, NOT real DDS |
+| Cyclone DDS plugin | synthetic BatteryStatus through the new ABI | **PASS for scoped synthetic real-wire**, official service migration open |
+| Fast DDS / RTI plugins | new-vendor ABI without app/core changes | **Fast DDS synthetic real-wire PASS**; RTI SDK/license blocked |
+
+See [full architecture, DLL/SO ownership and new-vendor instructions](docs/SDK_MODULAR_ARCHITECTURE.md),
+[implementation/evidence scope](docs/MODULAR_IMPLEMENTATION_EVIDENCE.md), and
+[existing delivery gates](docs/DELIVERY_GATES.md). This modularization milestone
+**does not claim official UMAA 6.0 conformance**. Synthetic Report vendor swapping is verified; full-service switching is not.
+
 Two **separate projects** for development and independent verification of UMAA services:
 
 - [sdk/](sdk/): strict synthetic-subset generator and **official-EngineControl-derived ignition Handler generator**, Command/Report/Collection prototype, versioned native service module loader (DLL/SO), installable CMake package and tests.
@@ -178,3 +225,158 @@ generator with deterministic regeneration checks and an optional Cyclone
 `idlc` syntax gate. It does **not** rewrite or supersede the official UMAA IDL.
 See [Studio scope and commands](studio/README.md) and
 [V5 acceptance scope](docs/UMAA_ROADMAP_STATUS_V5.md).
+
+
+## SDK module facade phase 2 — typed local consumer
+
+The experimental `umaa::Application` in `sdk/include/umaa/application.hpp` adds a
+small `consume<Service>()` API over an ABI-v2 device component for **host-local**
+calls. `CommandHandle::wait()` refuses a Pending result until an actual
+UMAA ACK/Status tracking implementation is attached. `read_local()` is not
+DDS subscription; see [scope and remaining gates](docs/SDK_FACADE_PHASE2.md).
+All official UMAA vendor, QoS, runtime and conformance gates remain open.
+
+
+### Phase 2 — typed Report consumer over an independent DDS plugin
+
+The hosted [modular Cyclone plugin real-wire test](https://github.com/rydolabs/umaa-kit/actions/workflows/sdk-dds-backend-wire.yml)
+now compiles a **separate** `libumaa_dds_cyclone_demo.so` and user component
+`libumaa_cyclone_vehicle_component.so`. A publisher process uses the device
+component's synthetic BatteryStatus Handler, while a second process uses
+`Application::consume<BatteryStatus>().poll()/latest()` with **no DDS include**
+to observe a keyed Report and subsequent Dispose.
+
+This is **synthetic demo:battery-v1**, not official UMAA TypeSupport, not a
+full multi-service Cyclone adapter, and now verified across Cyclone/Fast DDS using identical client/device binaries; RTI remains unverified.
+The true UMAA Command ACK/Status async client, official service binding
+generation and safe device hot-swap remain open. See
+[SDK Facade Phase 2](docs/SDK_FACADE_PHASE2.md).
+
+## SDK implementation gates (active PR #15)
+
+The SDK uses a **device Component DLL/SO** loaded by a shared UMAA runtime and a
+separate **DDS backend plugin DLL/SO**. User device code implements a typed
+`Component::provide<Service>(handler)`; the loader owns the module ABI v2.
+The host-side `Application::consume<Service>()` currently supports local
+Command results and typed synthetic Report subscription. DDS vendor code is
+isolated under `dds/vendors/<vendor>/`, behind
+`sdk/include/umaa/internal/dds_backend.h`. New vendors MUST NOT change
+application handlers or the common protocol FSM.
+
+**Proven:** Linux/Windows SDK builds, device-module load/unload ABI, Cyclone DDS
+synthetic BatteryStatus cross-process wire with value/Dispose, and scoped
+legacy official service tests. Development-only Report Writer reuse and
+per-instance cache are covered by CTest.
+**Still open:** actual UMAA Command/Ack/Status consumer wire, approved
+TypeSupport/QoS for all scoped services, coherent LargeSet/LargeList,
+production module isolation, RTI licensed validation and normative conformance.
+See [module architecture](docs/SDK_MODULAR_ARCHITECTURE.md) and the
+[implementation evidence and blockers](docs/SDK_IMPLEMENTATION_BACKLOG.md).
+Never infer formal compliance from synthetic IDL or service-name catalogs.
+
+## SDK v2 modular runtime — verified 2026-10-29 development increment
+
+The **same user Component DLL/SO** and the **same typed Consumer binary**
+can use the Cyclone DDS or Fast DDS backend without recompilation for a
+synthetic BatteryStatus Report. Both implementations use the same single
+`dds_backend.h` C ABI, with vendor TypeSupport confined to their own
+`dds/vendors/<vendor>/` directory. This establishes ABI-based vendor
+substitution for the tested development fixture only, not mixed-vendor DDS
+wire interoperability or official UMAA service compatibility.
+
+User application code may register multiple typed Handlers in one native
+module with `Component::provide<Service>(handler)`. Host applications may
+use `Application::consume<Service>()`, with synthetic Report
+`on_change(data_handler,dispose_handler)` callbacks. SDK host Report
+publishers have a cancellable `start_periodic()` scheduler that invokes
+only the user's `ReportSource::read()` implementation. Device business
+modules contain no DDS Reader/Writer/QoS code.
+
+The ABI v2 host now **prevents unload during in-flight calls and Pending
+device commands**. Duplicate Command session execution and unsafe shutdown
+are refused, not retried. CTest checks pending session draining and 180ms
+in-flight callback completion before unload, including injected stop failure.
+These are development safety gates, not physical hardware or process-crash
+isolation proofs.
+
+**Still required:** actual UMAA 6.0 CommandStatus/Ack on-wire integration,
+reviewed official IDL ServiceBindings/keys/QoS, LargeSet/List coherent/ordered
+semantics, RTI licensed adapter and mixed-network tests, hard process
+isolation, and independently approved normative conformance scope. See
+[SDK implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md) and
+[modular architecture](docs/SDK_MODULAR_ARCHITECTURE.md). PR #15 remains
+Draft and `main` is not implicitly merged.
+
+### SDK transport protocol hardening (experimental)
+
+The modular SDK now contains strict, vendor-neutral building blocks for
+coherent LargeCollection batch reconciliation and remote Command Ack/Status
+correlation. Both are covered by standalone CTest and are **not** substitutes
+for reviewed UMAA TypeBindings, DDS coherent/ordered QoS, or the missing
+on-wire Command runtime. See
+[SDK implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md) for the
+remaining completion gates.
+
+### Modular SDK Command transport integration (development)
+
+The SDK now provides a host-side path from a user Component v2 business
+handler to `CommandEngine`, typed Status/Ack events, and a pluggable
+`UmaaDdsBackendV1` event writer. A separate mock-backend Reader test
+checks that a client does not report terminal success from Status alone.
+This **is not a completed network Command client**: official Command
+TypeSupport, incoming DDS Command readers, reviewed status/ack schemas,
+recovery policy and real Cyclone/Fast DDS Command wire tests remain open.
+The new `CoherentCollectionReceiver` similarly provides atomic, bounded
+revision processing but still requires vendor Coherent/Ordered DDS bindings.
+See [the implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md).
+
+### Real DDS Command transport development slice (synthetic)
+
+Separate Cyclone DDS and Fast DDS `UmaaDdsBackendV1` plugins now publish
+typed synthetic Command Status and Ack, with independent-process readers
+verifying the ordered 4 Status events, 1 Ack and 2 keyed Dispose events.
+The same command client executable and Component module binary are tested
+against each vendor backend without rebuilding user code. This is a
+**synthetic Command example only**: it is not the full official UMAA
+Command topic/client/session implementation. See the
+[SDK implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md).
+
+### Typed remote Command client (synthetic real-DDS acceptance)
+
+`sdk/include/umaa/remote_command_client.hpp` exposes a typed
+`RemoteCommandClient<Service>` to send a Command and await a correlated
+Status+Ack without application DDS Reader/Writer code. The client explicitly
+disposes the initiating Command after terminal confirmation and waits for
+provider response cleanup. Independent-process Cyclone and Fast DDS tests
+exercise this flow using `DemoCommandEvent.idl`; the parity workflow uses
+the **same executable** and device Component against either vendor plugin.
+This is a non-normative demo contract only; the official UMAA TypeBinding
+and QoS acceptance gates remain unresolved.
+
+### SDK Command cancellation, revision and crash isolation development update
+
+The modular SDK includes a **typed remote Command** path with confirmed
+device cancel, status/ack correlation, and guarded in-flight Command update.
+[Real Cyclone DDS synthetic Command tests](https://github.com/rydolabs/umaa-kit/actions/runs/40872063613)
+and [Fast DDS synthetic Command tests](https://github.com/rydolabs/umaa-kit/actions/runs/40872063639)
+exercise the same `send → update/cancel → wait_for → finish` concepts in
+separate processes. Both use non-normative `DemoCommandEvent.idl`.
+
+An optional, explicitly supervised out-of-process Component Worker has also
+been added for crash fault containment and **no automatic Command replay**.
+The sender/receiver pair for LargeSet/LargeList now supports deterministic
+bounded collection batches, final-element Dispose and generation recovery.
+Neither the child-process experiment nor the collection transaction API
+is a formal UMAA 6.0 conformance result. See the
+[implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md).
+
+### Remote asynchronous CommandHandle (typed application entrypoint)
+
+Use `Application::issue_remote<Service>(command,session,source,destination)`
+to obtain a `RemoteCommandHandle<Service>` with SDK-owned DDS Reader/Writer
+lifetime. The handle supports `state()`, `poll()`, `wait_for()`,
+`request_cancel()`, `ready_for_update()`, `update()` and `finish()`.
+It remains usable after destruction of the configuration `Application`.
+Only explicit, non-normative synthetic service bindings are proven by the
+Cyclone/Fast DDS end-to-end tests; an official UMAA CommandHandle contract
+still requires service-specific IDL and QoS review.

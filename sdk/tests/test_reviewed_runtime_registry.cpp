@@ -28,6 +28,28 @@ int main() {
   rejects([&]{ require_topic(b.service,b.name,"SomeOther::Type",Role::Report,false); });
   rejects([&]{ require_topic(b.service,b.name,b.type,Role::Report,true); });
   rejects([&]{ require_topic("UMAA::Unknown","UMAA::Unknown::Report","UMAA::Unknown::Report",Role::Report,false); });
+  static_assert(umaa::reviewed::command_families.size() == 24);
+  const auto& family = umaa::reviewed::require_command_family(
+      "UMAA::EO::EngineControl",
+      "UMAA::EO::EngineControl::EngineCommandType", false);
+  assert(family.ack_topic ==
+         "UMAA::EO::EngineControl::EngineCommandAckReportType"sv);
+  const auto& conditional = umaa::reviewed::require_command_family(
+      "UMAA::MM::ConditionalControl",
+      "UMAA::MM::ConditionalControl::ConditionalAddCommandType", false);
+  assert(conditional.status_topic ==
+         "UMAA::MM::ConditionalControl::ConditionalAddCommandStatusType"sv);
+  rejects([&]{(void)umaa::reviewed::require_command_family(
+      family.service,family.command_topic,true);});
+  rejects([&]{(void)umaa::reviewed::require_command_family(
+      family.service,"UMAA::EO::EngineControl::InventedCommandType",false);});
+  for (const auto& f:umaa::reviewed::command_families) {
+    assert(!f.qos_verified);
+    assert(!f.command_topic.empty() && !f.ack_topic.empty() && !f.status_topic.empty());
+    (void)require_topic(f.service,f.command_topic,f.command_topic,Role::Command,false);
+    (void)require_topic(f.service,f.ack_topic,f.ack_topic,Role::Ack,false);
+    (void)require_topic(f.service,f.status_topic,f.status_topic,Role::Status,false);
+  }
   for (const auto& t:umaa::reviewed::topics) {
     assert(!t.service.empty() && !t.name.empty() && !t.type.empty());
     assert(!t.qos_verified); // never automatically mark per-service Component QoS as approved

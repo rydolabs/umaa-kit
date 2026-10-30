@@ -1,0 +1,10 @@
+// Development-only atomic Collection frame. ONE DDS sample = ONE complete
+// application transaction. Not official UMAA IDL or native GROUP presentation.
+module Demo {
+ module EO {
+  struct CollectionBatch {
+    @key long collection_id;
+    sequence<octet, 65536> frame;
+  };
+ };
+};

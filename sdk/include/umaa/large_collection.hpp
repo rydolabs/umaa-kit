@@ -106,10 +106,17 @@ private:
     if (last_commit_ == token_now) return;
     if (m.size != elems_.size()) return;
     if (m.size == 0) {
-      // Nil GUID represents an empty collection; simplify recognition by
-      // accepting empty ID or all-zero UUID as the transport-canonical form.
-      if (m.update_element_id != "00000000-0000-0000-0000-000000000000" &&
-          !m.update_element_id.empty()) return;
+      // A freshly empty snapshot has a nil update ID. An emptied collection
+      // produced by disposing its LAST element instead references that
+      // element's ID, without a timestamp. Both are valid, but a fabricated
+      // last-dispose ID must never publish an empty snapshot.
+      const bool empty_snapshot =
+        m.update_element_id.empty() ||
+        m.update_element_id == "00000000-0000-0000-0000-000000000000";
+      if (empty_snapshot) {
+        if (m.update_element_timestamp) return;
+      } else if (m.update_element_timestamp ||
+                 !disposed_.count(m.update_element_id)) return;
       committed_ = std::vector<T>{}; last_commit_ = token_now; ++commits_; return;
     }
     if (m.update_element_timestamp) {

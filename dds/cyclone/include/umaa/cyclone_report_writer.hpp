@@ -17,12 +17,15 @@ class ReportWriter final : public ReportTransport<Value> {
   enum class State { Idle, Active, Stopped, Faulted };
   ReportWriter(std::string source, dds_entity_t participant, dds_entity_t topic,
                const dds_qos_t* qos, Mapper mapper, int expected_readers = 0,
-               int discovery_attempts = 200)
+               int discovery_attempts = 200,
+               std::uint32_t retire_grace_ms = 0)
       : source_(std::move(source)), participant_(participant), topic_(topic),
         qos_(qos), mapper_(std::move(mapper)), expected_readers_(expected_readers),
-        discovery_attempts_(discovery_attempts) {
+        discovery_attempts_(discovery_attempts),
+        retire_grace_ms_(retire_grace_ms) {
     if (source_.empty() || participant_ <= 0 || topic_ <= 0 || !qos_ ||
-        expected_readers_ < 0 || discovery_attempts_ <= 0)
+        expected_readers_ < 0 || discovery_attempts_ <= 0 ||
+        retire_grace_ms_ > 5000)
       throw std::invalid_argument("Report Writer requires explicit source, entities and QoS");
   }
   ReportWriter(const ReportWriter&) = delete;
@@ -73,6 +76,12 @@ class ReportWriter final : public ReportTransport<Value> {
       // Reliable middleware ACK: wait for prior Report/Dispose deliveries
       // before deleting the writer, not an arbitrary sleep.
       check(dds_wait_for_acks(writer_, DDS_SECS(5)), "wait for Report ACKs");
+      // A DDS ACK proves Writer-history delivery but not the application's
+      // observation of the final Dispose. Under explicit network-impairment
+      // testing, keep the Writer alive for the configured late-repair window.
+      // This is NOT a normative UMAA DDS QoS policy or fabricated app ACK.
+      if (retire_grace_ms_)
+        dds_sleepfor(DDS_MSECS(retire_grace_ms_));
       check(dds_delete(writer_), "delete Report writer");
       writer_ = 0;
       state_ = State::Stopped;
@@ -97,6 +106,7 @@ class ReportWriter final : public ReportTransport<Value> {
   Mapper mapper_;
   int expected_readers_;
   int discovery_attempts_;
+  std::uint32_t retire_grace_ms_{0};
   dds_entity_t writer_{0};
   State state_{State::Idle};
 };

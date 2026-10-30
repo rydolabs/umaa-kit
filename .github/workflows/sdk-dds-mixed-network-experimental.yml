@@ -1,0 +1,35 @@
+name: Experimental Cyclone / Fast DDS mixed-network (synthetic, NOT a required gate)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mixed-vendor-experimental:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install vendor middleware
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
+      - name: Build vendor plugins with the same CLI and component binary
+        run: |
+          cmake -S dds/vendors/cyclone -B build/mixed-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/mixed-cyclone --parallel 2
+          cmake -S dds/vendors/fastdds -B build/mixed-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/mixed-fastdds --parallel 2
+      - name: Examine both directions and fail on incomplete reliability or lifecycle
+        run: |
+          set +e
+          cli="$PWD/build/mixed-cyclone/umaa_cyclone_backend_cli"
+          module="$PWD/build/mixed-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone="$PWD/build/mixed-cyclone/libumaa_dds_cyclone_demo.so"
+          fastdds="$PWD/build/mixed-fastdds/libumaa_dds_fastdds_demo.so"
+          python3 sdk/tests/run_real_dds_backend.py "$cli" "$cyclone" "$module" "$fastdds"
+          a=$?
+          python3 sdk/tests/run_real_dds_backend.py "$cli" "$fastdds" "$module" "$cyclone"
+          b=$?
+          echo "EXPERIMENTAL: FastDDS->Cyclone=$a, Cyclone->FastDDS=$b (0 only when strict final ACK and Dispose pass)"
+          test "$a" -eq 0 && test "$b" -eq 0
+# A red experimental run is honest evidence, not a required PR gate.

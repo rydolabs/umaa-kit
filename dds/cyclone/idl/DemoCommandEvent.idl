@@ -1,0 +1,9 @@
+// SYNTHETIC command event transport fixture. NOT official UMAA IDL.
+module Demo {
+ module EO {
+  struct CommandEvent {
+    @key long session_id;
+    long value;
+  };
+ };
+};

@@ -1,5 +1,6 @@
 // Cyclone C backend: synthetic BatteryStatus TypeBinding only, NOT official UMAA.
 #include "umaa/internal/dds_backend.h"
+#include "../common/demo_type_binding_rules.hpp"
 #include <dds/dds.h>
 #include "DemoCollectionBatch.h"
 #include <cerrno>
@@ -13,13 +14,9 @@ namespace {
 struct Domain {dds_entity_t participant;};
 struct Writer {dds_entity_t writer,topic;};
 struct Reader {dds_entity_t reader,topic;UmaaDdsOnSampleV1 callback;void* user;};
-constexpr uint64_t caps=UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE;
-bool supported(const UmaaDdsTopicV1* t) {
- return t&&t->topic_name&&t->schema_id&&t->qos_profile&&
- std::strcmp(t->topic_name,"demo/CollectionBatch")==0&&
- std::strcmp(t->schema_id,"demo:collection-batch-v1")==0&&
- std::strcmp(t->qos_profile,"demo-reliable")==0&&
- !(t->required_features&~caps);
+constexpr uint64_t caps=umaa::vendor::demo::capabilities;
+bool supported(const UmaaDdsTopicV1* topic) {
+ return umaa::vendor::demo::accepts(topic, umaa::vendor::demo::Family::Collection);
 }
 bool parse_key(const char* str,int32_t& out) {
  if(!str||!*str)return false;

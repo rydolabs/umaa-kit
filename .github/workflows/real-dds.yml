@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'dds/cyclone/**'
+      - 'dds/fixtures/**'
       - 'simulator/dds/**'
       - '.github/workflows/real-dds.yml'
   pull_request:

@@ -9,7 +9,7 @@ set(SDK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../sdk")
 set(TYPE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated")
 file(MAKE_DIRECTORY "${TYPE_ROOT}")
 execute_process(COMMAND "${FASTDDSGEN}" -replace -d "${TYPE_ROOT}"
-  "${CMAKE_CURRENT_LIST_DIR}/../../cyclone/idl/DemoBattery.idl"
+  "${CMAKE_CURRENT_LIST_DIR}/../../fixtures/idl/DemoBattery.idl"
   RESULT_VARIABLE GEN_RESULT OUTPUT_VARIABLE GEN_OUT ERROR_VARIABLE GEN_ERR)
 if(NOT GEN_RESULT EQUAL 0)
   message(FATAL_ERROR "fastddsgen failed: ${GEN_ERR} ${GEN_OUT}")
@@ -40,7 +40,7 @@ set_tests_properties(umaa_fastdds_backend_real_wire PROPERTIES TIMEOUT 35)
 set(COMMAND_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated-command")
 file(MAKE_DIRECTORY "${COMMAND_ROOT}")
 execute_process(COMMAND "${FASTDDSGEN}" -replace -d "${COMMAND_ROOT}"
-  "${CMAKE_CURRENT_LIST_DIR}/../../cyclone/idl/DemoCommandEvent.idl"
+  "${CMAKE_CURRENT_LIST_DIR}/../../fixtures/idl/DemoCommandEvent.idl"
   RESULT_VARIABLE COMMAND_GEN_RESULT OUTPUT_VARIABLE COMMAND_GEN_OUT
   ERROR_VARIABLE COMMAND_GEN_ERR)
 if(NOT COMMAND_GEN_RESULT EQUAL 0)
@@ -136,7 +136,7 @@ endforeach()
 set(COLLECTION_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated-collection")
 file(MAKE_DIRECTORY "${COLLECTION_ROOT}")
 execute_process(COMMAND "${FASTDDSGEN}" -replace -d "${COLLECTION_ROOT}"
-  "${CMAKE_CURRENT_LIST_DIR}/../../cyclone/idl/DemoCollectionBatch.idl"
+  "${CMAKE_CURRENT_LIST_DIR}/../../fixtures/idl/DemoCollectionBatch.idl"
   RESULT_VARIABLE COLLECTION_GEN_RESULT OUTPUT_VARIABLE COLLECTION_GEN_OUT
   ERROR_VARIABLE COLLECTION_GEN_ERR)
 if(NOT COLLECTION_GEN_RESULT EQUAL 0)

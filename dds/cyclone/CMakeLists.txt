@@ -3,7 +3,7 @@ project(UMAARealDDSProof LANGUAGES C CXX)
 find_package(CycloneDDS REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include(CTest)
-idlc_generate(TARGET demo_battery_types FILES "${CMAKE_CURRENT_SOURCE_DIR}/idl/DemoBattery.idl" WARNINGS no-implicit-extensibility)
+idlc_generate(TARGET demo_battery_types FILES "${CMAKE_CURRENT_SOURCE_DIR}/../fixtures/idl/DemoBattery.idl" WARNINGS no-implicit-extensibility)
 add_library(umaa_dds_battery_module MODULE
   "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk/tests/modules/battery.cpp")
 target_include_directories(umaa_dds_battery_module PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk/include")

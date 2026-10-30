@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1",
+  "vendor": "rti",
+  "role": "runtime-plugin",
+  "status": "blocked",
+  "abi": {
+    "version": 1,
+    "entry": "umaa_get_dds_backend_v1",
+    "header": "sdk/include/umaa/internal/dds_backend.h"
+  },
+  "capabilities": [],
+  "normativeUmaaWireVerified": false,
+  "families": [],
+  "blockers": [
+    "Licensed RTI Connext SDK and rtiddsgen",
+    "Dedicated compile/run CI environment",
+    "Independent native TypeSupport and QoS evidence"
+  ]
+}

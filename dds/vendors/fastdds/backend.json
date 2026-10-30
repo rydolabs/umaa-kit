@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1",
+  "vendor": "fastdds",
+  "role": "runtime-plugin",
+  "status": "synthetic-development",
+  "abi": {
+    "version": 1,
+    "entry": "umaa_get_dds_backend_v1",
+    "header": "sdk/include/umaa/internal/dds_backend.h"
+  },
+  "capabilities": [
+    "reliable",
+    "instance-lifecycle"
+  ],
+  "normativeUmaaWireVerified": false,
+  "families": [
+    {
+      "name": "report",
+      "source": "adapter.cpp",
+      "fixture": "dds/fixtures/idl/DemoBattery.idl"
+    },
+    {
+      "name": "command",
+      "source": "command_adapter.cpp",
+      "fixture": "dds/fixtures/idl/DemoCommandEvent.idl"
+    },
+    {
+      "name": "collection",
+      "source": "collection_adapter.cpp",
+      "fixture": "dds/fixtures/idl/DemoCollectionBatch.idl"
+    }
+  ]
+}

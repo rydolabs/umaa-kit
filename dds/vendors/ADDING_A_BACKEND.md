@@ -63,3 +63,43 @@ It must never modify user Component modules, `CommandEngine`,
 `rtiddsgen` compiler, independent Linux/Windows Runner access, reviewed
 official TypeSupport+Key/Policy mapping and published legal deployment
 requirements. There is no RTI pass or fabricated placeholder adapter.
+
+## ROS 2 RMW-style adapter contract (incremental UMAA Kit design)
+
+The **sole canonical runtime backend** location is
+`dds/vendors/<vendor>/`. `dds/cyclone/` is a separate, historical
+independent real-wire verification harness, not a parallel SDK adapter.
+Shared synthetic IDL input is in `dds/fixtures/idl/`.
+
+1. **Register identity/status** in `backend.json`; the architecture test
+   refuses undeclared vendor plugins, unknown family/source paths, forged
+   normative evidence, and unsupported capability claims. A BLOCKED vendor
+   must not provide a dummy runtime DLL.
+2. **Implement exactly ABI v1** and the C entrypoint from
+   `sdk/include/umaa/internal/dds_backend.h`. No C++ exception crosses
+   the ABI; every function pointer must be present. Source and binary tests
+   both verify version/struct size/entrypoint.
+3. **Use shared contract filtering:** initial demo fixtures must use
+   `dds/vendors/common/demo_type_binding_rules.hpp` for exact
+   Topic+Schema+QoS+required-feature validation; TypeSupport, native key
+   handling and Reader/Writer QoS remain adapter-private. Official services
+   need a **new, separately reviewed** generated binding registry from
+   original signed-off ICD/IDL, not a synthetically extended demo allow-list.
+4. **Use the same behavioral test contract** for both vendors: Report DATA,
+   UPDATE, DISPOSE; Command/ACK/Status, UPDATE, CANCEL; Set/List snapshot and
+   delta; unknown schema, unsupported QoS, invalid instance keys and ambiguous
+   delivery. Native coherent/ordered collections must be independently
+   proven before advertising their flags.
+5. **Single logical plugin is the target**, not the present implementation:
+   the existing prototype builds separate synthetic Report, Command and
+   Collection modules *per vendor*. Native TypeSupport registration and
+   multi-service lifecycle must be designed and tested before consolidating
+   into one runtime-selectable backend module.
+
+Test the source-tree contract with
+`python -m unittest sdk.tests.test_dds_vendor_adapter_layout` and the
+C++ ABI-independent allow-list with CTest
+`umaa_vendor_type_binding_rules_test`. **Do not** substitute these static
+tests for standalone middleware wire tests.
+
+See [DDS root layout](../README.md).

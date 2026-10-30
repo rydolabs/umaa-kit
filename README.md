@@ -1,11 +1,20 @@
 <div align="center">
 
 # UMAA Kit
-### **Define services. Generate components. Write only the logic.**
+
+![UMAA Kit: services to native component DLL/SO modules](docs/assets/umaa-kit-hero.svg)
+
+### **Build native UMAA-aligned components with less plumbing.**
+
+[![SDK CI](https://github.com/rydolabs/umaa-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/rydolabs/umaa-kit/actions/workflows/ci.yml)
+[![Studio CI](https://github.com/rydolabs/umaa-kit/actions/workflows/studio-platform.yml/badge.svg)](https://github.com/rydolabs/umaa-kit/actions/workflows/studio-platform.yml)
+[![Verifier CI](https://github.com/rydolabs/umaa-kit/actions/workflows/verifier.yml/badge.svg)](https://github.com/rydolabs/umaa-kit/actions/workflows/verifier.yml)
 
 **A C++ component SDK, code generator, independent DDS testbed, and evolving model-driven development platform.**
 
 **Windows DLL · Linux SO · CMake · Component ABI v2 · Cyclone DDS · Fast DDS**
+
+<sub>Current CLI: synthetic development services only · Official DDS runtime completeness is not claimed</sub>
 
 [Try the Component CLI](#try-the-component-cli) · [Explore the architecture](#how-the-pieces-fit) · [Current capabilities](#what-works-today) · [Studio roadmap](#visual-composition-with-umaa-studio)
 
@@ -13,9 +22,9 @@
 
 ---
 
-## What if building UMAA components felt like creating a project?
+## From service definition to native component
 
-~~~mermaid
+```mermaid
 flowchart LR
     A["1. Choose Services<br/>Provider / Consumer"] --> B["2. Define Component<br/>Manifest"]
     B --> C["3. Generate C++<br/>Wrappers + CMake"]
@@ -25,7 +34,7 @@ flowchart LR
     style A fill:#dbeafe,color:#172554,stroke:#2563eb
     style C fill:#e0e7ff,color:#312e81,stroke:#6366f1
     style E fill:#dcfce7,color:#14532d,stroke:#16a34a
-~~~
+```
 
 UMAA Kit aims to **remove repetitive DDS plumbing from application code**.
 Define the services that your component provides or consumes, generate the
@@ -37,17 +46,16 @@ The platform separates **a service interface**, **a logical component**, and
 services. DDS Topic names, message types, roles and protocol procedures come
 from reviewed contracts, not string conventions.
 
-## One platform. Two development workflows.
+## Two ways to compose. One project format.
 
-| CLI-first — available development slice | Visual-first — planned Studio extension |
-|---|---|
-| Create a component project from a command | Drag a Component onto a React Flow canvas |
-| Add services and select Provider/Consumer roles | Connect services with role-specific ports |
-| Generate CMake, ABI entry and user Handler templates | Edit the **same** Assembly Manifest |
-| Build a Linux SO / Windows DLL | Generate exactly the same project from the UI |
-| **First implementation: synthetic ABI-v2 Provider fixtures** | **Designer implementation not yet delivered** |
+![Two workflows: CLI available, React Flow Studio planned, both use the same manifest and project generator](docs/assets/umaa-kit-workflows.svg)
 
-~~~mermaid
+**Use the CLI today:** create, validate, generate and build a synthetic ABI-v2
+Provider component. **React Flow composition is planned:** the UI will
+edit the *same* Component Assembly Manifest, not introduce a separate
+generator or invent UMAA wire behavior.
+
+```mermaid
 flowchart TB
     EA["Sparx EA model snapshots<br/>Read-only importer exists"] --> CONTRACT["Versioned Service Contracts<br/>Full normative extraction: OPEN"]
     ICD["UMAA 6.0 official ICD + IDL<br/>Reviewed literal catalog"] --> CONTRACT
@@ -62,18 +70,18 @@ flowchart TB
     style FLOW fill:#fef3c7,color:#78350f,stroke:#d97706
     style ASSEMBLY fill:#dbeafe,color:#172554,stroke:#2563eb
     style MODULE fill:#dcfce7,color:#14532d,stroke:#16a34a
-~~~
+```
 
 ## Try the Component CLI
 
-**The first generator slice lives in a Draft development branch.**
-It generates **buildable synthetic Demo service Provider modules**, not
+**The Component generator is on `main` as an early developer preview.**
+It emits **buildable synthetic Demo service Provider modules**, not
 complete official UMAA 6.0 service bindings.
 
 Run from the repository root with Python 3.10+, CMake 3.20+ and a C++17
 compiler:
 
-~~~bash
+```bash
 # 1. Create a project
 python -m tools.umaa_component_cli new component engine_demo
 
@@ -96,13 +104,13 @@ cmake --install build/sdk-cli --config Release
 python -m tools.umaa_component_cli build \
   --project engine_demo --sdk-prefix build/sdk-cli-install
 python -m tools.umaa_component_cli test --project engine_demo
-~~~
+```
 
 This is a development example; the generated business handlers initially
 **reject Commands** and **throw for Reports**, rather than claim hardware
 success. Implement the real behavior in your own Handler files.
 
-~~~text
+```text
 engine_demo/
 ├── umaa.component.json          # common CLI / future Studio manifest
 ├── CMakeLists.txt               # generated build configuration
@@ -113,7 +121,7 @@ engine_demo/
 │   ├── engine_control.hpp
 │   └── battery_status.hpp
 └── tests/module_smoke.cpp       # actual ABI loader CTest
-~~~
+```
 
 **Regeneration is safe for user-owned files.** Generated files are
 explicitly marked; the generator refuses to replace an unmarked CMake file.
@@ -126,11 +134,11 @@ See the [full CLI and generation contract](docs/COMPONENT_PROJECT_GENERATION.md)
 The development CLI now also exposes a deterministic, **non-normative**
 catalog snapshot and a shared assembly validation gate:
 
-~~~bash
+```bash
 python -m tools.umaa_component_cli contract export --output build/umaa-contracts.json
 python -m tools.umaa_component_cli contract verify --input build/umaa-contracts.json
 python -m tools.umaa_component_cli validate --project engine_demo
-~~~
+```
 
 The export retains 53 reviewed service names / 113 Topic mappings and their
 available source references. Two existing EO records have explicitly unknown
@@ -138,7 +146,7 @@ per-service provenance; the generator does not invent it. Standard UMAA
 services can be selected into a source-pinned assembly but cannot yet be
 generated as fully verified native DDS bindings.
 
-**Studio server foundation (Draft):** project-authenticated read-only
+**Studio server foundation (available API only):** project-authenticated read-only
 Service Contract discovery and stateless Component Assembly validation now
 call the **same CLI validation code**. The React Flow canvas and production
 build sandbox remain planned, not shipped.
@@ -149,7 +157,7 @@ build sandbox remain planned, not shipped.
 
 ## How the pieces fit
 
-~~~mermaid
+```mermaid
 flowchart TB
     subgraph Component["Component DLL / SO — device/business logic"]
         P["Typed Provider Handlers"]
@@ -169,7 +177,7 @@ flowchart TB
     B --> FA["Fast DDS plugin"]
     style Component fill:#e0f2fe,color:#082f49,stroke:#0284c7
     style Runtime fill:#e0e7ff,color:#312e81,stroke:#6366f1
-~~~
+```
 
 The DDS vendor lives **outside application Handler code**. Current
 synthetic real-wire tests demonstrate standalone Cyclone DDS and standalone
@@ -188,7 +196,7 @@ Fast DDS interoperate with each other on a mixed-vendor network.
 | **Official UMAA 6.0 IDL** | 352/352 original IDL files compiled in scoped CI; not 352 service APIs |
 | **Reviewed six-ICD service catalog** | 53 services / 113 Topic identities; **not complete normative runtime or QoS** |
 | **Sparx EA Studio** | Read-only QEA snapshot importer, GUID diff and draft extension IDL; real customer QEA acceptance pending |
-| **Component Manifest + CLI + generator** | New Draft slice: synthetic Provider module and generated CMake/CTest |
+| **Component Manifest + CLI + generator** | Available dev preview: synthetic Provider module, CMake and generated CTest |
 | **React Flow Component Designer** | **Planned**, not shipped |
 | **Full official service bindings / conformance** | **OPEN** — Key/QoS/roles, wire behavior and independent normative evidence incomplete |
 
@@ -214,7 +222,7 @@ Fast DDS interoperate with each other on a mixed-vendor network.
 
 ## Visual composition with UMAA Studio
 
-~~~mermaid
+```mermaid
 flowchart LR
     L["UMAA Service Library"] --> D["Component Designer<br/>React Flow — NEXT"]
     X["Project extension services"] --> D
@@ -223,7 +231,7 @@ flowchart LR
     V --> G["CMake + SDK Wrapper Generator"]
     G --> P["Native project + protected user code"]
     style D fill:#fef3c7,color:#78350f,stroke:#d97706
-~~~
+```
 
 The **planned** visual editor will offer a service library, Component canvas,
 Provider/Consumer role ports, validation details and project generation.
@@ -250,15 +258,16 @@ not a second place to hand-edit official UMAA contracts.
 
 ## What's next
 
-~~~mermaid
+```mermaid
 flowchart LR
-    A["CLI + synthetic<br/>module generator"] --> B["Service Contract schema<br/>+ EA provenance"]
+    A["CLI + synthetic<br/>module generator"] --> B["Reviewed contract snapshots<br/>+ Studio validation API"]
     B --> C["Official Report<br/>Provider/Consumer"]
     C --> D["React Flow<br/>Component Designer"]
     D --> E["System Composer<br/>+ deployment validation"]
     style A fill:#dcfce7,color:#14532d,stroke:#16a34a
-    style B fill:#fef3c7,color:#78350f,stroke:#d97706
-~~~
+    style B fill:#dcfce7,color:#14532d,stroke:#16a34a
+    style C fill:#fef3c7,color:#78350f,stroke:#d97706
+```
 
 Our goal: **use the CLI like a native build tool, or design visually in
 Studio — and receive the very same editable, buildable CMake project.**

@@ -59,6 +59,7 @@ spec:
     cancelGlobalVectorCommand:
       actor: consumer
       transport: dds-dispose
+      topicRef: command  # Dispose the existing Command instance; no new Topic
       clause: "6.1.5"
       description: DDS-native cancellation; no independent cancel Topic
     reportGlobalVectorCancelCommandStatus:

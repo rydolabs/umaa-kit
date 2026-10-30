@@ -66,7 +66,7 @@ def create_snapshot(path: Path = CATALOG) -> dict:
             "commandGroups": list(record.get("command_groups", [])),
             "source": {
                 "clauses": list(record["clauses"]),
-                "reference": record["source"],
+                "reference": record.get("source"),  # None means provenance not recorded; never fabricate.
             },
             "evidence": {
                 "icdMappingReviewed": record["icd_reviewed"] is True,

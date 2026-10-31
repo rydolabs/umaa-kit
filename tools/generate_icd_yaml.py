@@ -148,6 +148,15 @@ def build_protocols(service: dict, by_type: dict[str, str]) -> list[dict]:
     return result
 
 
+def service_clause(service: dict) -> str:
+    """Use the actual 5.1.N or 6.1.N service heading, not a generic chapter."""
+    headings = [clause for clause in service["clauses"]
+                if __import__("re").fullmatch(r"(?:5|6)\\.1\\.\\d+", clause)]
+    if len(headings) != 1:
+        raise ValueError("ambiguous or missing service section: " + service["name"])
+    return headings[0]
+
+
 def build_service(service: dict, catalog: dict) -> dict:
     fq_name = service["name"]
     _, domain, title = fq_name.split("::")
@@ -178,7 +187,7 @@ def build_service(service: dict, catalog: dict) -> dict:
         "documentation": {
             "summary": "Service and interface identities from reviewed ICD mapping; full prose, tables and figures not imported.",
             "sections": [{
-                "clause": service["clauses"][0],
+                "clause": service_clause(service),
                 "title": title,
                 "text": "",
             }],
@@ -215,7 +224,7 @@ def build_icd(domain: str, services: list[dict], catalog: dict) -> dict:
     unique = set()
     sections = []
     for svc in services:
-        clause = svc["clauses"][0]
+        clause = service_clause(svc)
         if clause in unique:
             raise ValueError("repeated service clause " + clause)
         unique.add(clause)

@@ -1,0 +1,74 @@
+# GENERATED index, NOT a full original ICD transcription.
+apiVersion: "umaa.dev/v1alpha1"
+kind: "ICD"
+metadata: 
+  id: "UMAA-SPEC-SEMICD"
+  title: "SEM ICD (partial reviewed index)"
+  revision: 1
+sources: 
+  document: 
+    id: "UMAA-SPEC-SEMICD"
+    version: "6.0"
+    originalSha256: null
+    reference: 
+      kind: "secondary-transcription"
+      revision: "ecb923646e7f3fe569b773c3946444e793d8a8be"
+spec: 
+  sections: 
+    - clause: "5.1.1"
+      title: "Catalog-referenced clause"
+      paragraphs: []
+      tables: []
+      figures: []
+      requirements: []
+    - clause: "5.1.1.1"
+      title: "Catalog-referenced clause"
+      paragraphs: []
+      tables: []
+      figures: []
+      requirements: []
+    - clause: "5.1.2"
+      title: "Catalog-referenced clause"
+      paragraphs: []
+      tables: []
+      figures: []
+      requirements: []
+    - clause: "5.1.2.1"
+      title: "Catalog-referenced clause"
+      paragraphs: []
+      tables: []
+      figures: []
+      requirements: []
+    - clause: "5.1.2.2"
+      title: "Catalog-referenced clause"
+      paragraphs: []
+      tables: []
+      figures: []
+      requirements: []
+    - clause: "5.1.2.3"
+      title: "Catalog-referenced clause"
+      paragraphs: []
+      tables: []
+      figures: []
+      requirements: []
+    - clause: "5.1.3"
+      title: "Catalog-referenced clause"
+      paragraphs: []
+      tables: []
+      figures: []
+      requirements: []
+    - clause: "5.1.3.1"
+      title: "Catalog-referenced clause"
+      paragraphs: []
+      tables: []
+      figures: []
+      requirements: []
+  services: 
+    - "UMAA::SEM::GPSStatus"
+    - "UMAA::SEM::InertialSensorControl"
+    - "UMAA::SEM::InertialSensorStatus"
+extensions: 
+  x-catalog: 
+    partial: true
+    reviewedServiceCount: 3
+    originalDocumentTextIncluded: false

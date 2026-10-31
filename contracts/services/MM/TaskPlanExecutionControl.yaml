@@ -1,0 +1,142 @@
+# GENERATED; partial ICD catalog projection only, not an official wire contract.
+apiVersion: "umaa.dev/v1alpha1"
+kind: "Service"
+metadata: 
+  id: "UMAA::MM::TaskPlanExecutionControl"
+  title: "TaskPlanExecutionControl"
+  revision: 1
+sources: 
+  icd: 
+    document: "UMAA-SPEC-MMICD"
+    version: "6.0"
+    clauses: 
+      - "6.1.13"
+      - "6.1.13.1"
+      - "6.1.13.2"
+      - "6.1.13.3"
+    originalSha256: null
+    reference: 
+      kind: "secondary-transcription"
+      revision: "ecb923646e7f3fe569b773c3946444e793d8a8be"
+  idl: 
+    release: "6.0"
+    bundleSha256: null
+documentation: 
+  summary: "Partial reviewed mapping, not the full original ICD. No original prose, tables, figures, official Key or QoS are asserted."
+  sections: 
+    - clause: "6.1.13"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+    - clause: "6.1.13.1"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+    - clause: "6.1.13.2"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+    - clause: "6.1.13.3"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+  tables: []
+  figures: []
+spec: 
+  topics: 
+    topic01: 
+      catalogId: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType"
+      idlType: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType"
+      ddsTopicName: null
+      role: "ack"
+      direction: "provider-to-consumer"
+      keyFields: null
+      qosProfileRef: null
+    topic02: 
+      catalogId: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType"
+      idlType: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType"
+      ddsTopicName: null
+      role: "status"
+      direction: "provider-to-consumer"
+      keyFields: null
+      qosProfileRef: null
+    topic03: 
+      catalogId: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType"
+      idlType: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType"
+      ddsTopicName: null
+      role: "command"
+      direction: "consumer-to-provider"
+      keyFields: null
+      qosProfileRef: null
+  operations: 
+    reportTaskPlanExecutionCommandAck: 
+      kind: "unresolved"
+      topicRef: null
+      sourceClause: null
+      description: "Operation is catalog-reviewed; exact operation-to-topic binding and behavior are not verified."
+    reportTaskPlanExecutionCommandStatus: 
+      kind: "unresolved"
+      topicRef: null
+      sourceClause: null
+      description: "Operation is catalog-reviewed; exact operation-to-topic binding and behavior are not verified."
+    setTaskPlanExecution: 
+      kind: "unresolved"
+      topicRef: null
+      sourceClause: null
+      description: "Operation is catalog-reviewed; exact operation-to-topic binding and behavior are not verified."
+  protocols: 
+    - id: "catalogPattern"
+      kind: "command-response"
+      rulesRef: "umaa://flows/command-response@6.0"
+      bindings: 
+        ack: 
+          - "topic01"
+        status: 
+          - "topic02"
+        command: 
+          - "topic03"
+  collections: []
+  specializations: []
+  requirements: []
+extensions: 
+  x-catalog: 
+    originalRecord: 
+      name: "UMAA::MM::TaskPlanExecutionControl"
+      pattern: "command_response"
+      clauses: 
+        - "6.1.13"
+        - "6.1.13.1"
+        - "6.1.13.2"
+        - "6.1.13.3"
+      icd_reviewed: true
+      provider_topics: 
+        - name: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType"
+          type: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType"
+          role: "ack"
+        - name: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType"
+          type: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType"
+          role: "status"
+      consumer_topics: 
+        - name: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType"
+          type: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType"
+          role: "command"
+      collection_topics: []
+      operations: 
+        - "reportTaskPlanExecutionCommandAck"
+        - "reportTaskPlanExecutionCommandStatus"
+        - "setTaskPlanExecution"
+      command_groups: 
+        - name: "TaskPlanExecution"
+          command: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType"
+          ack: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType"
+          status: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType"
+      official_idl_verified: false
+      dds_qos_verified: false
+      dds_behavior_verified: false
+      source: "UMAA-SPEC-MMICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    collectionTypeRefs: []
+    commandGroups: 
+      - name: "TaskPlanExecution"
+        command: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandType"
+        ack: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandAckReportType"
+        status: "UMAA::MM::TaskPlanExecutionControl::TaskPlanExecutionCommandStatusType"
+    reviewedMapping: true
+    officialIdlVerified: false
+    ddsQosVerified: false
+    ddsBehaviorVerified: false

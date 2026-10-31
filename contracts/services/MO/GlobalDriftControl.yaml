@@ -1,0 +1,166 @@
+# GENERATED; partial ICD catalog projection only, not an official wire contract.
+apiVersion: "umaa.dev/v1alpha1"
+kind: "Service"
+metadata: 
+  id: "UMAA::MO::GlobalDriftControl"
+  title: "GlobalDriftControl"
+  revision: 1
+sources: 
+  icd: 
+    document: "UMAA-SPEC-MOICD"
+    version: "6.0"
+    clauses: 
+      - "6.1.3"
+      - "6.1.3.1"
+      - "6.1.3.2"
+      - "6.1.3.3"
+      - "6.1.3.4"
+    originalSha256: null
+    reference: 
+      kind: "secondary-transcription"
+      revision: "ecb923646e7f3fe569b773c3946444e793d8a8be"
+  idl: 
+    release: "6.0"
+    bundleSha256: null
+documentation: 
+  summary: "Partial reviewed mapping, not the full original ICD. No original prose, tables, figures, official Key or QoS are asserted."
+  sections: 
+    - clause: "6.1.3"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+    - clause: "6.1.3.1"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+    - clause: "6.1.3.2"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+    - clause: "6.1.3.3"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+    - clause: "6.1.3.4"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+  tables: []
+  figures: []
+spec: 
+  topics: 
+    topic01: 
+      catalogId: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType"
+      idlType: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType"
+      ddsTopicName: null
+      role: "ack"
+      direction: "provider-to-consumer"
+      keyFields: null
+      qosProfileRef: null
+    topic02: 
+      catalogId: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType"
+      idlType: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType"
+      ddsTopicName: null
+      role: "status"
+      direction: "provider-to-consumer"
+      keyFields: null
+      qosProfileRef: null
+    topic03: 
+      catalogId: "UMAA::MO::GlobalDriftControl::GlobalDriftExecutionStatusReportType"
+      idlType: "UMAA::MO::GlobalDriftControl::GlobalDriftExecutionStatusReportType"
+      ddsTopicName: null
+      role: "execution-status"
+      direction: "provider-to-consumer"
+      keyFields: null
+      qosProfileRef: null
+    topic04: 
+      catalogId: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType"
+      idlType: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType"
+      ddsTopicName: null
+      role: "command"
+      direction: "consumer-to-provider"
+      keyFields: null
+      qosProfileRef: null
+  operations: 
+    reportGlobalDriftCommandAck: 
+      kind: "unresolved"
+      topicRef: null
+      sourceClause: null
+      description: "Operation is catalog-reviewed; exact operation-to-topic binding and behavior are not verified."
+    reportGlobalDriftCommandStatus: 
+      kind: "unresolved"
+      topicRef: null
+      sourceClause: null
+      description: "Operation is catalog-reviewed; exact operation-to-topic binding and behavior are not verified."
+    reportGlobalDriftExecutionStatus: 
+      kind: "unresolved"
+      topicRef: null
+      sourceClause: null
+      description: "Operation is catalog-reviewed; exact operation-to-topic binding and behavior are not verified."
+    setGlobalDrift: 
+      kind: "unresolved"
+      topicRef: null
+      sourceClause: null
+      description: "Operation is catalog-reviewed; exact operation-to-topic binding and behavior are not verified."
+  protocols: 
+    - id: "catalogPattern"
+      kind: "command-response"
+      rulesRef: "umaa://flows/command-response@6.0"
+      bindings: 
+        ack: 
+          - "topic01"
+        status: 
+          - "topic02"
+        execution_status: 
+          - "topic03"
+        command: 
+          - "topic04"
+  collections: []
+  specializations: []
+  requirements: []
+extensions: 
+  x-catalog: 
+    originalRecord: 
+      name: "UMAA::MO::GlobalDriftControl"
+      pattern: "command_response"
+      clauses: 
+        - "6.1.3"
+        - "6.1.3.1"
+        - "6.1.3.2"
+        - "6.1.3.3"
+        - "6.1.3.4"
+      icd_reviewed: true
+      provider_topics: 
+        - name: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType"
+          type: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType"
+          role: "ack"
+        - name: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType"
+          type: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType"
+          role: "status"
+        - name: "UMAA::MO::GlobalDriftControl::GlobalDriftExecutionStatusReportType"
+          type: "UMAA::MO::GlobalDriftControl::GlobalDriftExecutionStatusReportType"
+          role: "execution_status"
+      consumer_topics: 
+        - name: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType"
+          type: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType"
+          role: "command"
+      collection_topics: []
+      operations: 
+        - "reportGlobalDriftCommandAck"
+        - "reportGlobalDriftCommandStatus"
+        - "reportGlobalDriftExecutionStatus"
+        - "setGlobalDrift"
+      command_groups: 
+        - name: "GlobalDrift"
+          command: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType"
+          ack: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType"
+          status: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType"
+      official_idl_verified: false
+      dds_qos_verified: false
+      dds_behavior_verified: false
+      source: "UMAA-SPEC-MOICD 6.0, explicit operation/Topic mapping; public RTI transcription pinned ecb923646e7f3fe569b773c3946444e793d8a8be; QoS and runtime not independently verified"
+    collectionTypeRefs: []
+    commandGroups: 
+      - name: "GlobalDrift"
+        command: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandType"
+        ack: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandAckReportType"
+        status: "UMAA::MO::GlobalDriftControl::GlobalDriftCommandStatusType"
+    reviewedMapping: true
+    officialIdlVerified: false
+    ddsQosVerified: false
+    ddsBehaviorVerified: false

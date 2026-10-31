@@ -1,0 +1,97 @@
+# GENERATED; partial ICD catalog projection only, not an official wire contract.
+apiVersion: "umaa.dev/v1alpha1"
+kind: "Service"
+metadata: 
+  id: "UMAA::EO::EngineStatus"
+  title: "EngineStatus"
+  revision: 1
+sources: 
+  icd: 
+    document: "UMAA-SPEC-EOICD"
+    version: "6.0"
+    clauses: 
+      - "5.2.1"
+      - "6.1.7"
+      - "6.1.7.1"
+    originalSha256: null
+    reference: 
+      kind: "secondary-transcription"
+      revision: "ecb923646e7f3fe569b773c3946444e793d8a8be"
+  idl: 
+    release: "6.0"
+    bundleSha256: null
+documentation: 
+  summary: "Partial reviewed mapping, not the full original ICD. No original prose, tables, figures, official Key or QoS are asserted."
+  sections: 
+    - clause: "5.2.1"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+    - clause: "6.1.7"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+    - clause: "6.1.7.1"
+      title: "Catalog clause reference"
+      text: "Original ICD clause text not available in reviewed catalog."
+  tables: []
+  figures: []
+spec: 
+  topics: 
+    topic01: 
+      catalogId: "UMAA::EO::EngineStatus::EngineReportType"
+      idlType: "UMAA::EO::EngineStatus::EngineReportType"
+      ddsTopicName: null
+      role: "report"
+      direction: "provider-to-consumer"
+      keyFields: null
+      qosProfileRef: null
+  operations: 
+    queryEngine: 
+      kind: "unresolved"
+      topicRef: null
+      sourceClause: null
+      description: "Operation is catalog-reviewed; exact operation-to-topic binding and behavior are not verified."
+    reportEngine: 
+      kind: "unresolved"
+      topicRef: null
+      sourceClause: null
+      description: "Operation is catalog-reviewed; exact operation-to-topic binding and behavior are not verified."
+  protocols: 
+    - id: "catalogPattern"
+      kind: "request-reply"
+      mode: "without-query-data"
+      rulesRef: "umaa://flows/request-reply-without-query-data@6.0"
+      bindings: 
+        reports: 
+          - "topic01"
+  collections: []
+  specializations: []
+  requirements: []
+extensions: 
+  x-catalog: 
+    originalRecord: 
+      name: "UMAA::EO::EngineStatus"
+      pattern: "request_reply_without_query_data"
+      clauses: 
+        - "5.2.1"
+        - "6.1.7"
+        - "6.1.7.1"
+      icd_reviewed: true
+      provider_topics: 
+        - name: "UMAA::EO::EngineStatus::EngineReportType"
+          type: "UMAA::EO::EngineStatus::EngineReportType"
+          role: "report"
+      consumer_topics: []
+      collection_topics: []
+      operations: 
+        - "queryEngine"
+        - "reportEngine"
+      official_idl_verified: false
+      dds_qos_verified: false
+      dds_behavior_verified: false
+      source: "UMAA-SPEC-EOICD v6.0, Section 6.1; source document read but no full QoS audit"
+    collectionTypeRefs: []
+    commandGroups: []
+    reviewedMapping: true
+    officialIdlVerified: false
+    ddsQosVerified: false
+    ddsBehaviorVerified: false

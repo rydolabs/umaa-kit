@@ -1,0 +1,137 @@
+"""Regression: all reviewed UMAA 6.0 ICD mappings are represented exactly in YAML."""
+import copy
+import json
+from pathlib import Path
+import shutil
+import sys
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.generate_icd_yaml import build_service, expected_files, yaml_text, write_files
+from tools.umaa_service_contracts import _read_catalog
+from tools.validate_icd_yaml import ICDYamlError, strict_load, validate, require_dependencies
+
+
+class ICDYAMLCoverage(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.catalog, cls.digest = _read_catalog()
+        cls.files = expected_files(cls.catalog)
+        try:
+            cls.yaml, cls.jsonschema = require_dependencies()
+        except ICDYamlError as exc:
+            # General SDK jobs do not install optional YAML parser dependencies.
+            # The dedicated ICD workflow installs both and MUST execute all tests.
+            raise unittest.SkipTest(str(exc)) from exc
+        cls.root = ROOT / "contracts/umaa6"
+
+    def test_all_six_icds_services_topics_and_operations(self):
+        self.assertEqual(59, len(self.files))
+        self.assertEqual(6, sum(p.startswith("icd/") for p in self.files))
+        self.assertEqual(53, sum(p.startswith("services/") for p in self.files))
+        self.assertEqual(113, sum(len(s["provider_topics"]) + len(s["consumer_topics"])
+                                  for s in self.catalog["services"]))
+        self.assertEqual(131, sum(len(s["operations"]) for s in self.catalog["services"]))
+        self.assertEqual({"EO", "MM", "MO", "SA", "SEM", "SO"},
+                         {p.split("/")[1] for p in self.files if p.startswith("services/")})
+
+    def test_exact_generated_bytes_and_full_schema_validation(self):
+        write_files(self.root, self.files, check=True)
+        summary = validate(self.root)
+        self.assertEqual(6, summary["icds"])
+        self.assertEqual(53, summary["services"])
+        self.assertEqual(113, summary["topics"])
+        self.assertEqual(131, summary["operations"])
+        self.assertEqual("REVIEWED_MAPPING_ONLY", summary["status"])
+
+    def test_multiple_command_groups_are_lossless(self):
+        groups = [s for s in self.catalog["services"]
+                  if len(s.get("command_groups", [])) > 1]
+        self.assertEqual(5, len(groups))
+        for s in groups:
+            doc = self.yaml.safe_load(self.files["services/" +
+                                s["name"].split("::")[1] + "/" + s["name"].split("::")[2] + ".yaml"])
+            generated = doc["spec"]["protocols"]
+            self.assertEqual([g["name"] for g in s["command_groups"]],
+                             [g["id"] for g in generated])
+            by_alias = {alias: t["idlType"] for alias, t in doc["spec"]["topics"].items()}
+            for raw, made in zip(s["command_groups"], generated):
+                self.assertEqual(raw["command"], by_alias[made["bindings"]["command"]])
+                self.assertEqual(raw["ack"], by_alias[made["bindings"]["ack"]])
+                self.assertEqual(raw["status"], by_alias[made["bindings"]["status"]])
+
+    def test_all_queryless_services_are_subscriptions_not_rpc(self):
+        report = [s for s in self.catalog["services"]
+                  if s["pattern"] == "request_reply_without_query_data"]
+        self.assertEqual(35, len(report))
+        for s in report:
+            record = build_service(s, self.catalog)
+            self.assertEqual("request-reply", record["spec"]["protocols"][0]["kind"])
+            self.assertEqual("without-query-data", record["spec"]["protocols"][0]["mode"])
+            self.assertEqual(set(s["operations"]), set(record["spec"]["operations"]))
+            self.assertEqual([], record["spec"]["collections"])
+
+    def test_unresolved_collection_types_preserved_without_invented_structure(self):
+        s = next(x for x in self.catalog["services"]
+                 if x["name"] == "UMAA::EO::BatteryStatus")
+        record = build_service(s, self.catalog)
+        self.assertEqual(s["collection_topics"], record["spec"]["unresolvedCollectionTypes"])
+        self.assertEqual([], record["spec"]["collections"])
+        self.assertEqual([], record["spec"]["specializations"])
+
+    def test_yaml_rejects_duplicate_keys_and_aliases(self):
+        with tempfile.TemporaryDirectory() as d:
+            file = Path(d) / "invalid.yaml"
+            file.write_text('apiVersion: "umaa.dev/v1alpha1"\napiVersion: "evil"\n')
+            with self.assertRaises(ICDYamlError):
+                strict_load(file, self.yaml)
+            file.write_text('value: &anchor true\nother: *anchor\n')
+            with self.assertRaises(ICDYamlError):
+                strict_load(file, self.yaml)
+
+    def test_editing_catalog_projection_fails_closed(self):
+        with tempfile.TemporaryDirectory() as d:
+            target = Path(d) / "converted"
+            # Use actual generated bytes (not the generator) as baseline.
+            shutil.copytree(self.root, target)
+            path = target / "services/SA/GlobalPoseStatus.yaml"
+            source = path.read_text()
+            for mutated in (
+                source.replace("ddsTopicName: null", 'ddsTopicName: "invented"', 1),
+                source.replace("ddsQosVerified: false", "ddsQosVerified: true", 1),
+                source.replace("without-query-data", "with-query-data", 1),
+                source.replace("GlobalPoseReportType", "WrongReportType", 1),
+            ):
+                path.write_text(mutated)
+                with self.assertRaises(ICDYamlError):
+                    validate(target)
+            path.write_text(source)
+            self.assertEqual(53, validate(target)["services"])
+
+    def test_no_forged_source_hash_or_approval_flag(self):
+        for s in self.catalog["services"]:
+            doc = build_service(s, self.catalog)
+            self.assertIsNone(doc["sources"]["icd"]["originalSha256"])
+            self.assertIsNone(doc["sources"]["idl"]["bundleSha256"])
+            self.assertFalse(doc["verification"]["ddsBehaviorVerified"])
+            self.assertFalse(doc["verification"]["ddsQosVerified"])
+            for t in doc["spec"]["topics"].values():
+                self.assertIsNone(t["ddsTopicName"])
+                self.assertIsNone(t["keyFields"])
+                self.assertIsNone(t["qosProfileRef"])
+
+    def test_generated_yaml_deterministic(self):
+        s = self.catalog["services"][0]
+        doc = build_service(s, self.catalog)
+        a = yaml_text(doc)
+        b = yaml_text(copy.deepcopy(doc))
+        self.assertEqual(a, b)
+        self.assertEqual(doc, self.yaml.safe_load(a))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,41 @@
+name: UMAA ICD YAML contract (reviewed mapping, not conformance)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - 'catalog/**'
+      - 'contracts/umaa6/**'
+      - 'schemas/umaa-icd-v1alpha1.schema.json'
+      - 'tools/generate_icd_yaml.py'
+      - 'tools/validate_icd_yaml.py'
+      - 'tools/umaa_service_contracts.py'
+      - 'sdk/tests/test_icd_yaml_contract.py'
+      - '.github/workflows/icd-yaml-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  reviewed-icd-yaml:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned YAML/schema validators
+        run: python -m pip install PyYAML==6.0.2 jsonschema==4.23.0
+      - name: Verify committed YAML is reproducible
+        run: python -m tools.generate_icd_yaml --check
+      - name: Validate YAML syntax, schema and reviewed catalog parity
+        run: python -m tools.validate_icd_yaml
+      - name: Exercise corruption, missing semantics and duplicate YAML keys
+        run: python -m unittest discover -s sdk/tests -p test_icd_yaml_contract.py -v

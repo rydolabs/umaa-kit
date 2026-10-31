@@ -5,6 +5,19 @@ currently reviewed **six nonexperimental UMAA 6.0 ICD mappings**. This
 directory is **generated**; edit the reviewed JSON catalog and regenerate
 until YAML becomes the separately validated primary source in a later version.
 
+## Pinned readable reference documents
+
+- [EO ICD secondary Markdown transcription](https://github.com/rticommunity/rticonnextdds-usecases-umaa/blob/ecb923646e7f3fe569b773c3946444e793d8a8be/docs/UMAA-SPEC-EOICD.md)
+- [MM ICD secondary Markdown transcription](https://github.com/rticommunity/rticonnextdds-usecases-umaa/blob/ecb923646e7f3fe569b773c3946444e793d8a8be/docs/UMAA-SPEC-MMICD.md)
+- [MO ICD secondary Markdown transcription](https://github.com/rticommunity/rticonnextdds-usecases-umaa/blob/ecb923646e7f3fe569b773c3946444e793d8a8be/docs/UMAA-SPEC-MOICD.md)
+- [SA ICD secondary Markdown transcription](https://github.com/rticommunity/rticonnextdds-usecases-umaa/blob/ecb923646e7f3fe569b773c3946444e793d8a8be/docs/UMAA-SPEC-SAICD.md)
+- [SEM ICD secondary Markdown transcription](https://github.com/rticommunity/rticonnextdds-usecases-umaa/blob/ecb923646e7f3fe569b773c3946444e793d8a8be/docs/UMAA-SPEC-SEMICD.md)
+- [SO ICD secondary Markdown transcription](https://github.com/rticommunity/rticonnextdds-usecases-umaa/blob/ecb923646e7f3fe569b773c3946444e793d8a8be/docs/UMAA-SPEC-SOICD.md)
+
+These are the **public secondary transcriptions**, not the authoritative
+AUVSI original documents. Their content is linked for human review and
+is not copied wholesale into this generated repository mapping.
+
 ## What was converted
 
 | ICD | Reviewed Service sections | Exact Topic/IDL identities | Operation names |

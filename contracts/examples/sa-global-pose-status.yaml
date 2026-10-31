@@ -1,0 +1,62 @@
+# Draft reviewed mapping, NOT an official UMAA 6.0 wire binding.
+apiVersion: umaa.dev/v1alpha1
+kind: Service
+metadata:
+  id: UMAA::SA::GlobalPoseStatus
+  title: Global Pose Status
+  revision: 1
+
+sources:
+  icd:
+    document: UMAA-SPEC-SAICD
+    version: "6.0"
+    clauses: ["6.1.6", "6.1.6.1"]
+    originalSha256: null
+    reference:
+      kind: secondary-transcription
+      revision: ecb923646e7f3fe569b773c3946444e793d8a8be
+  idl:
+    release: "6.0"
+    bundleSha256: null
+
+documentation:
+  summary: >
+    GlobalPoseStatus provides GlobalPoseReportType on a report Topic.
+    This is an editorial summary, not a verbatim official ICD quotation.
+  sections:
+    - clause: "6.1.6"
+      title: GlobalPoseStatus
+      text: "Service definition; consult the pinned original ICD for complete normative content."
+  tables: []
+  figures: []
+
+spec:
+  topics:
+    poseReport:
+      catalogId: UMAA::SA::GlobalPoseStatus::GlobalPoseReportType
+      idlType: UMAA::SA::GlobalPoseStatus::GlobalPoseReportType
+      ddsTopicName: null
+      role: report
+      direction: provider-to-consumer
+      keyFields: null
+      qosProfileRef: null
+
+  operations:
+    reportGlobalPose:
+      kind: publish
+      topicRef: poseReport
+      sourceClause: "6.1.6.1"
+
+  protocols:
+    - id: poseReportRequest
+      kind: request-reply
+      mode: without-query-data
+      rulesRef: umaa://flows/request-reply-without-query-data@6.0
+      bindings:
+        reports: [poseReport]
+
+  collections: []
+  specializations: []
+  requirements: []
+
+extensions: {}

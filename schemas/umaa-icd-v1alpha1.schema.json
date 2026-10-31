@@ -302,13 +302,15 @@
                         "collection-metadata",
                         "collection-element",
                         "generalization",
-                        "specialization"
+                        "specialization",
+                        "collection-type"
                       ]
                     },
                     "direction": {
                       "enum": [
                         "provider-to-consumer",
-                        "consumer-to-provider"
+                        "consumer-to-provider",
+                        "not-a-dds-topic"
                       ]
                     },
                     "keyFields": {
@@ -368,6 +370,7 @@
                         "dispose",
                         "subscribe",
                         "update",
+                        "unresolved",
                         "unresolved"
                       ]
                     },

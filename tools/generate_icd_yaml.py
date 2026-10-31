@@ -149,9 +149,14 @@ def build_protocols(service: dict, by_type: dict[str, str]) -> list[dict]:
 
 
 def service_clause(service: dict) -> str:
-    """Use the actual 5.1.N or 6.1.N service heading, not a generic chapter."""
-    headings = [clause for clause in service["clauses"]
-                if __import__("re").fullmatch(r"(?:5|6)\\.1\\.\\d+", clause)]
+    """Prefer service section 6.1.N when present; otherwise 5.1.N."""
+    import re
+
+    headings = [c for c in service["clauses"]
+                if re.fullmatch(r"6\.1\.\d+", c)]
+    if not headings:
+        headings = [c for c in service["clauses"]
+                    if re.fullmatch(r"5\.1\.\d+", c)]
     if len(headings) != 1:
         raise ValueError("ambiguous or missing service section: " + service["name"])
     return headings[0]

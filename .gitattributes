@@ -1,0 +1,8 @@
+# Ensure catalog SHA-256 and generated YAML are identical on Windows and Linux.
+# Windows core.autocrlf must not rewrite source-provenance bytes.
+catalog/*.json text eol=lf
+contracts/umaa6/** text eol=lf
+schemas/umaa-icd-v1alpha1.schema.json text eol=lf
+tools/generate_icd_yaml.py text eol=lf
+tools/validate_icd_yaml.py text eol=lf
+sdk/tests/test_icd_yaml_contract.py text eol=lf

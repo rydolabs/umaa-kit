@@ -21,7 +21,12 @@ class ICDYAMLCoverage(unittest.TestCase):
     def setUpClass(cls):
         cls.catalog, cls.digest = _read_catalog()
         cls.files = expected_files(cls.catalog)
-        cls.yaml, cls.jsonschema = require_dependencies()
+        try:
+            cls.yaml, cls.jsonschema = require_dependencies()
+        except ICDYamlError as exc:
+            # General SDK jobs do not install optional YAML parser dependencies.
+            # The dedicated ICD workflow installs both and MUST execute all tests.
+            raise unittest.SkipTest(str(exc)) from exc
         cls.root = ROOT / "contracts/umaa6"
 
     def test_all_six_icds_services_topics_and_operations(self):

@@ -74,6 +74,9 @@ int main(int argc,char** argv){
   const UmaaDdsTopicV1 topic{"demo/BatteryStatus","demo:battery-v1",
                              "demo-reliable",UMAA_DDS_CAP_RELIABLE};
   must_fail([&]{auto* w=domain->writer(topic,writer);domain->close_writer(w);});
+  UmaaDdsTopicV1 requires_ordered=topic;
+  requires_ordered.required_features|=UMAA_DDS_CAP_ORDERED_ACCESS;
+  must_fail([&]{auto* w=domain->writer(requires_ordered,writer);domain->close_writer(w);});
  }
  std::cout<<"PASS shared QoS contract, constraints, compatibility and ABI isolation\n";
 }

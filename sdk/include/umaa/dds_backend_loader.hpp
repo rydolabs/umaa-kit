@@ -65,9 +65,13 @@ public:
                  const qos::Requirements& requirements={}) {
       validate(topic,true); qos::validate(policy,requirements);
       if(!qos_api_)throw std::runtime_error("DDS backend lacks explicit QoS extension");
-      if((topic.required_features&UMAA_DDS_CAP_RELIABLE) &&
-         policy.reliability!=qos::Reliability::reliable)
-        throw std::invalid_argument("reviewed topic requires reliable DDS endpoint");
+      if(((topic.required_features&UMAA_DDS_CAP_RELIABLE) &&
+          policy.reliability!=qos::Reliability::reliable) ||
+         ((topic.required_features&UMAA_DDS_CAP_ORDERED_ACCESS) &&
+          !policy.ordered_access) ||
+         ((topic.required_features&UMAA_DDS_CAP_COHERENT_GROUP) &&
+          !policy.coherent_access))
+        throw std::invalid_argument("reviewed topic requires unavailable QoS policy");
       const auto needed=qos::required_capabilities(policy)|topic.required_features;
       if((qos_api_->capabilities & needed)!=needed)
         throw std::runtime_error("DDS backend lacks required QoS capability");

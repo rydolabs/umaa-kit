@@ -4,7 +4,9 @@ on:
   push:
     paths:
       - '.github/workflows/dds-netns.yml'
-      - 'dds/cyclone/**'
+      - 'tests/integration/cyclone/**'
+      - 'dds-backends/cyclone/include/**'
+      - 'tests/fixtures/idl/**'
       - 'simulator/dds/**'
       - 'tools/dds_netns.sh'
       - 'tools/official_idl_compile.py'
@@ -19,7 +21,9 @@ on:
   pull_request:
     paths:
       - '.github/workflows/dds-netns.yml'
-      - 'dds/cyclone/**'
+      - 'tests/integration/cyclone/**'
+      - 'dds-backends/cyclone/include/**'
+      - 'tests/fixtures/idl/**'
       - 'simulator/dds/**'
       - 'tools/dds_netns.sh'
       - 'tools/official_idl_compile.py'
@@ -166,7 +170,7 @@ jobs:
       - name: Build synthetic and official DDS binaries
         shell: bash
         run: |
-          cmake -S dds/cyclone -B build/netns-dds -DCMAKE_BUILD_TYPE=Debug -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/umaa-battery-types" -DUMAA_ENGINE_GENERATED_ROOT="$RUNNER_TEMP/umaa-engine-types" -DUMAA_PROBE_GENERATED_ROOT="$RUNNER_TEMP/umaa-probe-types"
+          cmake -S tests/integration/cyclone -B build/netns-dds -DCMAKE_BUILD_TYPE=Debug -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/umaa-battery-types" -DUMAA_ENGINE_GENERATED_ROOT="$RUNNER_TEMP/umaa-engine-types" -DUMAA_PROBE_GENERATED_ROOT="$RUNNER_TEMP/umaa-probe-types"
           cmake --build build/netns-dds --parallel 2
       - name: Existing same-network DDS process tests (regression)
         run: ctest --test-dir build/netns-dds --output-on-failure -V

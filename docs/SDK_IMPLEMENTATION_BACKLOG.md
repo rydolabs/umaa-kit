@@ -28,7 +28,7 @@ networks and RTI validation are future-only, not present blockers.
 - `sdk/include/umaa/internal/dds_backend.h` — exact stable C backend ABI
 - `sdk/include/umaa/module_api_v2.h` — user Component module ABI
 - `sdk/include/umaa/component.hpp` and `application.hpp` — minimal public C++ API
-- `dds/vendors/<vendor>/` — all vendor-specific headers, compiler and TypeSupport
+- `dds-backends/<vendor>/` — all vendor-specific headers, compiler and TypeSupport
 - `sdk/tests/test_report_publisher_v2.cpp` — multikey, persistent writer, resource ownership
 - `.github/workflows/sdk-dds-vendor-parity.yml` — identical binaries against two DDS plugins
 
@@ -200,7 +200,7 @@ GROUP-coherent and ordered access.
 
 ## 2026-10-29 genuine DDS synthetic Command vertical slice
 
-The new `dds/cyclone/idl/DemoCommandEvent.idl` fixture and two **separate**
+The new `tests/fixtures/idl/DemoCommandEvent.idl` fixture and two **separate**
 Command backend plugins (Cyclone DDS and Fast DDS) connect the common
 Component business handler through `CommandEngine` and the DDS Backend
 Facade. Independent-process subscriber verification requires exactly four

@@ -16,7 +16,7 @@ jobs:
           sudo apt-get install -y libfastrtps-dev libfastcdr-dev fastddsgen
           dpkg-query -W libfastrtps-dev fastddsgen
       - name: Configure Fast DDS plugin
-        run: cmake -S dds/vendors/fastdds -B build/sdk-fastdds -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S dds-backends/fastdds -B build/sdk-fastdds -DCMAKE_BUILD_TYPE=Release
       - name: Build plugin, device module, and consumer
         run: cmake --build build/sdk-fastdds --parallel 2
       - name: Execute independent-process DDS real wire test

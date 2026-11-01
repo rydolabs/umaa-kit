@@ -9,6 +9,8 @@ add_test(NAME umaa_component_module_v2_test COMMAND umaa_component_module_v2_tes
   "$<TARGET_FILE:umaa_demo_vehicle_v2>")
 add_executable(umaa_dds_backend_abi_test tests/test_dds_backend_abi.cpp)
 target_link_libraries(umaa_dds_backend_abi_test PRIVATE UMAA::Core ${CMAKE_DL_LIBS})
+add_test(NAME umaa_qos_v1_fallback_reject
+  COMMAND umaa_qos_policy_test "$<TARGET_FILE:umaa_mock_dds_backend>")
 add_test(NAME umaa_dds_backend_abi_test COMMAND umaa_dds_backend_abi_test
   "$<TARGET_FILE:umaa_mock_dds_backend>")
 add_executable(umaa_application_facade_test tests/test_application_facade.cpp)

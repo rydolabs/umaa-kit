@@ -1,0 +1,179 @@
+name: Official UMAA 6.0 source → ICD YAML → Cyclone DDS runner verification
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/official-idl-runner-integration.yml'
+      - 'tools/official_icd_evidence.py'
+      - 'tools/official_icd_overlay.py'
+      - 'tools/official_idl_coverage.py'
+      - 'tools/official_idl_compile.py'
+      - 'contracts/**'
+  push:
+    paths:
+      - '.github/workflows/official-idl-runner-integration.yml'
+      - 'tools/official_icd_evidence.py'
+      - 'tools/official_icd_overlay.py'
+      - 'tools/official_idl_coverage.py'
+      - 'tools/official_idl_compile.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  official-types-and-wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      UMAA_IDL_SHA256: 15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08
+      UMAA_IDL_URL: https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl-with-exp-services.zip
+    steps:
+      - name: Checkout sources (no official IDL in repo)
+        uses: actions/checkout@v4
+
+      - name: Install canonical YAML validators and Cyclone DDS compiler
+        run: |
+          python3 -m pip install --disable-pip-version-check 'PyYAML==6.0.2' 'jsonschema==4.23.0'
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev
+
+      - name: Download original AUVSI public-release ZIP; enforce uploaded-source SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 3 \
+            --connect-timeout 20 --max-time 120 "$UMAA_IDL_URL" \
+            --output "$RUNNER_TEMP/umaa-6.0-with-exp.zip"
+          printf '%s  %s\n' "$UMAA_IDL_SHA256" "$RUNNER_TEMP/umaa-6.0-with-exp.zip" | sha256sum --check
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from tools.official_icd_evidence import inspected_zip
+          path = Path(os.environ["RUNNER_TEMP"]) / "umaa-6.0-with-exp.zip"
+          with inspected_zip(path) as z:
+              assert z.testzip() is None, "official ZIP CRC failure"
+              idls = [n for n in z.namelist() if n.endswith(".idl")]
+              assert len(idls) == 594, f"unexpected AUVSI IDL count {len(idls)}"
+              assert "LICENSE" in z.namelist()
+              print("OFFICIAL_IDL_AUTHENTICATED", len(idls), "IDL files; LICENSE included")
+          PY
+
+      - name: Verify all reviewed Service Topic/Key declarations and IDL import graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m tools.official_icd_evidence \
+            --zip "$RUNNER_TEMP/umaa-6.0-with-exp.zip" \
+            --yaml-root contracts/umaa6 \
+            --expect-sha256 "$UMAA_IDL_SHA256" \
+            --out "$RUNNER_TEMP/official-idl-evidence.json"
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          d=json.loads((Path(os.environ["RUNNER_TEMP"])/"official-idl-evidence.json").read_text())
+          assert d["status"]=="PASS" and not d["issues"]
+          assert d["servicesAudited"]==53 and d["topicsAudited"]==113
+          assert d["unresolvedCollectionTypesAudited"]==1
+          assert d["archiveIntegrity"]["idlFiles"]==594
+          assert d["archiveIntegrity"]["idlImportReferences"]==1705
+          assert d["approvedDdsQos"] is False
+          assert d["approvedOperationSemantics"] is False
+          print("OFFICIAL_UMAA_SOURCE_AUDIT_PASS", d["servicesAudited"], "services,", d["topicsAudited"], "Topics")
+          PY
+
+      - name: Generate strict-schema YAML candidates without approving unknown QoS/Operation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m tools.official_icd_overlay \
+            --zip "$RUNNER_TEMP/umaa-6.0-with-exp.zip" \
+            --yaml-root contracts/umaa6 \
+            --expect-sha256 "$UMAA_IDL_SHA256" \
+            --out-root "$RUNNER_TEMP/source-backed-candidates"
+          python3 - <<'PY'
+          import os,json
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"])/"source-backed-candidates"
+          s=json.loads((root/"source-evidence-summary.json").read_text())
+          assert s["services"]==53 and s["directTopicTypes"]==113 and s["unresolvedCollectionTypes"]==1
+          assert s["approvedDdsQos"] is False and s["approvedOperations"] is False
+          assert len(list(root.glob("services/*/*.yaml")))==53
+          print("OFFICIAL_UMAA_YAML_CANDIDATES_PASS", s["services"])
+          PY
+
+      - name: Extract validated source only to ephemeral Runner temp
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from tools.official_icd_evidence import inspected_zip
+          tmp=Path(os.environ["RUNNER_TEMP"])
+          root=tmp/"official-idl"
+          root.mkdir()
+          with inspected_zip(tmp/"umaa-6.0-with-exp.zip") as z:
+              assert z.testzip() is None
+              z.extractall(root)
+          print("OFFICIAL_UMAA_SOURCE_EXTRACTED_TEMP_ONLY")
+          PY
+
+      - name: Generate and C-compile every official core and experimental IDL TypeSupport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/official_idl_coverage.py \
+            --root "$RUNNER_TEMP/official-idl" \
+            --output "$RUNNER_TEMP/all-typesupport" \
+            --minimum-idls 594
+          python3 - <<'PY'
+          import os,json
+          from pathlib import Path
+          s=json.loads((Path(os.environ["RUNNER_TEMP"])/"official_idl_coverage.json").read_text())
+          assert s["input_idl_files"]==594 and s["idl_generated"]==594
+          assert s["generated_c_files"]==594 and s["c_compiled"]==594
+          assert s["failures"]==0
+          print("OFFICIAL_UMAA_594_TYPESUPPORT_COMPILE_PASS")
+          PY
+
+      - name: Build official Battery and Engine transitive TypeSupport
+        shell: bash
+        run: |
+          set -euo pipefail
+          for target in UMAA/EO/BatteryStatus/BatteryReportType.idl; do
+            python3 tools/official_idl_compile.py \
+              --root "$RUNNER_TEMP/official-idl" \
+              --out "$RUNNER_TEMP/battery-typesupport" \
+              --source "$target"
+          done
+          for target in \
+              UMAA/EO/EngineControl/EngineCommandType.idl \
+              UMAA/EO/EngineControl/EngineCommandStatusType.idl \
+              UMAA/EO/EngineControl/EngineCommandAckReportType.idl; do
+            python3 tools/official_idl_compile.py \
+              --root "$RUNNER_TEMP/official-idl" \
+              --out "$RUNNER_TEMP/engine-typesupport" \
+              --source "$target"
+          done
+
+      - name: Compile real Cyclone DDS producer and independent consumers
+        shell: bash
+        run: |
+          cmake -S dds/cyclone -B "$RUNNER_TEMP/official-wire-build" \
+            -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/battery-typesupport" \
+            -DUMAA_ENGINE_GENERATED_ROOT="$RUNNER_TEMP/engine-typesupport" \
+            -DCMAKE_BUILD_TYPE=Debug
+          cmake --build "$RUNNER_TEMP/official-wire-build" --parallel 2
+
+      - name: Prove official real DDS Report / Command / update flow over separate processes
+        shell: bash
+        run: |
+          ctest --test-dir "$RUNNER_TEMP/official-wire-build" \
+            -R 'official_umaa_(battery_dds_wire|engine_command_flow|engine_update_flow)' \
+            --output-on-failure -V
+
+      - name: Confirmation — no original AUVSI files were committed or uploaded
+        if: success()
+        run: |
+          echo "RUNNER_OFFICIAL_UMAA_SOURCE_AND_WIRE_PASS"
+          echo "Original AUVSI IDL kept exclusively under RUNNER_TEMP."
+          echo "Source candidates and generated TypeSupport are NOT uploaded as artifacts."

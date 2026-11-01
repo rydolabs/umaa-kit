@@ -15,9 +15,9 @@ jobs:
           sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
       - name: Build real vendor TypeSupport plugins and one client binary
         run: |
-          cmake -S dds/vendors/cyclone -B build/mix-col-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake -S dds-backends/cyclone -B build/mix-col-cyclone -DCMAKE_BUILD_TYPE=Release
           cmake --build build/mix-col-cyclone --parallel 2
-          cmake -S dds/vendors/fastdds -B build/mix-col-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake -S dds-backends/fastdds -B build/mix-col-fastdds -DCMAKE_BUILD_TYPE=Release
           cmake --build build/mix-col-fastdds --parallel 2
       - name: Test all four actual cross-vendor directions with strict Dispose and ACK
         run: |

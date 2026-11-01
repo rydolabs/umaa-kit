@@ -8,7 +8,7 @@ It must never modify user Component modules, `CommandEngine`,
 
 ## Steps
 
-1. Add `dds/vendors/<new-vendor>/` and keep SDK libraries, generated
+1. Add `dds-backends/<new-vendor>/` and keep SDK libraries, generated
    middleware headers, vendor QoS objects, DDS entities, and official
    TypeSupport in this adapter only. Keep `UMAA::Core` and business modules
    vendor-header-free.
@@ -42,7 +42,7 @@ It must never modify user Component modules, `CommandEngine`,
 
 ## Development targets and evidence
 
-- `dds/vendors/cyclone/CMakeLists.txt` and `fastdds/CMakeLists.txt`
+- `dds-backends/cyclone/CMakeLists.txt` and `dds-backends/fastdds/CMakeLists.txt`
   implement synthetic Report, Command and Set/List single-sample
   Collection plugins with real vendor TypeSupport.
 - `sdk/tests/real_dds_typed_command_server_cli.cpp`,
@@ -63,3 +63,13 @@ It must never modify user Component modules, `CommandEngine`,
 `rtiddsgen` compiler, independent Linux/Windows Runner access, reviewed
 official TypeSupport+Key/Policy mapping and published legal deployment
 requirements. There is no RTI pass or fabricated placeholder adapter.
+
+## Explicit QoS extension
+If a new vendor supports user-configurable QoS, export
+`umaa_get_dds_qos_backend_v2(uint32_t)` and implement the separate
+`UmaaDdsQosBackendV2` table in addition to unchanged V1. Use the values
+from `UmaaDdsQosV2` for **both** Reader and Writer, and apply partition
+and Presentation to Publisher/Subscriber rather than to a DDS Topic or
+DataWriter. Do not advertise an untested ordered/coherent capability;
+unsupported mandatory policies must fail, not silently degrade.
+See [source-anchored QoS design](../docs/QOS_ARCHITECTURE.md).

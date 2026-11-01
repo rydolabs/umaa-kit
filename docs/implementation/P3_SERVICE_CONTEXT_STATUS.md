@@ -6,7 +6,7 @@
   113-Topic** `sdk/include/umaa/reviewed_service_registry.hpp` using the reviewed
   six-ICD Catalog. The script verifies role, naming, duplicate identities, and
   *explicit* QoS review flags. `--check` compares byte-exact output in CI.
-- `dds/cyclone/include/umaa/cyclone_service_context.hpp` owns the Cyclone C
+- `dds-backends/cyclone/include/umaa/cyclone_service_context.hpp` owns the Cyclone C
   participant, checks the service/Topic/type/direction **before** creating DDS
   topics, and deletes the participant when closed or destroyed. Default mode
   rejects any Topic with `dds_qos_verified=false`. Only an **explicitly requested

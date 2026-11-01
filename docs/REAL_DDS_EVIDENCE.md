@@ -14,7 +14,7 @@
 
 ## Independence boundary
 
-`sdk/tests/modules/battery.cpp` is a **user-logic prototype module**; `dds/cyclone/src/official_battery_publisher.cpp` is **handwritten experimental host glue** using generated official TypeSupport. It loads the plugin, creates the actual DDS writer and publishes an optional `chargeRemaining` value. `simulator/dds/official_battery_subscriber.c` is an independently compiled executable that does **not** import SDK-internal state machines. It validates two received data samples and an instance Dispose event.
+`sdk/tests/modules/battery.cpp` is a **user-logic prototype module**; `tests/integration/cyclone/src/official_battery_publisher.cpp` is **handwritten experimental host glue** using generated official TypeSupport. It loads the plugin, creates the actual DDS writer and publishes an optional `chargeRemaining` value. `simulator/dds/official_battery_subscriber.c` is an independently compiled executable that does **not** import SDK-internal state machines. It validates two received data samples and an instance Dispose event.
 
 ## Exclusions (NOT proven)
 

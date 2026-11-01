@@ -47,7 +47,27 @@ int main(int argc,char** argv){
    auto report=app.consume<BatteryStatus>();
    assert(report.poll()==0); // valid remote-only client config
  }
+ write(config(false)+
+   "qos_profiles:\n  demo-reliable:\n    reliability: reliable\n"
+   "    durability: volatile\n    history: keep_last\n    depth: 8\n"
+   "    presentation_scope: instance\n    ordered_access: false\n"
+   "    partition: fleet-a\n");
+ {
+   const auto parsed=umaa::internal::RuntimeConfig::read(path.string());
+   assert(parsed.qos_profiles.size()==1);
+   const auto& q=parsed.qos_profiles.at("demo-reliable");
+   assert(q.depth==8 && q.partition=="fleet-a");
+   assert(q.reliability==umaa::qos::Reliability::reliable);
+ }
  const std::vector<std::string> rejected={
+   config(false)+"qos_profiles:\n  demo-reliable:\n    depth: 0\n",
+   config(false)+"qos_profiles:\n  demo-reliable:\n    depth: 8\n    depth: 9\n",
+   config(false)+"qos_profiles:\n  demo-reliable:\n    ordered_access: true\n",
+   config(false)+"qos_profiles:\n  demo-reliable:\n    reliability: not-reliable\n",
+   config(false)+"qos_profiles:\n  demo-reliable:\n    bogus: value\n",
+   config(false)+"qos_profiles:\n  demo-reliable:\n    depth: 8\n  demo-reliable:\n",
+   config(false)+"qos_profiles:\n    depth: 8\n",
+
    "middleware:\n  backend: fake\n  domain_id: 999\n",
    "middleware:\n  backend: fake\n  backend: fake\n  domain_id: 81\n",
    "middleware:\n  backend: fake\n  domain_id: abc\n",

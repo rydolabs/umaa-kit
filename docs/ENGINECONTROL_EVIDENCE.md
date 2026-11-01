@@ -9,7 +9,7 @@
 2. Cyclone `idlc` generates TypeSupport from **actual** `EngineCommandType`, `EngineCommandStatusType`, `EngineCommandAckReportType` and their transitive dependencies.
 3. `tools/generate_official_engine_plugin.py` verifies the official generated `state`, `source`, `destination`, `sessionID`, `timeStamp` layout and enum `OFF=0/RUN=1` before generating the typed `EngineControlHandler` interface and versioned C module glue. Unexpected schema expansions are hard failures.
 4. The **only user-owned behavior file** in the demo is `sdk/examples/engine_control_user_handler.cpp`. The SDK generator does not overwrite it.
-5. `dds/cyclone/src/official_engine_host.cpp` loads the generated SO/DLL module and owns the DDS entities, C++ common `CommandEngine`, Command→Ack/Status mapping, and session clean-up.
+5. `tests/integration/cyclone/src/official_engine_host.cpp` loads the generated SO/DLL module and owns the DDS entities, C++ common `CommandEngine`, Command→Ack/Status mapping, and session clean-up.
 6. The independently compiled `simulator/dds/official_engine_simulator.c` shares **no SDK code**. It sends official DDS Command instances and verifies status reasons, Ack payload, Command Dispose, and Status/Ack keyed instance disposal.
 
 ## GitHub-hosted acceptance runs

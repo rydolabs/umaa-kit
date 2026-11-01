@@ -90,6 +90,8 @@ class SourceAuditTest(unittest.TestCase):
         self.assertEqual("PASS", result["status"], result["issues"])
         self.assertEqual(2, result["servicesAudited"])
         self.assertEqual(4, result["topicsAudited"])
+        self.assertTrue(result["archiveIntegrity"]["allIdlImportsPresent"])
+        self.assertEqual(4, result["archiveIntegrity"]["idlFiles"])
         self.assertEqual(1, result["unresolvedCollectionTypesAudited"])
         self.assertEqual(["listID", "elementID"], result["services"][0]["unresolvedCollectionTypes"][0]["keyFields"])
         self.assertFalse(result["approvedDdsQos"])
@@ -110,6 +112,13 @@ class SourceAuditTest(unittest.TestCase):
         result = audit(self.zip_path, [path])
         self.assertEqual("CONFLICT", result["status"])
         self.assertEqual(2, len(result["issues"]))
+
+    def test_missing_import_in_external_zip_is_rejected(self):
+        source = "UMAA/EO/EngineControl/EngineCommandType.idl"
+        self.blobs[source] = b'#include "UMAA/Common/MissingType.idl"\n' + self.blobs[source]
+        self.rezip()
+        with self.assertRaisesRegex(SourceError, "transitive IDL import"):
+            audit(self.zip_path, [self.yaml("EngineControl")])
 
     def test_forged_topic_missing_type_and_namespace_fail_closed(self):
         path = "UMAA/EO/BatteryStatus/BatteryReportType.idl"

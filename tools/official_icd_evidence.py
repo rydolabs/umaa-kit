@@ -70,6 +70,29 @@ def inspected_zip(path: Path):
     return archive
 
 
+INCLUDE_RE = re.compile(r'^\s*#\s*include\s*"([^"\r\n]+)"', re.M)
+
+
+def check_idl_imports(archive: zipfile.ZipFile) -> dict:
+    """Verify every local IDL dependency resolves within the supplied archive."""
+    names = set(archive.namelist())
+    inputs = sorted(n for n in names if n.endswith(".idl"))
+    edges = 0
+    for path in inputs:
+        try:
+            src = archive.read(path).decode("utf-8-sig")
+        except (UnicodeError, RuntimeError, zipfile.BadZipFile) as exc:
+            raise SourceError("invalid IDL source/import file: " + path) from exc
+        for rel in INCLUDE_RE.findall(src):
+            if (not rel.startswith("UMAA/") or "\\" in rel or
+                    any(part == ".." for part in PurePosixPath(rel).parts) or
+                    not rel.endswith(".idl") or rel not in names):
+                raise SourceError("missing or unsafe transitive IDL import: " + path + " => " + rel)
+            edges += 1
+    return {"idlFiles": len(inputs), "idlImportReferences": edges,
+            "allIdlImportsPresent": True}
+
+
 def source_type(archive: zipfile.ZipFile, fqtype: str) -> dict:
     if not TYPE_RE.fullmatch(fqtype) or not fqtype.startswith("UMAA::"):
         raise SourceError("unsupported source Type ID: " + str(fqtype))
@@ -131,6 +154,7 @@ def audit(archive_path: Path, service_paths: list[Path]) -> dict:
     issues = []
     names = set()
     with inspected_zip(archive_path) as archive:
+        imports = check_idl_imports(archive)
         for service_path in service_paths:
             doc, yaml_digest = load_service(service_path)
             service = doc["metadata"]["id"]
@@ -164,6 +188,7 @@ def audit(archive_path: Path, service_paths: list[Path]) -> dict:
     return {"reportVersion": 1, "status": "PASS" if not issues else "CONFLICT",
             "scope": "IDL Topic constant / @key declaration evidence only; NOT official runtime or compliance",
             "archiveSha256": sha(archive_path.read_bytes()),
+            "archiveIntegrity": imports,
             "servicesAudited": len(results), "topicsAudited": sum(len(s["topics"]) for s in results),
             "unresolvedCollectionTypesAudited": sum(len(s["unresolvedCollectionTypes"]) for s in results),
             "issues": sorted(issues), "services": results,

@@ -11,7 +11,7 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-INPUT = ROOT / "contracts/umaa6/qos/eo-large-collections.yaml"
+INPUT = ROOT / "contracts/qos/umaa6/eo-large-collections.yaml"
 OUTPUT = ROOT / "sdk/include/umaa/generated/umaa6_qos_requirements.hpp"
 IDL = re.compile(r"UMAA(?:::[A-Za-z_]\w*){2,6}$")
 
@@ -62,7 +62,7 @@ def parse(path: Path) -> list[dict]:
 
 def render(entries: list[dict]) -> str:
     lines=[
-        "// GENERATED from contracts/umaa6/qos/eo-large-collections.yaml; DO NOT EDIT",
+        "// GENERATED from contracts/qos/umaa6/eo-large-collections.yaml; DO NOT EDIT",
         "// Verified EO ICD 6.0 §3.8.1 minimum; not an entire Service QoS profile.",
         "#pragma once",
         '#include "umaa/qos_policy.hpp"',

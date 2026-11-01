@@ -3,7 +3,9 @@
 #pragma once
 #include <cstdint>
 #include <chrono>
+#include "umaa/qos_policy.hpp"
 #include <memory>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #if defined(_WIN32)
@@ -64,6 +66,8 @@ public:
   // Module administration must be serialized by the host orchestrator.
   bool unload_component(const std::string& module_id);
   void load_backend(const std::string& filename, uint32_t domain_id);
+  // Configure before endpoints; an explicit profile MUST use the QoS extension.
+  void set_qos_profiles(const std::unordered_map<std::string,umaa::qos::Policy>& profiles);
   std::vector<std::string> services() const;
   std::unique_ptr<ReportSubscription> subscribe_report_fixture(const std::string& service,
      const std::string& topic,const std::string& schema,const std::string& qos);

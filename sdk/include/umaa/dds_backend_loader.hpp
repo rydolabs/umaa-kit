@@ -63,8 +63,11 @@ public:
     }
     void* writer(const UmaaDdsTopicV1& topic, const qos::Policy& policy,
                  const qos::Requirements& requirements={}) {
-      validate(topic); qos::validate(policy,requirements);
+      validate(topic,true); qos::validate(policy,requirements);
       if(!qos_api_)throw std::runtime_error("DDS backend lacks explicit QoS extension");
+      if((topic.required_features&UMAA_DDS_CAP_RELIABLE) &&
+         policy.reliability!=qos::Reliability::reliable)
+        throw std::invalid_argument("reviewed topic requires reliable DDS endpoint");
       const auto needed=qos::required_capabilities(policy)|topic.required_features;
       if((qos_api_->capabilities & needed)!=needed)
         throw std::runtime_error("DDS backend lacks required QoS capability");
@@ -95,11 +98,12 @@ public:
     void close_writer(void* w) { if (w) api_->close_writer(w); }
     void close_reader(void* r) { if (r) api_->close_reader(r); }
   private:
-    void validate(const UmaaDdsTopicV1& t) const {
+    void validate(const UmaaDdsTopicV1& t,bool extended=false) const {
       if (!t.topic_name || !*t.topic_name || !t.schema_id || !*t.schema_id ||
           !t.qos_profile || !*t.qos_profile)
         throw std::invalid_argument("DDS topic requires explicit reviewed schema and QoS");
-      if ((api_->capabilities & t.required_features) != t.required_features)
+      const uint64_t caps=extended&&qos_api_?qos_api_->capabilities:api_->capabilities;
+      if ((caps & t.required_features) != t.required_features)
         throw std::runtime_error("DDS vendor lacks mandatory capability");
     }
     const UmaaDdsBackendV1* api_;

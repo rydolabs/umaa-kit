@@ -238,8 +238,13 @@ public:
     auto config=internal::RuntimeConfig::read(config_path);
     Application app;
     app.use_backend(config.backend,config.domain_id);
+    app.host_->set_qos_profiles(config.qos_profiles);
     for(const auto& module:config.modules)app.load_component(module);
     return app;
+  }
+  void configure_qos_profiles(
+      const std::unordered_map<std::string,umaa::qos::Policy>& profiles) {
+    host_->set_qos_profiles(profiles);
   }
   void load_component(const std::string& path){host_->load_component(path);}
   // Cooperative in-process reload; not a crash-safe hot-upgrade.

@@ -171,7 +171,7 @@ jobs:
                *[str(p) for p in objs],"-lddsc","-o",str(executable)]
           subprocess.run(cmd,check=True)
           subprocess.run([str(executable)],check=True)
-          print("OFFICIAL_UMAA_NATIVE_DESCRIPTOR_LINK_AND_TOPIC_CREATE_PASS",
+          print("OFFICIAL_UMAA_NATIVE_DESCRIPTOR_LINK_AND_LOCAL_PROBE_PASS",
                 m["nativeDescriptorCount"],"types",len(objs),"dependency objects")
           PY
 

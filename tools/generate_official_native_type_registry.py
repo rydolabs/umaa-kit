@@ -34,7 +34,7 @@ extern "C" {
 typedef struct UmaaNativeTypeEvidenceV1 {
   const char *service_id;
   const char *idl_type;
-  const char *dds_topic_name;
+  const char *declared_idl_topic_constant; /* NOT an approved DDS runtime wire name */
   const char *key_fields;
   const char *source_idl_sha256;
   const dds_topic_descriptor_t *descriptor;
@@ -126,12 +126,14 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
         '  for(size_t i=0;i<umaa_native_type_count();i++){',
         '    const UmaaNativeTypeEvidenceV1 *entry=umaa_native_type_at(i);',
         '    if(!entry || !entry->descriptor || !entry->source_idl_sha256',
-        '       || strcmp(entry->dds_topic_name,entry->idl_type)) return 5;',
+        '       || strcmp(entry->declared_idl_topic_constant,entry->idl_type)) return 5;',
         '    if(umaa_native_type_lookup(entry->idl_type)!=entry) return 6;',
+        '    char probe_name[64];',
+        '    (void)snprintf(probe_name,sizeof(probe_name),"UMAA_TYPE_PROBE_%03zu",i);',
         '    dds_entity_t topic=dds_create_topic(participant,entry->descriptor,',
-        '                                    entry->dds_topic_name,NULL,NULL);',
-        '    if(topic<0) { fprintf(stderr,"UMAA_NATIVE_TOPIC_CREATE_FAIL type=%s topic=%s DDS=%s\\n",',
-        '       entry->idl_type,entry->dds_topic_name,dds_strretcode(-topic));',
+        '                                    probe_name,NULL,NULL);',
+        '    if(topic<0) { fprintf(stderr,"UMAA_NATIVE_PROBE_FAIL type=%s DDS=%s\\n",',
+        '       entry->idl_type,dds_strretcode(-topic));',
         '       dds_delete(participant); return 8; }',
         '    if(dds_delete(topic)<0){ dds_delete(participant); return 9; }',
         '  }',
@@ -156,6 +158,8 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
         "operationsApproved": False,
         "payloadCodecGenerated": False,
         "runtimeWireConformanceVerified": False,
+        "originalWireTopicNameVerified": False,
+        "probeTopicNames": "UMAA_TYPE_PROBE_<index> (non-normative, local TypeSupport check)",
         "disclaimer": "Native descriptor linkage only, not a full UMAA Component",
     }
     output.parent.mkdir(parents=True, exist_ok=True)

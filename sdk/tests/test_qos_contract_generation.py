@@ -11,6 +11,13 @@ if str(ROOT) not in sys.path:
 from tools.generate_qos_requirements import INPUT,OUTPUT,parse,render
 
 class QosContractGenerationTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            import yaml  # noqa: F401 - optional in the SDK's base Python CI
+        except ImportError as exc:
+            raise unittest.SkipTest("PyYAML needed only for dedicated QoS contract validation") from exc
+
     def test_generated_header_is_exact_and_source_reviewed(self):
         entries=parse(INPUT)
         self.assertEqual(1,len(entries))

@@ -144,3 +144,8 @@ The current deterministic generator keeps this mapping immutable; a
 separately reviewed source-ingestion integration is required before
 authoritative content can be safely emitted into canonical contracts.
 No synthetic fixtures are written to generated contracts.
+
+The canonical validator also rejects literal YAML `<<` merges and
+checks every explicit Operation/Protocol Topic reference against the
+Service Topic aliases. These are structural guards only, not a claim
+that the source catalog proves every operation's runtime behavior.

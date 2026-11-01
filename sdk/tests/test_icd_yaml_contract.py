@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 
 from tools.generate_icd_yaml import build_service, expected_files, yaml_text, write_files
 from tools.umaa_service_contracts import _read_catalog
-from tools.validate_icd_yaml import ICDYamlError, strict_load, validate, require_dependencies, validate_document_elements
+from tools.validate_icd_yaml import ICDYamlError, strict_load, validate, require_dependencies, validate_document_elements, validate_topic_references
 
 
 class ICDYAMLCoverage(unittest.TestCase):
@@ -48,6 +48,27 @@ class ICDYAMLCoverage(unittest.TestCase):
         self.assertEqual(113, summary["topics"])
         self.assertEqual(131, summary["operations"])
         self.assertEqual("REVIEWED_MAPPING_ONLY", summary["status"])
+
+    def test_rejects_dangling_explicit_topic_references(self):
+        baseline = self.yaml.safe_load(
+            self.files["services/SA/GlobalPoseStatus.yaml"])
+        validate_topic_references(baseline)
+        bad = copy.deepcopy(baseline)
+        bad["spec"]["operations"]["reportGlobalPose"]["topicRef"] = "missing"
+        with self.assertRaises(ICDYamlError):
+            validate_topic_references(bad)
+        bad = copy.deepcopy(baseline)
+        bad["spec"]["protocols"][0]["bindings"]["reports"] = ["missing"]
+        with self.assertRaises(ICDYamlError):
+            validate_topic_references(bad)
+
+    def test_yaml_rejects_explicit_merge_mapping(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "merge.yaml"
+            path.write_text("a:\\n  <<: {b: 1}\\n".replace("\\\\n", "\\n"),
+                            encoding="utf-8")
+            with self.assertRaises(ICDYamlError):
+                strict_load(path, self.yaml)
 
     def test_official_document_element_schema_and_source_consistency(self):
         # Synthetic in-memory fixture only; no official text/hash is asserted.

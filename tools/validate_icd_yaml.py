@@ -42,6 +42,9 @@ def strict_load(path: Path, yaml):
             return super().compose_node(parent, index)
 
         def construct_mapping(self, node, deep=False):
+            if any(key_node.tag == "tag:yaml.org,2002:merge" or
+                   key_node.value == "<<" for key_node, _ in node.value):
+                raise ICDYamlError("YAML merge keys are forbidden: " + str(path))
             self.flatten_mapping(node)
             keys = set()
             for key_node, _ in node.value:
@@ -59,6 +62,25 @@ def strict_load(path: Path, yaml):
     if not isinstance(doc, dict):
         raise ICDYamlError("YAML root must be a mapping: " + str(path))
     return doc
+
+
+def validate_topic_references(doc: dict) -> None:
+    """Reject dangling explicit references without inferring UMAA semantics."""
+    if doc["kind"] != "Service":
+        return
+    topics = doc["spec"]["topics"]
+    for name, operation in doc["spec"]["operations"].items():
+        ref = operation["topicRef"]
+        if ref is not None and ref not in topics:
+            raise ICDYamlError("dangling Operation->Topic reference: " + name)
+        if operation["kind"] == "unresolved" and ref is not None:
+            raise ICDYamlError("unreviewed Operation cannot bind a Topic: " + name)
+    for protocol in doc["spec"]["protocols"]:
+        for role, refs in protocol["bindings"].items():
+            for ref in refs if isinstance(refs, list) else [refs]:
+                if ref not in topics:
+                    raise ICDYamlError("dangling protocol->Topic reference: " +
+                                       protocol["id"] + "/" + role)
 
 
 def validate_document_elements(doc: dict) -> None:
@@ -134,6 +156,7 @@ def validate(root: Path = DEFAULT_OUT, catalog_path: Path = CATALOG,
         errors = sorted(validator.iter_errors(doc), key=lambda e: str(e.path))
         if errors:
             raise ICDYamlError(rel + ": schema error: " + str(errors[0]))
+        validate_topic_references(doc)
         validate_document_elements(doc)
         # Compare the semantic object AND serialized text, so no undocumented
         # alias, source upgrade, inferred type/QoS, or hand-edit can be accepted.

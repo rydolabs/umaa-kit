@@ -181,3 +181,10 @@ add_test(NAME umaa_fastdds_explicit_qos_real_wire
   "$<TARGET_FILE:umaa_dds_fastdds_demo>"
   "$<TARGET_FILE:umaa_fastdds_vehicle_demo>")
 set_tests_properties(umaa_fastdds_explicit_qos_real_wire PROPERTIES TIMEOUT 38)
+
+add_test(NAME umaa_fastdds_runtime_yaml_qos_real_wire
+  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_qos.py"
+  "$<TARGET_FILE:umaa_fastdds_qos_cli>"
+  "$<TARGET_FILE:umaa_dds_fastdds_demo>"
+  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>" runtime)
+set_tests_properties(umaa_fastdds_runtime_yaml_qos_real_wire PROPERTIES TIMEOUT 42)

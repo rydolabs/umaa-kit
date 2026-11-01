@@ -48,6 +48,13 @@ class ICDYAMLCoverage(unittest.TestCase):
         self.assertEqual(131, summary["operations"])
         self.assertEqual("REVIEWED_MAPPING_ONLY", summary["status"])
 
+    def test_legacy_parallel_projection_does_not_reappear(self):
+        # All catalog-derived YAML belongs to the deterministic canonical root.
+        for old_path in ("contracts/services", "contracts/icds"):
+            legacy = ROOT / old_path
+            self.assertFalse(legacy.exists() and list(legacy.rglob("*.yaml")),
+                             "duplicate YAML projection: " + old_path)
+
     def test_multiple_command_groups_are_lossless(self):
         groups = [s for s in self.catalog["services"]
                   if len(s.get("command_groups", [])) > 1]

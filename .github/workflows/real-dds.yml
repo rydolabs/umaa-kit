@@ -2,7 +2,9 @@ name: Cyclone DDS real-wire integration (synthetic IDL)
 on:
   push:
     paths:
-      - 'dds/cyclone/**'
+      - 'tests/integration/cyclone/**'
+      - 'dds-backends/cyclone/include/**'
+      - 'tests/fixtures/idl/**'
       - 'simulator/dds/**'
       - '.github/workflows/real-dds.yml'
   pull_request:

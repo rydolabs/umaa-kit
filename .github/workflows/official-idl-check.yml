@@ -4,7 +4,9 @@ on:
     paths:
       - '.github/workflows/official-idl-check.yml'
       - 'tools/official_idl_compile.py'
-      - 'dds/cyclone/**'
+      - 'tests/integration/cyclone/**'
+      - 'dds-backends/cyclone/include/**'
+      - 'tests/fixtures/idl/**'
       - 'simulator/dds/**'
       - 'sdk/include/umaa/command_engine.hpp'
   workflow_dispatch:

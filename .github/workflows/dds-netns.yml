@@ -4,7 +4,9 @@ on:
   push:
     paths:
       - '.github/workflows/dds-netns.yml'
-      - 'dds/cyclone/**'
+      - 'tests/integration/cyclone/**'
+      - 'dds-backends/cyclone/include/**'
+      - 'tests/fixtures/idl/**'
       - 'simulator/dds/**'
       - 'tools/dds_netns.sh'
       - 'tools/official_idl_compile.py'
@@ -19,7 +21,9 @@ on:
   pull_request:
     paths:
       - '.github/workflows/dds-netns.yml'
-      - 'dds/cyclone/**'
+      - 'tests/integration/cyclone/**'
+      - 'dds-backends/cyclone/include/**'
+      - 'tests/fixtures/idl/**'
       - 'simulator/dds/**'
       - 'tools/dds_netns.sh'
       - 'tools/official_idl_compile.py'

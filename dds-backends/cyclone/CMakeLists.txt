@@ -166,3 +166,16 @@ add_test(NAME umaa_cyclone_runtime_yaml_qos_real_wire
   "$<TARGET_FILE:umaa_dds_cyclone_demo>"
   "$<TARGET_FILE:umaa_cyclone_vehicle_component>" runtime)
 set_tests_properties(umaa_cyclone_runtime_yaml_qos_real_wire PROPERTIES TIMEOUT 42)
+
+add_test(NAME umaa_cyclone_transient_local_qos_real_wire
+  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_qos.py"
+  "$<TARGET_FILE:umaa_cyclone_qos_cli>"
+  "$<TARGET_FILE:umaa_dds_cyclone_demo>"
+  "$<TARGET_FILE:umaa_cyclone_vehicle_component>" transient)
+set_tests_properties(umaa_cyclone_transient_local_qos_real_wire PROPERTIES TIMEOUT 42)
+add_test(NAME umaa_cyclone_ordered_topic_qos_real_wire
+  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_qos.py"
+  "$<TARGET_FILE:umaa_cyclone_qos_cli>"
+  "$<TARGET_FILE:umaa_dds_cyclone_demo>"
+  "$<TARGET_FILE:umaa_cyclone_vehicle_component>" ordered)
+set_tests_properties(umaa_cyclone_ordered_topic_qos_real_wire PROPERTIES TIMEOUT 42)

@@ -62,9 +62,21 @@ int main(int argc,char** argv) {
   policy.history=umaa::qos::History::keep_last;
   policy.depth=8;
   policy.durability=umaa::qos::Durability::volatile_data;
+  if(argc==5 && std::string(argv[4])=="transient")
+    policy.durability=umaa::qos::Durability::transient_local;
+  if(argc==5 && std::string(argv[4])=="ordered"){
+    policy.presentation=umaa::qos::Presentation::topic;
+    policy.ordered_access=true;
+  }
   umaa::qos::Requirements requirements;
   requirements.reliability=umaa::qos::Reliability::reliable;
   requirements.minimum_history_depth=4;
+  if(policy.durability==umaa::qos::Durability::transient_local)
+    requirements.durability=umaa::qos::Durability::transient_local;
+  if(policy.ordered_access){
+    requirements.presentation=umaa::qos::Presentation::topic;
+    requirements.require_ordered_access=true;
+  }
   if(argc==5 && std::string(argv[4])=="runtime"){
    const auto config=config_file(mode,argv[2],argv[3]);
    auto app=umaa::Application::from_config(config);

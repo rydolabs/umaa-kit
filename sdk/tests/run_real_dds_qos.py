@@ -4,7 +4,7 @@ import sys
 import time
 
 def main():
-    if len(sys.argv)!=5 or sys.argv[4]!="runtime":
+    if len(sys.argv)!=5 or sys.argv[4] not in ("runtime","transient","ordered"):
         return 2
     exe, backend, component, variant=sys.argv[1:5]
     sub=subprocess.Popen([exe,"subscriber",backend,component,variant],

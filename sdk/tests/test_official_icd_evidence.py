@@ -156,7 +156,7 @@ class SourceAuditTest(unittest.TestCase):
     def test_reject_zip_slip_duplicate_and_missing_license(self):
         cases = [
             {"LICENSE": b"x", "../escape.idl": b"bad"},
-            {"LICENSE": b"x", "UMAA\\EO\\bad.idl": b"bad"},
+            {"LICENSE": b"x", "/UMAA/EO/bad.idl": b"bad"},
             {"UMAA/EO/BatteryStatus/BatteryReportType.idl": b"bad"},
         ]
         for blobs in cases:
@@ -165,6 +165,14 @@ class SourceAuditTest(unittest.TestCase):
                 self.rezip()
                 with self.assertRaises(SourceError):
                     inspected_zip(self.zip_path)
+        # Windows ZipInfo normalizes backslashes when creating the archive.
+        # Patch both central and local ZIP filename bytes for a genuine attack.
+        self.blobs = {"LICENSE": b"x", "UMAA/EO/bad.idl": b"bad"}
+        self.rezip()
+        blob = self.zip_path.read_bytes()
+        self.zip_path.write_bytes(blob.replace(b"UMAA/EO/bad.idl", b"UMAA\\EO\\bad.idl"))
+        with self.assertRaisesRegex(SourceError, "unsafe"):
+            inspected_zip(self.zip_path)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             with zipfile.ZipFile(self.zip_path, "w") as z:

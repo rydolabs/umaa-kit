@@ -71,7 +71,7 @@ jobs:
         run: |
           $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
           if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
-          cmake -S dds/cyclone -B build/real-dds-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake"
+          cmake -S tests/integration/cyclone -B build/real-dds-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build real DDS publisher and independent simulator
         run: cmake --build build/real-dds-win --config Release --parallel 2
@@ -154,7 +154,7 @@ jobs:
           if (-not $vcpkgRoot) { $vcpkgRoot = 'C:\vcpkg' }
           $root = Join-Path $env:RUNNER_TEMP 'umaa-official-generated'
           $engineRoot = Join-Path $env:RUNNER_TEMP 'umaa-engine-generated'
-          cmake -S dds/cyclone -B build/official-dds-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake" -DUMAA_OFFICIAL_GENERATED_ROOT="$root" -DUMAA_ENGINE_GENERATED_ROOT="$engineRoot" -DUMAA_PROBE_GENERATED_ROOT="$env:RUNNER_TEMP/umaa-probe-types"
+          cmake -S tests/integration/cyclone -B build/official-dds-win -G 'Visual Studio 17 2022' -A x64 -DCMAKE_TOOLCHAIN_FILE="$vcpkgRoot/scripts/buildsystems/vcpkg.cmake" -DUMAA_OFFICIAL_GENERATED_ROOT="$root" -DUMAA_ENGINE_GENERATED_ROOT="$engineRoot" -DUMAA_PROBE_GENERATED_ROOT="$env:RUNNER_TEMP/umaa-probe-types"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cmake --build build/official-dds-win --config Release --parallel 2
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

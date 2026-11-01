@@ -24,7 +24,7 @@ jobs:
           dpkg-query -W 'cyclonedds*' 'libddsc*' || true
           idlc --version || true
       - name: Configure DDS C and TypeSupport
-        run: cmake -S dds/cyclone -B build/real-dds -DCMAKE_BUILD_TYPE=Debug
+        run: cmake -S tests/integration/cyclone -B build/real-dds -DCMAKE_BUILD_TYPE=Debug
       - name: Build DDS publisher and independent simulator
         run: cmake --build build/real-dds --parallel 2
       - name: Independent real DDS wire test

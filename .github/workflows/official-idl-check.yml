@@ -92,7 +92,7 @@ jobs:
       - name: Configure and compile official UMAA type-based C++ plugin Host and independent simulator
         shell: bash
         run: |
-          cmake -S dds/cyclone -B build/official-dds \
+          cmake -S tests/integration/cyclone -B build/official-dds \
             -DUMAA_OFFICIAL_GENERATED_ROOT=/tmp/umaa-official/generated \
             -DUMAA_ENGINE_GENERATED_ROOT=/tmp/umaa-official/engine-type-support \
             -DCMAKE_BUILD_TYPE=Debug

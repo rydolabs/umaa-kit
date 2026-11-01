@@ -127,6 +127,32 @@ class SourceAuditTest(unittest.TestCase):
             with self.assertRaisesRegex(SourceError, "namespace"):
                 source_type(z, "UMAA::EO::BatteryStatus::BatteryReportType")
 
+    def test_source_checked_overlay_preserves_unreviewed_contract_and_blocks_overwrite(self):
+        from tools.official_icd_overlay import produce
+        from tools.umaa_contract_ir import load_service
+        source = self.yaml("BatteryStatus")
+        output = self.root / "authored"
+        digest = sha(self.zip_path.read_bytes())
+        baseline, _ = load_service(source)
+        report = produce(self.zip_path, [source], output, digest)
+        self.assertEqual(1, report["services"])
+        self.assertEqual(1, report["unresolvedCollectionTypes"])
+        result, _ = load_service(output / "services/EO/BatteryStatus.yaml")
+        topic = next(iter(result["spec"]["topics"].values()))
+        self.assertEqual("UMAA::EO::BatteryStatus::BatteryReportType", topic["ddsTopicName"])
+        self.assertEqual(["source"], topic["keyFields"])
+        self.assertIsNone(topic["qosProfileRef"])
+        self.assertEqual(digest, result["sources"]["idl"]["bundleSha256"])
+        self.assertEqual(baseline["verification"], result["verification"])
+        self.assertEqual(baseline["spec"]["operations"], result["spec"]["operations"])
+        self.assertEqual(baseline["spec"]["unresolvedCollectionTypes"],
+                         result["spec"]["unresolvedCollectionTypes"])
+        with self.assertRaisesRegex(SourceError, "nonexistent"):
+            produce(self.zip_path, [source], output, digest)
+        with self.assertRaisesRegex(SourceError, "SHA-256"):
+            produce(self.zip_path, [source], self.root / "bad", "0" * 64)
+        self.assertFalse((self.root / "bad").exists())
+
     def test_reject_zip_slip_duplicate_and_missing_license(self):
         cases = [
             {"LICENSE": b"x", "../escape.idl": b"bad"},

@@ -162,6 +162,40 @@ class SourceAuditTest(unittest.TestCase):
             produce(self.zip_path, [source], self.root / "bad", "0" * 64)
         self.assertFalse((self.root / "bad").exists())
 
+    def test_source_checked_native_registry_is_pinned_and_build_glue_only(self):
+        from tools.official_icd_overlay import produce
+        from tools.generate_official_native_type_registry import generate
+        sources=[self.yaml("BatteryStatus"),self.yaml("EngineControl")]
+        digest=sha(self.zip_path.read_bytes())
+        candidate=self.root/"candidate"
+        produce(self.zip_path,sources,candidate,digest)
+        docs=sorted(candidate.glob("services/*/*.yaml"))
+        original_root=self.root/"original"
+        for rel,body in self.blobs.items():
+            if not rel.endswith(".idl"): continue
+            path=original_root/rel
+            path.parent.mkdir(parents=True,exist_ok=True)
+            path.write_bytes(body)
+        out=self.root/"native"
+        report=generate(self.zip_path,docs,out,digest,original_root)
+        self.assertEqual((2,4,5),(report["sourceEvidenceServices"],
+                         report["sourceEvidenceTopics"],report["nativeDescriptorCount"]))
+        self.assertEqual(4,len(report["nativeIdlFiles"]))
+        self.assertFalse(report["qosApproved"])
+        self.assertFalse(report["payloadCodecGenerated"])
+        text=(out/"umaa_native_type_registry.c").read_text(encoding="utf-8")
+        self.assertIn("&UMAA_EO_BatteryStatus_BatteryReportType_desc",text)
+        self.assertIn("&UMAA_EO_BatteryStatus_BatteryReportTypeCellsListElement_desc",text)
+        self.assertIn("&UMAA_EO_EngineControl_EngineCommandType_desc",text)
+        self.assertNotIn("synthetic test-only archive",text)
+        with self.assertRaisesRegex(SourceError,"already exist"):
+            generate(self.zip_path,docs,out,digest,original_root)
+        with self.assertRaisesRegex(SourceError,"does not match"):
+            generate(self.zip_path,docs,self.root/"wrong","0"*64,original_root)
+        with self.assertRaisesRegex(SourceError,"unreviewed or unpinned"):
+            generate(self.zip_path,sources,self.root/"raw",digest,original_root)
+        self.assertFalse((self.root/"raw").exists())
+
     def test_reject_zip_slip_duplicate_and_missing_license(self):
         cases = [
             {"LICENSE": b"x", "../escape.idl": b"bad"},

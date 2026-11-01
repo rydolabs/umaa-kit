@@ -4,6 +4,7 @@ on:
     paths:
       - 'tools/official_icd_evidence.py'
       - 'tools/official_icd_overlay.py'
+      - 'tools/generate_official_native_type_registry.py'
       - 'sdk/tests/test_official_icd_evidence.py'
       - '.github/workflows/official-icd-source-audit.yml'
   push:
@@ -11,6 +12,7 @@ on:
     paths:
       - 'tools/official_icd_evidence.py'
       - 'tools/official_icd_overlay.py'
+      - 'tools/generate_official_native_type_registry.py'
       - 'sdk/tests/test_official_icd_evidence.py'
       - '.github/workflows/official-icd-source-audit.yml'
 jobs:

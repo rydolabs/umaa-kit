@@ -7,6 +7,7 @@ on:
       - 'tools/official_icd_overlay.py'
       - 'tools/official_idl_coverage.py'
       - 'tools/official_idl_compile.py'
+      - 'tools/generate_official_native_type_registry.py'
       - 'contracts/**'
   push:
     paths:
@@ -15,6 +16,7 @@ on:
       - 'tools/official_icd_overlay.py'
       - 'tools/official_idl_coverage.py'
       - 'tools/official_idl_compile.py'
+      - 'tools/generate_official_native_type_registry.py'
   workflow_dispatch:
 
 permissions:
@@ -133,6 +135,40 @@ jobs:
           assert s["generated_c_files"]==594 and s["c_compiled"]==594
           assert s["failures"]==0
           print("OFFICIAL_UMAA_594_TYPESUPPORT_COMPILE_PASS")
+          PY
+
+      - name: Compile and link all 114 source-matched native DDS descriptor entries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m tools.generate_official_native_type_registry \
+            --zip "$RUNNER_TEMP/umaa-6.0-with-exp.zip" \
+            --yaml-root "$RUNNER_TEMP/source-backed-candidates" \
+            --original-idl-root "$RUNNER_TEMP/official-idl" \
+            --expect-sha256 "$UMAA_IDL_SHA256" \
+            --out "$RUNNER_TEMP/native-registry"
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          temp=Path(os.environ["RUNNER_TEMP"])
+          root=temp/"native-registry"
+          m=json.loads((root/"native_manifest.json").read_text())
+          assert (m["sourceEvidenceServices"],m["sourceEvidenceTopics"],
+                  m["nativeDescriptorCount"]) == (53,113,114)
+          assert not m["qosApproved"] and not m["payloadCodecGenerated"]
+          objs=[temp/"all-typesupport"/"obj"/Path(p).with_suffix(".o")
+                for p in m["nativeIdlFiles"]]
+          assert objs and all(p.is_file() for p in objs)
+          executable=root/"native_descriptor_smoke"
+          cmd=["cc","-std=c11","-I",str(temp/"all-typesupport"),
+               "-I",str(temp/"official-idl"), "-I",str(root),
+               str(root/"umaa_native_type_registry.c"),
+               str(root/"native_descriptor_smoke.c"),
+               *[str(p) for p in objs],"-lddsc","-o",str(executable)]
+          subprocess.run(cmd,check=True)
+          subprocess.run([str(executable)],check=True)
+          print("OFFICIAL_UMAA_NATIVE_DESCRIPTOR_LINK_PASS",
+                m["nativeDescriptorCount"],"types",len(objs),"dependency objects")
           PY
 
       - name: Build official Battery and Engine transitive TypeSupport

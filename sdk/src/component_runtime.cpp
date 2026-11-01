@@ -365,7 +365,8 @@ void ReportPublisher::rethrow_periodic_error(){
 }
 std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
     const std::string& service_id,const std::string& topic_name,
-    const std::string& schema_id,const std::string& instance_key){
+    const std::string& schema_id,const std::string& instance_key,
+    const std::string& qos_profile){
   if(!state_->domain)throw std::runtime_error("DDS backend not loaded");
   std::shared_ptr<umaa::ComponentModule> module;
   {
@@ -380,12 +381,12 @@ std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
   for(const auto& d:module->services())
     if(d.service==service_id&&d.schema==schema_id&&(d.actions&4u))authorized=true;
   if(!authorized)throw std::runtime_error("report schema or role mismatch");
-  const UmaaDdsTopicV1 topic{topic_name.c_str(),schema_id.c_str(),"demo-reliable",
+  const UmaaDdsTopicV1 topic{topic_name.c_str(),schema_id.c_str(),qos_profile.c_str(),
     UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
   void* writer=nullptr;
   if(state_->qos_profiles.empty())writer=state_->domain->writer(topic);
   else {
-    const auto found=state_->qos_profiles.find("demo-reliable");
+    const auto found=state_->qos_profiles.find(qos_profile);
     if(found==state_->qos_profiles.end())throw std::runtime_error("missing configured DDS QoS profile");
     writer=state_->domain->writer(topic,found->second);
   }

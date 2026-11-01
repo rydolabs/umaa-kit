@@ -79,7 +79,8 @@ public:
   // Report lifecycle. A generated ServiceBinding will own reviewed topic/QoS.
   std::unique_ptr<ReportPublisher> open_report_fixture(
     const std::string& service_id,const std::string& topic_name,
-    const std::string& schema_id,const std::string& instance_key);
+    const std::string& schema_id,const std::string& instance_key,
+    const std::string& qos_profile="demo-reliable");
   void publish_report_fixture(const std::string& service_id,
                               const std::string& topic_name,
                               const std::string& schema_id,

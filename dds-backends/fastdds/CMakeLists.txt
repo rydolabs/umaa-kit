@@ -169,3 +169,29 @@ add_test(NAME umaa_fastdds_typed_server_background_real_wire
  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>"
  "$<TARGET_FILE:umaa_fastdds_typed_command_client_cli>" auto)
 set_tests_properties(umaa_fastdds_typed_server_background_real_wire PROPERTIES TIMEOUT 55)
+
+# Same vendor-neutral QoS v2 client; Presentation ordered_access must fail closed.
+add_executable(umaa_fastdds_qos_cli "${SDK_ROOT}/tests/real_dds_qos_cli.cpp")
+target_compile_features(umaa_fastdds_qos_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_fastdds_qos_cli PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_fastdds_qos_cli PRIVATE UMAA::Runtime)
+add_test(NAME umaa_fastdds_explicit_qos_real_wire
+  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_backend.py"
+  "$<TARGET_FILE:umaa_fastdds_qos_cli>"
+  "$<TARGET_FILE:umaa_dds_fastdds_demo>"
+  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>")
+set_tests_properties(umaa_fastdds_explicit_qos_real_wire PROPERTIES TIMEOUT 38)
+
+add_test(NAME umaa_fastdds_runtime_yaml_qos_real_wire
+  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_qos.py"
+  "$<TARGET_FILE:umaa_fastdds_qos_cli>"
+  "$<TARGET_FILE:umaa_dds_fastdds_demo>"
+  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>" runtime)
+set_tests_properties(umaa_fastdds_runtime_yaml_qos_real_wire PROPERTIES TIMEOUT 42)
+
+add_test(NAME umaa_fastdds_transient_local_qos_real_wire
+  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_qos.py"
+  "$<TARGET_FILE:umaa_fastdds_qos_cli>"
+  "$<TARGET_FILE:umaa_dds_fastdds_demo>"
+  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>" transient)
+set_tests_properties(umaa_fastdds_transient_local_qos_real_wire PROPERTIES TIMEOUT 42)

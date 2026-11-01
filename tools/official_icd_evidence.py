@@ -16,7 +16,7 @@ import stat
 import sys
 import zipfile
 
-from tools.validate_icd_yaml import require_dependencies, strict_load, validate_topic_references
+from tools.umaa_contract_ir import load_service
 
 TYPE_RE = re.compile(r"^[A-Za-z_]\w*(?:::[A-Za-z_]\w*){2,7}$")
 MODULE_RE = re.compile(r"\bmodule\s+([A-Za-z_]\w*)\s*\{")
@@ -127,16 +127,12 @@ def source_type(archive: zipfile.ZipFile, fqtype: str) -> dict:
 def audit(archive_path: Path, service_paths: list[Path]) -> dict:
     if not service_paths:
         raise SourceError("at least one Service YAML required")
-    yaml, _ = require_dependencies()
     results = []
     issues = []
     names = set()
     with inspected_zip(archive_path) as archive:
         for service_path in service_paths:
-            doc = strict_load(service_path, yaml)
-            if doc.get("kind") != "Service":
-                raise SourceError("expected Service YAML: " + str(service_path))
-            validate_topic_references(doc)
+            doc, yaml_digest = load_service(service_path)
             service = doc["metadata"]["id"]
             if service in names:
                 raise SourceError("duplicate Service YAML: " + service)
@@ -157,7 +153,7 @@ def audit(archive_path: Path, service_paths: list[Path]) -> dict:
                                "source": observed,
                                "unresolvedInYaml": [f for f in ("ddsTopicName", "keyFields", "qosProfileRef")
                                                     if declared[f] is None]})
-            results.append({"serviceId": service, "yamlSha256": sha(service_path.read_bytes()),
+            results.append({"serviceId": service, "yamlSha256": yaml_digest,
                             "topics": actual})
     return {"reportVersion": 1, "status": "PASS" if not issues else "CONFLICT",
             "scope": "IDL Topic constant / @key declaration evidence only; NOT official runtime or compliance",

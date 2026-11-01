@@ -1,5 +1,6 @@
 """Regression: all reviewed UMAA 6.0 ICD mappings are represented exactly in YAML."""
 import copy
+import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -13,7 +14,7 @@ if str(ROOT) not in sys.path:
 
 from tools.generate_icd_yaml import build_service, expected_files, yaml_text, write_files
 from tools.umaa_service_contracts import _read_catalog
-from tools.validate_icd_yaml import ICDYamlError, strict_load, validate, require_dependencies
+from tools.validate_icd_yaml import ICDYamlError, strict_load, validate, require_dependencies, validate_document_elements
 
 
 class ICDYAMLCoverage(unittest.TestCase):
@@ -47,6 +48,75 @@ class ICDYAMLCoverage(unittest.TestCase):
         self.assertEqual(113, summary["topics"])
         self.assertEqual(131, summary["operations"])
         self.assertEqual("REVIEWED_MAPPING_ONLY", summary["status"])
+
+    def test_official_document_element_schema_and_source_consistency(self):
+        # Synthetic in-memory fixture only; no official text/hash is asserted.
+        sample = self.yaml.safe_load(self.files["services/SA/GlobalPoseStatus.yaml"])
+        original_sha = "a" * 64
+        sample["sources"]["icd"]["originalSha256"] = original_sha
+        verbatim = "Synthetic test-only requirement, not original UMAA text."
+        sample["documentation"]["elements"] = [{
+            "id": "test-element-1", "kind": "requirement",
+            "source": {"kind": "official-icd",
+                       "documentId": "UMAA-SPEC-SAICD", "version": "6.0",
+                       "originalSha256": original_sha,
+                       "clause": "6.1.6", "locator": "synthetic fixture paragraph 1"},
+            "verbatim": verbatim,
+            "verbatimSha256": hashlib.sha256(verbatim.encode("utf-8")).hexdigest(),
+            "requirement": {"modality": "SHALL", "normative": True},
+        }]
+        schema = self.jsonschema.Draft202012Validator(
+            json.loads((ROOT / "schemas/umaa-icd-v1alpha1.schema.json").read_text()))
+        schema.validate(sample)
+        validate_document_elements(sample)
+
+        wrong = copy.deepcopy(sample)
+        wrong["documentation"]["elements"][0]["source"]["originalSha256"] = "b" * 64
+        with self.assertRaises(ICDYamlError):
+            validate_document_elements(wrong)
+        wrong = copy.deepcopy(sample)
+        wrong["documentation"]["elements"][0]["verbatim"] += " modified"
+        with self.assertRaises(ICDYamlError):
+            validate_document_elements(wrong)
+        wrong = copy.deepcopy(sample)
+        wrong["sources"]["icd"]["originalSha256"] = None
+        with self.assertRaises(ICDYamlError):
+            validate_document_elements(wrong)
+        wrong = copy.deepcopy(sample)
+        wrong["documentation"]["elements"].append(copy.deepcopy(
+            wrong["documentation"]["elements"][0]))
+        with self.assertRaises(ICDYamlError):
+            validate_document_elements(wrong)
+        wrong = copy.deepcopy(sample)
+        wrong["documentation"]["elements"][0].pop("verbatimSha256")
+        self.assertFalse(schema.is_valid(wrong))
+        wrong = copy.deepcopy(sample)
+        wrong["documentation"]["elements"][0]["requirement"]["unknown"] = True
+        self.assertFalse(schema.is_valid(wrong))
+
+    def test_icd_document_sections_accept_source_anchored_elements(self):
+        record = self.yaml.safe_load(self.files["icd/SA.yaml"])
+        original_sha = "c" * 64
+        record["sources"]["document"]["originalSha256"] = original_sha
+        verbatim = "Synthetic table fixture, not an official ICD transcription."
+        record["spec"]["sections"][0]["elements"] = [{
+            "id": "test-table-1", "kind": "table",
+            "source": {"kind": "official-icd", "documentId": "UMAA-SPEC-SAICD",
+                       "version": "6.0", "originalSha256": original_sha,
+                       "clause": "6.1.1", "locator": "test page / table"},
+            "verbatim": verbatim,
+            "verbatimSha256": hashlib.sha256(verbatim.encode("utf-8")).hexdigest(),
+            "table": {"title": "Synthetic table", "columns": ["A"], "rows": [["B"]]},
+        }]
+        schema = self.jsonschema.Draft202012Validator(
+            json.loads((ROOT / "schemas/umaa-icd-v1alpha1.schema.json").read_text()))
+        schema.validate(record)
+        validate_document_elements(record)
+        wrong = copy.deepcopy(record)
+        wrong["spec"]["sections"][1]["elements"] = copy.deepcopy(
+            wrong["spec"]["sections"][0]["elements"])
+        with self.assertRaises(ICDYamlError):
+            validate_document_elements(wrong)
 
     def test_legacy_parallel_projection_does_not_reappear(self):
         # All catalog-derived YAML belongs to the deterministic canonical root.

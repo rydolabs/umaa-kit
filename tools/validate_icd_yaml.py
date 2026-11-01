@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import hashlib
 from pathlib import Path
 
 from tools.generate_icd_yaml import DEFAULT_OUT, REPO, expected_files
@@ -60,6 +61,55 @@ def strict_load(path: Path, yaml):
     return doc
 
 
+def validate_document_elements(doc: dict) -> None:
+    """Check source/excerpt consistency; does NOT authenticate the official PDF.
+
+    Baseline generated mappings have no document elements and remain unchanged.
+    Future original-document transcription must additionally check physical
+    source-file hashes and complete coverage against the authoritative source.
+    """
+    if doc["kind"] == "Service":
+        source = doc["sources"]["icd"]
+        elements = doc["documentation"].get("elements", [])
+        operations = doc["spec"]["operations"]
+    elif doc["kind"] == "ICD":
+        source = doc["sources"]["document"]
+        elements = [element for section in doc["spec"]["sections"]
+                    for element in section.get("elements", [])]
+        operations = None
+    else:
+        raise ICDYamlError("unknown documentation resource kind")
+
+    if not elements:
+        return
+    original_sha = source.get("originalSha256")
+    if original_sha is None:
+        raise ICDYamlError("original ICD hash required before importing document elements")
+    document_id = source.get("document", source.get("id"))
+    seen = set()
+    for element in elements:
+        element_id = element["id"]
+        if element_id in seen:
+            raise ICDYamlError("duplicate original document element id: " + element_id)
+        seen.add(element_id)
+        location = element["source"]
+        if (location["kind"] != "official-icd" or
+                location["documentId"] != document_id or
+                location["version"] != source["version"] or
+                location["originalSha256"] != original_sha):
+            raise ICDYamlError("original ICD source locator/hash mismatch: " + element_id)
+        digest = hashlib.sha256(element["verbatim"].encode("utf-8")).hexdigest()
+        if digest != element["verbatimSha256"]:
+            raise ICDYamlError("original document excerpt digest mismatch: " + element_id)
+        if operations is not None:
+            if element["kind"] == "operation" and element["operation"]["name"] not in operations:
+                raise ICDYamlError("undocumented operation reference: " + element_id)
+            if element["kind"] == "error-condition":
+                ref = element["errorCondition"]["operationRef"]
+                if ref is not None and ref not in operations:
+                    raise ICDYamlError("unresolved error-condition operation: " + element_id)
+
+
 def validate(root: Path = DEFAULT_OUT, catalog_path: Path = CATALOG,
              schema_path: Path | None = None) -> dict:
     yaml, jsonschema = require_dependencies()
@@ -84,6 +134,7 @@ def validate(root: Path = DEFAULT_OUT, catalog_path: Path = CATALOG,
         errors = sorted(validator.iter_errors(doc), key=lambda e: str(e.path))
         if errors:
             raise ICDYamlError(rel + ": schema error: " + str(errors[0]))
+        validate_document_elements(doc)
         # Compare the semantic object AND serialized text, so no undocumented
         # alias, source upgrade, inferred type/QoS, or hand-edit can be accepted.
         original_doc = yaml.safe_load(original)

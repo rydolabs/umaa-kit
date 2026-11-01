@@ -119,3 +119,28 @@ normative clauses and exact Operation↔Topic binding evidence. It must:
 The present mapping is **a complete conversion of the currently reviewed
 catalog**, not a complete conversion of all contents of all original UMAA
 specification documents.
+
+## Source-anchored original ICD elements (optional schema extension)
+
+The canonical v1alpha1 schema now allows **ordered**
+`documentation.elements[]` in a Service and `spec.sections[].elements[]`
+in an ICD index. Supported kinds are paragraph, table, figure,
+requirement, operation description and error-condition. Every element
+requires an element ID, a **pinned original ICD SHA-256 and source locator**,
+verbatim source text with an independent UTF-8 SHA-256, and kind-specific
+structured fields. Figure references carry their own image asset hash.
+Elements can be traced without changing Topic/Type/Key/QoS mappings.
+
+The validator checks document identity/version/hash consistency, excerpt
+digests, unique IDs and Service operation references. The schema rejects
+unexpected fields and incomplete kind-specific records. **This does not
+verify the physical official document or completeness of its transcription.**
+Those checks require licensed/accessible original ICD files and an
+independent full-document coverage audit.
+
+The 59 baseline files intentionally contain **no imported official
+document elements**: the reviewed JSON catalog does not contain them.
+The current deterministic generator keeps this mapping immutable; a
+separately reviewed source-ingestion integration is required before
+authoritative content can be safely emitted into canonical contracts.
+No synthetic fixtures are written to generated contracts.

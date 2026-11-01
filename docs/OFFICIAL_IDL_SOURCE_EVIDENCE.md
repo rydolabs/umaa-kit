@@ -39,6 +39,26 @@ The output may contain short declaration identifiers and hashes and should
 remain **outside the public repo** while source/redistribution rules are
 reviewed. It never contains original IDL code, ICD prose or PDF contents.
 
+## Generate separate author-reviewable contracts
+
+```bash
+python -m tools.official_icd_overlay \
+  --zip /private/umaa-6.0-idl-with-exp-services.zip \
+  --yaml-root contracts/umaa6 \
+  --expect-sha256 <independently-recorded-64-hex-hash> \
+  --out-root /private/umaa6-source-backed-candidates
+```
+
+This outputs 53 separately authored Service YAML candidates (not the canonical
+`contracts/umaa6`) with **only** IDL-declared `ddsTopicName`,
+`keyFields` and source archive hash populated. `verification`, all
+Operation mappings, QoS, unknown Collection semantics, and original PDF
+evidence remain unchanged. The output is independently validated against the
+same strict YAML schema and is not written if any input declaration conflicts.
+Existing destination paths, mismatched pins, or attempts to write into the
+generated canonical area fail closed. Keep the authored candidates private
+until rights and original normative contracts have been reviewed.
+
 ## Scope of source evidence vs runtime readiness
 
 - A source audit is **not** a full OMG IDL parser, official DDS compiler,

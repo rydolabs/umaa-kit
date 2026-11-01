@@ -8,7 +8,7 @@ subscriber verify a keyed Report's two updates and DDS instance Dispose.
 Requires Cyclone DDS C including idlc, CMake and Python 3:
 
 ```sh
-cmake -S dds/cyclone -B build/dds-real
+cmake -S tests/integration/cyclone -B build/dds-real
 cmake --build build/dds-real
 ctest --test-dir build/dds-real --output-on-failure
 ```

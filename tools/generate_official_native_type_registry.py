@@ -67,6 +67,7 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
     if evidence["issues"]:
         raise SourceError("source/YAML disagreement: " + "; ".join(evidence["issues"]))
     by_type: dict[str, dict] = {}
+    service_specs: list[dict] = []
     sources = set()
     for path, entry in zip(service_paths, evidence["services"]):
         service_doc, _ = load_service(path)
@@ -74,6 +75,7 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
             raise SourceError("unreviewed or unpinned Service IDL bundle: " + entry["serviceId"])
         records = entry["topics"] + [{"alias": "embedded-collection",
                      "source": row} for row in entry["unresolvedCollectionTypes"]]
+        service_topics = []
         for item in records:
             info = item["source"]
             fq = info["idlType"]
@@ -83,12 +85,24 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
                 doc_topic = service_doc["spec"]["topics"][item["alias"]]
                 if doc_topic["ddsTopicName"] != info["ddsTopicName"] or doc_topic["keyFields"] != info["keyFields"]:
                     raise SourceError("Topic/Key not source-backed: " + fq)
+            if item["alias"] == "embedded-collection":
+                role, direction = "collection-element-unresolved", "unresolved"
+            else:
+                topic_config = service_doc["spec"]["topics"][item["alias"]]
+                role, direction = topic_config["role"], topic_config["direction"]
+            service_topics.append({
+                "alias": item["alias"], "idl_type": fq,
+                "declared_topic_constant": info["ddsTopicName"],
+                "key_fields": ",".join(info["keyFields"]),
+                "role": role, "direction": direction,
+            })
             if fq in by_type:
                 if by_type[fq]["source"] != info:
                     raise SourceError("conflicting duplicate TypeSupport: " + fq)
                 continue
             by_type[fq] = {"serviceId": entry["serviceId"], "source": info}
             sources.add(info["idlPath"])
+        service_specs.append({"id":entry["serviceId"], "topics":service_topics})
     if not by_type:
         raise SourceError("no native TypeSupport bindings")
     includes = sorted({data["source"]["idlPath"][:-4] + ".h" for data in by_type.values()})
@@ -140,6 +154,76 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
         '  if(dds_delete(participant)<0) return 10;',
         '  return 0;',
         '}', '']
+    # Separate SDK-side source identity metadata: no native DDS headers, no
+    # payload codec, no component readiness claim. One entry per Service.
+    service_cpp = [
+        "// GENERATED from source-pinned official IDL and authored Service YAML.",
+        "// Source declarations only; NOT runtime DDS Topic names, QoS, or protocols.",
+        "#pragma once", "#include <cstddef>", "#include <cstring>",
+        "namespace umaa { namespace generated {",
+        "struct SourceTopicV1 {",
+        " const char* alias; const char* idl_type;",
+        " const char* declared_idl_topic_constant; const char* key_fields;",
+        " const char* role; const char* direction;",
+        " bool qos_verified;",
+        "};",
+        "struct SourceServiceV1 {",
+        " const char* service_id; const SourceTopicV1* topics;",
+        " std::size_t topic_count; bool operations_verified; bool executable;",
+        "};",
+    ]
+    for index, service in enumerate(service_specs):
+        service_cpp.append(f"inline constexpr SourceTopicV1 source_topics_{index}[] = {{")
+        for topic in service["topics"]:
+            service_cpp.append(" {" + ", ".join(
+                quote(topic[key]) for key in (
+                    "alias","idl_type","declared_topic_constant",
+                    "key_fields","role","direction"
+                )
+            ) + ", false},")
+        service_cpp.append("};")
+    service_cpp.append("inline constexpr SourceServiceV1 source_services[] = {")
+    for index, service in enumerate(service_specs):
+        service_cpp.append(" {" + ", ".join([
+            quote(service["id"]), f"source_topics_{index}",
+            f"sizeof(source_topics_{index})/sizeof(source_topics_{index}[0])",
+            "false", "false"
+        ]) + "},")
+    service_cpp += [
+        "};",
+        "inline constexpr std::size_t source_service_count =",
+        " sizeof(source_services)/sizeof(source_services[0]);",
+        "inline const SourceServiceV1* find_source_service(const char* id) {",
+        " if (!id) return nullptr;",
+        " for (const auto& service : source_services)",
+        "  if (std::strcmp(service.service_id,id)==0) return &service;",
+        " return nullptr;",
+        "}",
+        "} } // namespace umaa::generated",
+        "",
+    ]
+    service_smoke=[
+        '#include "umaa_source_service_contracts.hpp"',
+        "#include <cstring>",
+        "int main(){",
+        f" if(umaa::generated::source_service_count != {len(service_specs)}) return 2;",
+        " if(umaa::generated::find_source_service(nullptr)!=nullptr) return 3;",
+        ' if(umaa::generated::find_source_service("UMAA::Unknown")!=nullptr) return 4;',
+        " std::size_t topics=0;",
+        " for(const auto& service:umaa::generated::source_services){",
+        "  if(service.executable || service.operations_verified) return 5;",
+        "  if(umaa::generated::find_source_service(service.service_id)!=&service) return 6;",
+        "  for(std::size_t i=0;i<service.topic_count;++i){",
+        "   const auto& topic=service.topics[i];",
+        "   if(topic.qos_verified || !topic.idl_type || !topic.alias",
+        "      || std::strcmp(topic.idl_type,topic.declared_idl_topic_constant)) return 7;",
+        "   ++topics;",
+        "  }",
+        " }",
+        f" return topics == {sum(len(s['topics']) for s in service_specs)} ? 0 : 8;",
+        "}",
+        "",
+    ]
     deps = set(sources)
     if original_root is not None:
         root = original_root.resolve()
@@ -152,6 +236,8 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
         "sourceEvidenceServices": evidence["servicesAudited"],
         "sourceEvidenceTopics": evidence["topicsAudited"],
         "nativeDescriptorCount": len(bindings),
+        "sourceServiceContractCount": len(service_specs),
+        "sourceServiceTopicCount": sum(len(spec["topics"]) for spec in service_specs),
         "nativeIdlFiles": sorted(deps),
         "descriptorNames": [fq for fq, _ in bindings],
         "qosApproved": False,
@@ -168,6 +254,10 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
         (stage / "umaa_native_type_registry.h").write_text(HEADER, encoding="utf-8")
         (stage / "umaa_native_type_registry.c").write_text("\n".join(code), encoding="utf-8")
         (stage / "native_descriptor_smoke.c").write_text("\n".join(smoke), encoding="utf-8")
+        (stage / "umaa_source_service_contracts.hpp").write_text(
+            "\n".join(service_cpp), encoding="utf-8")
+        (stage / "source_service_contract_smoke.cpp").write_text(
+            "\n".join(service_smoke), encoding="utf-8")
         (stage / "native_manifest.json").write_text(
             json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         stage.rename(output)

@@ -82,3 +82,41 @@ python -m unittest discover -s sdk/tests -p test_official_icd_evidence.py -v
 GitHub Actions runs synthetic-only regressions. No user-supplied AUVSI ZIP,
 ICD PDF or licensing terms are committed or requested by the CI workflow.
 A private, independently verified source audit is a separate acceptance gate.
+
+## GitHub-hosted Actions Runner: complete official archive, all types, actual wire
+
+CI workflow: `.github/workflows/official-idl-runner-integration.yml`.
+
+Verified against **the identical SHA-256 of the externally supplied full
+UMAA 6.0 package with EXP**:
+
+`15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08`
+
+The Runner obtains the archive exclusively from the official AUVSI
+Distribution Statement A download URL. It checks the exact SHA, ZIP CRC,
+LICENSE inclusion and the 594-IDL inventory, then uses only temporary storage.
+
+Each workflow run performs all of the following:
+
+1. Source identity/import/Topic/Key audit of all 53 catalog services, 113
+   direct Topic/Type bindings and BatteryStatus embedded collection type.
+2. Source-checked generation of 53 separate YAML candidates, preserving
+   the not-yet-verified QoS, Operation, original ICD source proof and review
+   flags. None are committed or uploaded.
+3. Official Cyclone DDS `idlc` generation **and C compilation of 594/594 IDLs**
+   using `tools/official_idl_coverage.py`. Source and binaries stay in
+   ephemeral Runner temp; only counts appear in the logs.
+4. Focused native TypeSupport compilation for BatteryStatus, EngineControl
+   Command, ACK, Status; then existing real-wire integration CTests:
+   `official_umaa_battery_dds_wire`,
+   `official_umaa_engine_command_flow`,
+   `official_umaa_engine_update_flow`.
+
+First recorded full-EXP success: [Actions run 41345796581](https://github.com/rydolabs/umaa-kit/actions/runs/41345796581)
+(594 generated/compiled, 53 YAML candidates, 3/3 real DDS integration tests).
+
+This **does not prove** that `umaa_icd_component_codegen.py` can
+generate complete official Provider/Consumer services: the original ICD
+operation semantics/QoS and the fully vendor-neutral runtime linkage
+are still separate, gated work. Full IDL C compilation alone does not
+establish independent vendor interchange or 6.0 Component compliance.

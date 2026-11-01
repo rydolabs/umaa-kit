@@ -2,6 +2,7 @@
 #include "umaa/component_module.hpp"
 #include "umaa/component.hpp"
 #include "umaa/dds_backend_loader.hpp"
+#include "umaa/generated/umaa6_qos_requirements.hpp"
 #include <stdexcept>
 #include <mutex>
 #include <memory>
@@ -150,13 +151,16 @@ std::unique_ptr<ReportSubscription> ComponentRuntime::subscribe_report_fixture(
   auto slot=std::make_unique<ReportSubscription::State>(state_->backend,state_->domain);
   const UmaaDdsTopicV1 descriptor{topic_name.c_str(),schema.c_str(),qos_profile.c_str(),
     UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
+  const auto normative=umaa::generated::reviewed_qos_requirements(service,topic_name);
   if(state_->qos_profiles.empty()) {
+    if(normative)throw std::runtime_error("mandatory official QoS requires explicit runtime profile");
     slot->reader=slot->domain->reader(descriptor,&ReportSubscription::State::receive,slot.get());
   } else {
     auto found=state_->qos_profiles.find(qos_profile);
     if(found==state_->qos_profiles.end())throw std::runtime_error("missing configured DDS QoS profile");
     slot->reader=slot->domain->reader(descriptor,found->second,
-      &ReportSubscription::State::receive,slot.get());
+      &ReportSubscription::State::receive,slot.get(),
+      normative.value_or(umaa::qos::Requirements{}));
   }
   return std::unique_ptr<ReportSubscription>(new ReportSubscription(std::move(slot)));
 }
@@ -383,12 +387,16 @@ std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
   if(!authorized)throw std::runtime_error("report schema or role mismatch");
   const UmaaDdsTopicV1 topic{topic_name.c_str(),schema_id.c_str(),qos_profile.c_str(),
     UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
+  const auto normative=umaa::generated::reviewed_qos_requirements(service_id,topic_name);
   void* writer=nullptr;
-  if(state_->qos_profiles.empty())writer=state_->domain->writer(topic);
-  else {
+  if(state_->qos_profiles.empty()){
+    if(normative)throw std::runtime_error("mandatory official QoS requires explicit runtime profile");
+    writer=state_->domain->writer(topic);
+  }else {
     const auto found=state_->qos_profiles.find(qos_profile);
     if(found==state_->qos_profiles.end())throw std::runtime_error("missing configured DDS QoS profile");
-    writer=state_->domain->writer(topic,found->second);
+    writer=state_->domain->writer(topic,found->second,
+      normative.value_or(umaa::qos::Requirements{}));
   }
   return std::unique_ptr<ReportPublisher>(new ReportPublisher(
     std::make_unique<ReportPublisher::State>(state_->backend,state_->domain,

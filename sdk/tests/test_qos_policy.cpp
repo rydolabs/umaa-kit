@@ -2,6 +2,7 @@
 #undef NDEBUG
 #endif
 #include "umaa/qos_policy.hpp"
+#include "umaa/generated/umaa6_qos_requirements.hpp"
 #include "umaa/dds_backend_loader.hpp"
 #include <cassert>
 #include <stdexcept>
@@ -17,6 +18,17 @@ template <typename Fn> void must_fail(Fn&& fn) {
 int main(int argc,char** argv){
  using namespace umaa::qos;
  Policy settings;
+ const auto reviewed=umaa::generated::reviewed_qos_requirements(
+     "UMAA::EO::BatteryStatus",
+     "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement");
+ assert(reviewed && reviewed->require_ordered_access);
+ assert(reviewed->presentation==Presentation::topic);
+ must_fail([&]{validate(settings,*reviewed);});
+ auto ordered=settings;ordered.presentation=Presentation::topic;
+ ordered.ordered_access=true;
+ validate(ordered,*reviewed);
+ assert(!umaa::generated::reviewed_qos_requirements(
+     "UMAA::EO::EngineControl","UMAA::EO::EngineControl::EngineCommandType"));
  validate(settings);
  assert(settings.depth==16 && required_capabilities(settings)==UMAA_DDS_CAP_RELIABLE);
  Requirements reviewed;

@@ -153,12 +153,19 @@ def audit(archive_path: Path, service_paths: list[Path]) -> dict:
                                "source": observed,
                                "unresolvedInYaml": [f for f in ("ddsTopicName", "keyFields", "qosProfileRef")
                                                     if declared[f] is None]})
+            collections = []
+            for dtype in doc["spec"].get("unresolvedCollectionTypes", []):
+                try:
+                    collections.append(source_type(archive, dtype))
+                except SourceError as exc:
+                    issues.append(service + "/unresolvedCollectionType: " + str(exc))
             results.append({"serviceId": service, "yamlSha256": yaml_digest,
-                            "topics": actual})
+                            "topics": actual, "unresolvedCollectionTypes": collections})
     return {"reportVersion": 1, "status": "PASS" if not issues else "CONFLICT",
             "scope": "IDL Topic constant / @key declaration evidence only; NOT official runtime or compliance",
             "archiveSha256": sha(archive_path.read_bytes()),
             "servicesAudited": len(results), "topicsAudited": sum(len(s["topics"]) for s in results),
+            "unresolvedCollectionTypesAudited": sum(len(s["unresolvedCollectionTypes"]) for s in results),
             "issues": sorted(issues), "services": results,
             "approvedDdsQos": False, "approvedOperationSemantics": False,
             "nativeDdsTypeSupportGenerated": False}

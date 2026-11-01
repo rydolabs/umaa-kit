@@ -90,6 +90,8 @@ class SourceAuditTest(unittest.TestCase):
         self.assertEqual("PASS", result["status"], result["issues"])
         self.assertEqual(2, result["servicesAudited"])
         self.assertEqual(4, result["topicsAudited"])
+        self.assertEqual(1, result["unresolvedCollectionTypesAudited"])
+        self.assertEqual(["listID", "elementID"], result["services"][0]["unresolvedCollectionTypes"][0]["keyFields"])
         self.assertFalse(result["approvedDdsQos"])
         self.assertFalse(result["approvedOperationSemantics"])
         self.assertFalse(result["nativeDdsTypeSupportGenerated"])

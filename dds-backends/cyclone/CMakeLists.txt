@@ -147,3 +147,15 @@ add_test(NAME umaa_cyclone_typed_server_background_real_wire
  "$<TARGET_FILE:umaa_cyclone_vehicle_component>"
  "$<TARGET_FILE:umaa_cyclone_typed_command_client_cli>" auto)
 set_tests_properties(umaa_cyclone_typed_server_background_real_wire PROPERTIES TIMEOUT 55)
+
+# Same vendor-neutral QoS v2 client tests actual separate processes.
+add_executable(umaa_cyclone_qos_cli "${SDK_ROOT}/tests/real_dds_qos_cli.cpp")
+target_compile_features(umaa_cyclone_qos_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_cyclone_qos_cli PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_cyclone_qos_cli PRIVATE UMAA::Runtime "${CMAKE_DL_LIBS}")
+add_test(NAME umaa_cyclone_explicit_qos_real_wire
+  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_backend.py"
+  "$<TARGET_FILE:umaa_cyclone_qos_cli>"
+  "$<TARGET_FILE:umaa_dds_cyclone_demo>"
+  "$<TARGET_FILE:umaa_cyclone_vehicle_component>")
+set_tests_properties(umaa_cyclone_explicit_qos_real_wire PROPERTIES TIMEOUT 38)

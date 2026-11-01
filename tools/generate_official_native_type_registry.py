@@ -18,6 +18,7 @@ from typing import Iterable
 from tools.official_icd_evidence import audit, SourceError
 from tools.official_idl_compile import collect
 from tools.umaa_contract_ir import load_service
+from tools.generate_qos_requirements import INPUT as REVIEWED_QOS_SOURCE, parse as load_reviewed_qos
 
 SHA = re.compile(r"[a-f0-9]{64}\Z")
 IDENT = re.compile(r"[A-Za-z_]\w*\Z")
@@ -66,6 +67,10 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
         raise SourceError("external archive does not match supplied SHA-256")
     if evidence["issues"]:
         raise SourceError("source/YAML disagreement: " + "; ".join(evidence["issues"]))
+    minimum_rules = {
+        (item["serviceId"], item["idlType"]): "UMAA-SPEC-EOICD-v6.0#3.8.1"
+        for item in load_reviewed_qos(REVIEWED_QOS_SOURCE)
+    }
     by_type: dict[str, dict] = {}
     service_specs: list[dict] = []
     sources = set()
@@ -95,6 +100,7 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
                 "declared_topic_constant": info["ddsTopicName"],
                 "key_fields": ",".join(info["keyFields"]),
                 "role": role, "direction": direction,
+                "reviewed_minimum": minimum_rules.get((entry["serviceId"], fq)),
             })
             if fq in by_type:
                 if by_type[fq]["source"] != info:
@@ -165,7 +171,8 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
         " const char* alias; const char* idl_type;",
         " const char* declared_idl_topic_constant; const char* key_fields;",
         " const char* role; const char* direction;",
-        " bool qos_verified;",
+        " const char* qos_minimum_reference; /* source-reviewed minimum only */",
+        " bool full_qos_profile_verified;",
         "};",
         "struct SourceServiceV1 {",
         " const char* service_id; const SourceTopicV1* topics;",
@@ -175,12 +182,13 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
     for index, service in enumerate(service_specs):
         service_cpp.append(f"inline constexpr SourceTopicV1 source_topics_{index}[] = {{")
         for topic in service["topics"]:
-            service_cpp.append(" {" + ", ".join(
-                quote(topic[key]) for key in (
-                    "alias","idl_type","declared_topic_constant",
-                    "key_fields","role","direction"
-                )
-            ) + ", false},")
+            literals = [quote(topic[key]) for key in (
+                "alias","idl_type","declared_topic_constant",
+                "key_fields","role","direction"
+            )]
+            literals.append(quote(topic["reviewed_minimum"])
+                            if topic["reviewed_minimum"] else "nullptr")
+            service_cpp.append(" {" + ", ".join(literals) + ", false},")
         service_cpp.append("};")
     service_cpp.append("inline constexpr SourceServiceV1 source_services[] = {")
     for index, service in enumerate(service_specs):
@@ -209,18 +217,20 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
         f" if(umaa::generated::source_service_count != {len(service_specs)}) return 2;",
         " if(umaa::generated::find_source_service(nullptr)!=nullptr) return 3;",
         ' if(umaa::generated::find_source_service("UMAA::Unknown")!=nullptr) return 4;',
-        " std::size_t topics=0;",
+        " std::size_t topics=0, reviewed_minimum_count=0;",
         " for(const auto& service:umaa::generated::source_services){",
         "  if(service.executable || service.operations_verified) return 5;",
         "  if(umaa::generated::find_source_service(service.service_id)!=&service) return 6;",
         "  for(std::size_t i=0;i<service.topic_count;++i){",
         "   const auto& topic=service.topics[i];",
-        "   if(topic.qos_verified || !topic.idl_type || !topic.alias",
+        "   if(topic.full_qos_profile_verified || !topic.idl_type || !topic.alias",
         "      || std::strcmp(topic.idl_type,topic.declared_idl_topic_constant)) return 7;",
+        "   if(topic.qos_minimum_reference) ++reviewed_minimum_count;",
         "   ++topics;",
         "  }",
         " }",
-        f" return topics == {sum(len(s['topics']) for s in service_specs)} ? 0 : 8;",
+        f" if(topics != {sum(len(s['topics']) for s in service_specs)}) return 8;",
+        f" return reviewed_minimum_count == {sum(bool(t['reviewed_minimum']) for svc in service_specs for t in svc['topics'])} ? 0 : 9;",
         "}",
         "",
     ]
@@ -238,6 +248,9 @@ def generate(archive: Path, yaml_paths: Iterable[Path], output: Path,
         "nativeDescriptorCount": len(bindings),
         "sourceServiceContractCount": len(service_specs),
         "sourceServiceTopicCount": sum(len(spec["topics"]) for spec in service_specs),
+        "sourceReviewedMinimumCount": sum(
+            bool(topic["reviewed_minimum"])
+            for spec in service_specs for topic in spec["topics"]),
         "nativeIdlFiles": sorted(deps),
         "descriptorNames": [fq for fq, _ in bindings],
         "qosApproved": False,

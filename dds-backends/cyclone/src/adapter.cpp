@@ -33,9 +33,11 @@ dds_qos_t* qos() {
        dds_qset_history(q,DDS_HISTORY_KEEP_LAST,16);}
  return q;
 }
-bool qos_valid(const UmaaDdsQosV2* q){
+bool qos_valid(const UmaaDdsTopicV1* t,const UmaaDdsQosV2* q){
  return q && q->struct_size==sizeof(UmaaDdsQosV2) && q->partition &&
    q->reliability<=UMAA_DDS_QOS_RELIABLE &&
+   (!(t->required_features&UMAA_DDS_CAP_RELIABLE) ||
+    q->reliability==UMAA_DDS_QOS_RELIABLE) &&
    q->durability<=UMAA_DDS_QOS_TRANSIENT_LOCAL &&
    q->history_kind<=UMAA_DDS_QOS_KEEP_ALL &&
    ((q->history_kind==UMAA_DDS_QOS_KEEP_LAST && q->history_depth>0 &&
@@ -111,7 +113,7 @@ void* open_reader(void* ptr,const UmaaDdsTopicV1* t,UmaaDdsOnSampleV1 cb,void* u
  return result;
 }
 void* open_writer_qos(void* ptr,const UmaaDdsTopicV1* t,const UmaaDdsQosV2* request){
- if(!ptr||!supported(t)||!qos_valid(request))return nullptr;
+ if(!ptr||!supported(t)||!qos_valid(t,request))return nullptr;
  auto* d=static_cast<Domain*>(ptr);
  const auto id=topic(d);if(id<0)return nullptr;
  auto* ps=pubsub_qos(request);if(!ps){(void)dds_delete(id);return nullptr;}
@@ -137,7 +139,7 @@ void* open_writer_qos(void* ptr,const UmaaDdsTopicV1* t,const UmaaDdsQosV2* requ
 }
 void* open_reader_qos(void* ptr,const UmaaDdsTopicV1* t,const UmaaDdsQosV2* request,
                       UmaaDdsOnSampleV1 cb,void* user){
- if(!ptr||!supported(t)||!qos_valid(request)||!cb)return nullptr;
+ if(!ptr||!supported(t)||!qos_valid(t,request)||!cb)return nullptr;
  auto* d=static_cast<Domain*>(ptr);
  const auto id=topic(d);if(id<0)return nullptr;
  auto* ps=pubsub_qos(request);if(!ps){(void)dds_delete(id);return nullptr;}

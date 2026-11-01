@@ -18,15 +18,15 @@ template <typename Fn> void must_fail(Fn&& fn) {
 int main(int argc,char** argv){
  using namespace umaa::qos;
  Policy settings;
- const auto reviewed=umaa::generated::reviewed_qos_requirements(
+ const auto normative=umaa::generated::reviewed_qos_requirements(
      "UMAA::EO::BatteryStatus",
      "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement");
- assert(reviewed && reviewed->require_ordered_access);
- assert(reviewed->presentation==Presentation::topic);
- must_fail([&]{validate(settings,*reviewed);});
+ assert(normative && normative->require_ordered_access);
+ assert(normative->presentation==Presentation::topic);
+ must_fail([&]{validate(settings,*normative);});
  auto ordered=settings;ordered.presentation=Presentation::topic;
  ordered.ordered_access=true;
- validate(ordered,*reviewed);
+ validate(ordered,*normative);
  assert(!umaa::generated::reviewed_qos_requirements(
      "UMAA::EO::EngineControl","UMAA::EO::EngineControl::EngineCommandType"));
  validate(settings);

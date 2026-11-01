@@ -160,6 +160,7 @@ jobs:
           assert (m["sourceEvidenceServices"],m["sourceEvidenceTopics"],
                   m["nativeDescriptorCount"]) == (53,113,114)
           assert (m["sourceServiceContractCount"],m["sourceServiceTopicCount"]) == (53,114)
+          assert m["sourceReviewedMinimumCount"] == 1
           assert not m["qosApproved"] and not m["payloadCodecGenerated"]
           objs=[temp/"all-typesupport"/"obj"/Path(p).with_suffix(".o")
                 for p in m["nativeIdlFiles"]]

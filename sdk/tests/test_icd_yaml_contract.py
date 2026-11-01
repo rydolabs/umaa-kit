@@ -65,8 +65,7 @@ class ICDYAMLCoverage(unittest.TestCase):
     def test_yaml_rejects_explicit_merge_mapping(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "merge.yaml"
-            path.write_text("a:\\n  <<: {b: 1}\\n".replace("\\\\n", "\\n"),
-                            encoding="utf-8")
+            path.write_text("a:\n  <<: {b: 1}\n", encoding="utf-8")
             with self.assertRaises(ICDYamlError):
                 strict_load(path, self.yaml)
 

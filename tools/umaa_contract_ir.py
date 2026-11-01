@@ -126,6 +126,8 @@ def resolve(yaml_path: Path, idl_path: Path | None = None,
         fields = idl_types.get(dtype)
         if idl_types and fields is None:
             blockers.append(alias + ": IDL type not found: " + dtype)
+        if fields is not None and any(f.type_name not in {"long", "string"} for f in fields):
+            blockers.append(alias + ": restricted generator supports IDL long/string only")
         keys = topic["keyFields"]
         if not isinstance(keys, list):
             blockers.append(alias + ": Key fields unresolved")

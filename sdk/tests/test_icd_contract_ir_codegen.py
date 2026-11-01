@@ -191,6 +191,18 @@ class ContractIRCodegenTests(unittest.TestCase):
         self.assertIn("NO DDS subscription", (out /
             "src/consumers/Demo_EO_BatteryStatus.hpp").read_text())
 
+    def test_existing_component_cli_accepts_yaml_and_idl(self):
+        p = self.authored("BatteryStatus")
+        man = self.manifest([("BatteryStatus", "provider")])
+        result = subprocess.run([sys.executable, "-m", "tools.umaa_component_cli",
+                "generate", "--project", str(self.root), "--yaml", str(p),
+                "--idl", str(self.idl), "--fixture"],
+                cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue((self.root / "generated/component_entry.cpp").is_file())
+        self.assertEqual("synthetic-fixture",
+                         json.loads((self.root / "generated/generation.json").read_text())["scope"])
+
     def test_no_silent_support_for_nonprimitive_idl(self):
         p = self.authored("BatteryStatus")
         self.idl.write_text(DEMO_IDL.replace("long level_pct", "double level_pct"))

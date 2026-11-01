@@ -75,9 +75,19 @@ if(DEFINED UMAA_ENGINE_GENERATED_ROOT)
   target_include_directories(umaa_engine_type_support PUBLIC "${ENGINE_ROOT}")
   target_link_libraries(umaa_engine_type_support PUBLIC CycloneDDS::ddsc)
   set(ENGINE_PLUGIN_OUT "${CMAKE_CURRENT_BINARY_DIR}/generated-engine-plugin")
+  set(ENGINE_YAML_SOURCE_ARGS)
+  if(DEFINED UMAA_ENGINE_SOURCE_YAML)
+    if(NOT DEFINED UMAA_OFFICIAL_IDL_ARCHIVE OR NOT DEFINED UMAA_OFFICIAL_IDL_SHA256)
+      message(FATAL_ERROR "Engine source gate requires ZIP and SHA256")
+    endif()
+    list(APPEND ENGINE_YAML_SOURCE_ARGS --yaml "${UMAA_ENGINE_SOURCE_YAML}"
+      --zip "${UMAA_OFFICIAL_IDL_ARCHIVE}" --expect-sha256 "${UMAA_OFFICIAL_IDL_SHA256}")
+  endif()
   execute_process(
-    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/generate_official_engine_plugin.py"
+    COMMAND "${Python3_EXECUTABLE}" "-m" "tools.generate_official_engine_plugin"
             --type-root "${ENGINE_ROOT}" --output "${ENGINE_PLUGIN_OUT}"
+            ${ENGINE_YAML_SOURCE_ARGS}
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../.."
     RESULT_VARIABLE ENGINE_PLUGIN_GEN_RESULT)
   if(NOT ENGINE_PLUGIN_GEN_RESULT EQUAL 0)
     message(FATAL_ERROR "Official EngineControl Handler/plugin code generation failed")

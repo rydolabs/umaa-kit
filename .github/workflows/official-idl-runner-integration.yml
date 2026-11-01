@@ -197,6 +197,9 @@ jobs:
           cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/official-wire-build" \
             -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/battery-typesupport" \
             -DUMAA_ENGINE_GENERATED_ROOT="$RUNNER_TEMP/engine-typesupport" \
+            -DUMAA_ENGINE_SOURCE_YAML="$RUNNER_TEMP/source-backed-candidates/services/EO/EngineControl.yaml" \
+            -DUMAA_OFFICIAL_IDL_ARCHIVE="$RUNNER_TEMP/umaa-6.0-with-exp.zip" \
+            -DUMAA_OFFICIAL_IDL_SHA256="$UMAA_IDL_SHA256" \
             -DCMAKE_BUILD_TYPE=Debug
           cmake --build "$RUNNER_TEMP/official-wire-build" --parallel 2
 

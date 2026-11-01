@@ -9,6 +9,10 @@ import argparse
 import json
 import pathlib
 import re
+import sys
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from tools.official_icd_evidence import audit, SourceError
 from tools.umaa_contract_ir import load_service

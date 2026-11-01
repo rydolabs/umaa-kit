@@ -32,7 +32,10 @@ def parse(path: Path) -> list[dict]:
     Strict.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, mapping)
     if path.is_symlink() or not path.is_file() or path.stat().st_size>100_000:
         raise ValueError("missing/unsafe QoS source")
-    doc=yaml.load(path.read_text(encoding="utf-8"), Loader=Strict)
+    try:
+        doc=yaml.load(path.read_text(encoding="utf-8"), Loader=Strict)
+    except yaml.YAMLError as exc:
+        raise ValueError("invalid QoS YAML syntax") from exc
     if (not isinstance(doc,dict) or set(doc)!={"schemaVersion","kind","source","entries"}
         or doc["schemaVersion"]!="1" or doc["kind"]!="QosRequirements"):
         raise ValueError("invalid QoS contract root")

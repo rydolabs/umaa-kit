@@ -196,6 +196,30 @@ class SourceAuditTest(unittest.TestCase):
             generate(self.zip_path,sources,self.root/"raw",digest,original_root)
         self.assertFalse((self.root/"raw").exists())
 
+    def test_engine_generated_module_requires_verified_yaml_command_ack_status(self):
+        from tools.official_icd_overlay import produce
+        from tools.generate_official_engine_plugin import verify_engine_source_contract
+        source=self.yaml("EngineControl")
+        digest=sha(self.zip_path.read_bytes())
+        out=self.root/"sourcechecked-engine"
+        produce(self.zip_path,[source],out,digest)
+        candidate=out/"services/EO/EngineControl.yaml"
+        result=verify_engine_source_contract(candidate,self.zip_path,digest)
+        self.assertEqual("ENGINECONTROL_IGNITION_SUBSET_ONLY",result["scope"])
+        self.assertEqual(3,result["verifiedNativeTopicTypes"])
+        self.assertFalse(result["completeProtocolGenerated"])
+        self.assertFalse(result["reviewedPerServiceQos"])
+        with self.assertRaisesRegex(SourceError,"wrong Service or IDL source pin"):
+            verify_engine_source_contract(source,self.zip_path,digest)
+        with self.assertRaisesRegex(SourceError,"source mismatch"):
+            verify_engine_source_contract(candidate,self.zip_path,"0"*64)
+        yaml,_=require_dependencies()
+        changed=strict_load(candidate,yaml)
+        changed["spec"]["topics"]["command01"]["keyFields"]=["source"]
+        candidate.write_text(yaml_text(changed),encoding="utf-8")
+        with self.assertRaises(SourceError):
+            verify_engine_source_contract(candidate,self.zip_path,digest)
+
     def test_reject_zip_slip_duplicate_and_missing_license(self):
         cases = [
             {"LICENSE": b"x", "../escape.idl": b"bad"},

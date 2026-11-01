@@ -123,6 +123,7 @@ class ContractIRCodegenTests(unittest.TestCase):
             self.assertIn("DDS Topic name unresolved", blockers)
             self.assertIn("Operation", blockers)
             self.assertIn("official IDL binding not reviewed", blockers)
+            self.assertIn("official DDS wire Topic name and Service behavior not verified", blockers)
 
     def test_idl_key_schema_and_source_mutations_are_rejected(self):
         p = self.authored("EngineControl")

@@ -1,5 +1,5 @@
 // Fast DDS adapter for synthetic BatteryStatus ONLY. No official UMAA QoS claim.
-#include "umaa/internal/dds_backend.h"
+#include "umaa/internal/dds_backend_qos.h"
 #include "DemoBattery.h"
 #include "DemoBatteryPubSubTypes.h"
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -43,6 +43,20 @@ bool decode_key(const char* s,int32_t& key){
  if(errno||!*s||*end||n<INT32_MIN||n>INT32_MAX)return false;
  key=static_cast<int32_t>(n);return true;
 }
+bool qos_valid(const UmaaDdsTopicV1* topic,const UmaaDdsQosV2* req){
+ return req && req->struct_size==sizeof(UmaaDdsQosV2) && req->partition &&
+  req->reliability<=UMAA_DDS_QOS_RELIABLE &&
+  (!(topic->required_features&UMAA_DDS_CAP_RELIABLE) ||
+   req->reliability==UMAA_DDS_QOS_RELIABLE) &&
+  req->durability<=UMAA_DDS_QOS_TRANSIENT_LOCAL &&
+  req->history_kind<=UMAA_DDS_QOS_KEEP_ALL &&
+  ((req->history_kind==UMAA_DDS_QOS_KEEP_LAST && req->history_depth>0 &&
+    req->history_depth<=4096) ||
+   (req->history_kind==UMAA_DDS_QOS_KEEP_ALL && req->history_depth==0)) &&
+  req->presentation_scope==UMAA_DDS_QOS_PRESENTATION_INSTANCE &&
+  req->ordered_access==0 && req->coherent_access==0 &&
+  std::strlen(req->partition)<=255;
+}
 void* open_domain(uint32_t domain){
  if(domain>230)return nullptr;
  try{
@@ -63,14 +77,26 @@ void close_domain(void* handle){
 Topic* make_topic(Domain* d){
  return d->p->create_topic("Demo_EO_BatteryReportType",d->type.get_type_name(),TOPIC_QOS_DEFAULT);
 }
-void* open_writer(void* handle,const UmaaDdsTopicV1* topic){
- if(!handle||!approved(topic))return nullptr;
+void* open_writer_impl(void* handle,const UmaaDdsTopicV1* topic,
+                       const UmaaDdsQosV2* request){
+ if(!handle||!approved(topic)||(request&&!qos_valid(topic,request)))return nullptr;
  auto* d=static_cast<Domain*>(handle);auto* t=make_topic(d);if(!t)return nullptr;
- auto* pub=d->p->create_publisher(PUBLISHER_QOS_DEFAULT);
+ PublisherQos pubq=PUBLISHER_QOS_DEFAULT;
+ if(request&&*request->partition)pubq.partition().push_back(request->partition);
+ auto* pub=d->p->create_publisher(pubq);
  if(!pub){(void)d->p->delete_topic(t);return nullptr;}
  DataWriterQos qos=DATAWRITER_QOS_DEFAULT;
  qos.reliability().kind=RELIABLE_RELIABILITY_QOS;
  qos.history().kind=KEEP_LAST_HISTORY_QOS;qos.history().depth=16;
+ if(request){
+  qos.reliability().kind=request->reliability==UMAA_DDS_QOS_RELIABLE?
+    RELIABLE_RELIABILITY_QOS:BEST_EFFORT_RELIABILITY_QOS;
+  qos.durability().kind=request->durability==UMAA_DDS_QOS_TRANSIENT_LOCAL?
+    TRANSIENT_LOCAL_DURABILITY_QOS:VOLATILE_DURABILITY_QOS;
+  qos.history().kind=request->history_kind==UMAA_DDS_QOS_KEEP_LAST?
+    KEEP_LAST_HISTORY_QOS:KEEP_ALL_HISTORY_QOS;
+  qos.history().depth=static_cast<int32_t>(request->history_depth);
+ }
  qos.writer_data_lifecycle().autodispose_unregistered_instances=false;
  auto* writer=pub->create_datawriter(t,qos);
  if(!writer){
@@ -94,14 +120,32 @@ void* open_writer(void* handle,const UmaaDdsTopicV1* topic){
  }
  return result;
 }
-void* open_reader(void* handle,const UmaaDdsTopicV1* topic,UmaaDdsOnSampleV1 cb,void* user){
- if(!handle||!approved(topic)||!cb)return nullptr;
+void* open_writer(void* h,const UmaaDdsTopicV1* t){
+ return open_writer_impl(h,t,nullptr);
+}
+void* open_writer_qos(void* h,const UmaaDdsTopicV1* t,const UmaaDdsQosV2* q){
+ return open_writer_impl(h,t,q);
+}
+void* open_reader_impl(void* handle,const UmaaDdsTopicV1* topic,
+                       const UmaaDdsQosV2* request,UmaaDdsOnSampleV1 cb,void* user){
+ if(!handle||!approved(topic)||!cb||(request&&!qos_valid(topic,request)))return nullptr;
  auto* d=static_cast<Domain*>(handle);auto* t=make_topic(d);if(!t)return nullptr;
- auto* sub=d->p->create_subscriber(SUBSCRIBER_QOS_DEFAULT);
+ SubscriberQos subq=SUBSCRIBER_QOS_DEFAULT;
+ if(request&&*request->partition)subq.partition().push_back(request->partition);
+ auto* sub=d->p->create_subscriber(subq);
  if(!sub){(void)d->p->delete_topic(t);return nullptr;}
  DataReaderQos qos=DATAREADER_QOS_DEFAULT;
  qos.reliability().kind=RELIABLE_RELIABILITY_QOS;
  qos.history().kind=KEEP_LAST_HISTORY_QOS;qos.history().depth=16;
+ if(request){
+  qos.reliability().kind=request->reliability==UMAA_DDS_QOS_RELIABLE?
+    RELIABLE_RELIABILITY_QOS:BEST_EFFORT_RELIABILITY_QOS;
+  qos.durability().kind=request->durability==UMAA_DDS_QOS_TRANSIENT_LOCAL?
+    TRANSIENT_LOCAL_DURABILITY_QOS:VOLATILE_DURABILITY_QOS;
+  qos.history().kind=request->history_kind==UMAA_DDS_QOS_KEEP_LAST?
+    KEEP_LAST_HISTORY_QOS:KEEP_ALL_HISTORY_QOS;
+  qos.history().depth=static_cast<int32_t>(request->history_depth);
+ }
  auto* reader=sub->create_datareader(t,qos);
  if(!reader){
   (void)d->p->delete_subscriber(sub);(void)d->p->delete_topic(t);return nullptr;
@@ -112,6 +156,13 @@ void* open_reader(void* handle,const UmaaDdsTopicV1* topic,UmaaDdsOnSampleV1 cb,
   (void)d->p->delete_topic(t);
  }
  return result;
+}
+void* open_reader(void* h,const UmaaDdsTopicV1* t,UmaaDdsOnSampleV1 cb,void* u){
+ return open_reader_impl(h,t,nullptr,cb,u);
+}
+void* open_reader_qos(void* h,const UmaaDdsTopicV1* t,const UmaaDdsQosV2* q,
+                      UmaaDdsOnSampleV1 cb,void* u){
+ return open_reader_impl(h,t,q,cb,u);
 }
 int32_t send(void* handle,const UmaaDdsSampleV1* sample,uint32_t kind){
  if(!handle||!sample||!sample->instance_key)return UMAA_DDS_INVALID;
@@ -219,7 +270,13 @@ const UmaaDdsBackendV1 backend={UMAA_DDS_ABI_VERSION,sizeof(UmaaDdsBackendV1),
  "fastdds-synthetic-battery-only",supported,&open_domain,&close_domain,
  &open_writer,&open_reader,&write,&dispose,&unregister_instance,&poll,
  &wait_for_acks,&close_writer,&close_reader};
+const UmaaDdsQosBackendV2 qos_backend{
+ UMAA_DDS_QOS_ABI_VERSION,sizeof(UmaaDdsQosBackendV2),supported,
+ &open_writer_qos,&open_reader_qos};
 }
 extern "C" UMAA_DDS_EXPORT const UmaaDdsBackendV1* umaa_get_dds_backend_v1(uint32_t version){
  return version==UMAA_DDS_ABI_VERSION?&backend:nullptr;
+}
+extern "C" UMAA_DDS_EXPORT const UmaaDdsQosBackendV2* umaa_get_dds_qos_backend_v2(uint32_t version){
+ return version==UMAA_DDS_QOS_ABI_VERSION?&qos_backend:nullptr;
 }

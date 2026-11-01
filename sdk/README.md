@@ -165,14 +165,14 @@ For a synthetic Command schema with `is_command=true` and
 `Pending`; `poll()`, `wait_for()` and `cancel()` handle host-local async
 business sessions. Real DDS CommandStatus/Ack is not yet connected.
 
-See `dds/vendors/cyclone/` for the **synthetic BatteryStatus-only** real-wire
+See `dds-backends/cyclone/` for the **synthetic BatteryStatus-only** real-wire
 adapter, and `docs/SDK_FACADE_PHASE2.md` for limitations and CI reproduction.
 These development APIs are not official UMAA conformance evidence.
 
 ## Vendor-parity acceptance
 
 The development API intentionally hides Reader/Writer/QoS from the user.
-Two builds of `dds/vendors/cyclone` and `dds/vendors/fastdds` provide
+Two builds of `dds-backends/cyclone` and `dds-backends/fastdds` provide
 separate vendor-native TypeSupport for one **synthetic** BatteryStatus fixture.
 The parity workflow requires **the identical component .so and identical
 consumer executable binaries** to run against each DDS backend plugin. It
@@ -303,7 +303,7 @@ instead of becoming empty whenever an unrelated key was disposed.
 
 ### Synthetic Command real-wire proof
 
-The `dds/vendors/{cyclone,fastdds}/command_adapter.cpp` plugins implement
+The `dds-backends/{cyclone,fastdds}/src/command_adapter.cpp` plugins implement
 `demo:async-status-v1` and `demo:async-ack-v1` using the distinct
 `DemoCommandEvent.idl` fixture. The host uses
 `ComponentCommandProvider<Service>` and `DdsCommandEventTransport<Service>`;

@@ -68,7 +68,7 @@ This repository remains an **incomplete, non-certified SDK prototype**.
 - `sdk/`: typed generated Handler contract, service/catalog toolchain,
   common Command and Report lifecycle cores, installable CMake library and
   versioned shared library loader.
-- `dds/cyclone/`: real Cyclone DDS examples and selected official service
+- `tests/integration/cyclone/`: real Cyclone DDS examples and selected official service
   wire integration. DDS entity ownership belongs to SDK/host, not user Handler.
 - `simulator/`: independent process and independent DDS sample oracle.
 - `tools/`: official IDL TypeSupport generation, catalog/ICD audits and

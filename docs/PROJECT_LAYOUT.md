@@ -1,59 +1,53 @@
 # Repository layout and ownership
 
-This structure is deliberately **not** an all-in-one `src` migration: `sdk/`,
-`dds/cyclone/`, `simulator/`, and `tools/` are consumed by existing CMake,
-Python, and GitHub Actions paths. Moving them without changing all those
-callers would make already verified tests non-reproducible.
+The DDS implementation has one vendor-specific root, `dds-backends/`.
+Standalone Cyclone integration programs and cross-backend IDL fixtures are
+kept in `tests/`; the independent oracle remains in `simulator/`.
+This layout preserves the existing dynamic `UmaaDdsBackendV1` ABI.
 
 ```text
-umaa-dev/
-├── .github/workflows/   GitHub Actions CI and real-DDS validation
-├── catalog/             Reviewed service and Topic JSON contracts
-├── dds/cyclone/         CycloneDDS C binding, hosts, wire integration
-│   ├── include/umaa/    Vendor-specific transport headers
-│   ├── src/             Official-type and synthetic sample programs
-│   └── idl/             Synthetic test IDL (not official UMAA IDL)
-├── sdk/                 Installable C++17 core library and user API
-│   ├── include/umaa/    Vendor-neutral public headers
-│   ├── cmake/           Package configuration
-│   ├── tools/           Restricted fixture codegen
-│   ├── examples/        Sample handlers/hosts
-│   ├── fixtures/        Synthetic test fixtures
-│   └── tests/           Unit tests, fake DDS, downstream consumers
-├── simulator/           Independent oracle and cross-process tests
-│   ├── dds/             Independent real-DDS simulator processes
-│   ├── scenarios/       stdio scenario fixtures
-│   ├── src/             Scenario runner/verifier
-│   └── tests/           Simulator tests
-├── verifier/            Independent verification orchestrator and evidence
-│   ├── contracts/       Development-only contract mappings
-│   ├── suites/          Allow-listed stdio and scoped DDS test suites
-│   └── tests/           Verifier unit/negative tests
-├── studio/              Read-only EA QEA import/diff PoC (not Web Studio yet)
-│   ├── qea.py           Selected model extraction and stable GUID snapshots
-│   └── tests/           Synthetic EA-like repository tests
-├── tools/               Official IDL, catalog, CI and auditing tools
-├── smoke/               Separate native shared-module ABI smoke proof
-├── docs/
-│   ├── README.md        Documentation index
-│   ├── ARCHITECTURE.md  Architecture boundaries
-│   ├── PROJECT_LAYOUT.md Repository map and conventions
-│   ├── DELIVERY_GATES.md  Release gate status
-│   ├── architecture/    Native module design details
-│   ├── implementation/  Transport/adapter implementation notes
-│   └── specification/   ICD catalog and traceability notes
-├── evidence/            Committed evidence manifest; CI output ignored
-├── AGENTS.md            Development rules
-├── PROJECT.md           Intended technical scope
-├── PROGRESS.md          Chronological handoff log
-├── STATUS.md            Historical project snapshot
-└── README.md            Primary entry point
+umaa-kit/
+├── .github/workflows/       Continuous integration and real DDS evidence
+├── catalog/                 Reviewed Topic and service mappings
+├── sdk/                     Vendor-neutral C++17 SDK and Component runtime
+│   ├── include/umaa/        Stable SDK / DDS backend ABI headers
+│   ├── src/                 Runtime implementation
+│   ├── tests/               SDK unit and fake-DDS tests
+│   └── cmake/               Installed package configuration
+├── dds-backends/
+│   ├── CMakeLists.txt        One-vendor-per-build dispatcher
+│   ├── cyclone/
+│   │   ├── CMakeLists.txt    Cyclone plugin / real-wire synthetic tests
+│   │   ├── src/             Native Cyclone backend plugin implementations
+│   │   └── include/umaa/    Reusable Cyclone-only transport bindings
+│   ├── fastdds/
+│   │   ├── CMakeLists.txt    Fast DDS plugin / real-wire synthetic tests
+│   │   └── src/             Native Fast DDS backend plugin implementations
+│   └── rti/                 Documented external SDK prerequisite only
+├── tests/
+│   ├── fixtures/idl/        Shared synthetic DDS IDL; NOT official UMAA IDL
+│   └── integration/cyclone/ Independent Cyclone official-archive / wire
+│       ├── CMakeLists.txt    Standalone, source-gated integration project
+│       └── src/             Test hosts and publishers
+├── simulator/
+│   └── dds/                Independent oracle processes and test drivers
+├── verifier/               Scoped verifier and evidence handling
+├── studio/                 EA QEA and platform prototype
+├── tools/                  Official IDL, catalog, CI and auditing utilities
+├── docs/                   Architecture and implementation documentation
+├── smoke/                  Separate ABI smoke checks
+└── evidence/               Evidence manifest (scratch output is ignored)
 ```
+
+The public SDK does not depend on a DDS vendor. The backend plugins compile
+the vendor API and generate fixture TypeSupport in a private build tree.
+Official AUVSI IDL/TypeSupport is acquired separately for source-gated
+integration tests, not committed to this repository.
 
 ## File management rules
 
 1. Place **public, vendor-neutral headers** in `sdk/include/umaa/` and
-   Cyclone-specific headers in `dds/cyclone/include/umaa/`.
+   Cyclone-specific headers in `dds-backends/cyclone/include/umaa/`.
 2. Put actual component implementations with their matching SDK or DDS build;
    keep the **independent** oracle under `simulator/`, not in SDK code.
 3. Do not commit official AUVSI IDL archives, unpacked official IDL, build

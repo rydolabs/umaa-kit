@@ -20,6 +20,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 namespace umaa {
@@ -231,6 +232,12 @@ public:
 private:
   std::unique_ptr<internal::ReportPublisher> endpoint_;
 };
+template<class T,class=void> struct ServiceQosName {
+  static constexpr const char* get(){return "demo-reliable";}
+};
+template<class T> struct ServiceQosName<T,std::void_t<decltype(T::qos_profile)>> {
+  static constexpr const char* get(){return T::qos_profile;}
+};
 class Application final {
 public:
   Application():host_(std::make_shared<internal::ComponentRuntime>()){}
@@ -238,8 +245,13 @@ public:
     auto config=internal::RuntimeConfig::read(config_path);
     Application app;
     app.use_backend(config.backend,config.domain_id);
+    app.host_->set_qos_profiles(config.qos_profiles);
     for(const auto& module:config.modules)app.load_component(module);
     return app;
+  }
+  void configure_qos_profiles(
+      const std::unordered_map<std::string,umaa::qos::Policy>& profiles) {
+    host_->set_qos_profiles(profiles);
   }
   void load_component(const std::string& path){host_->load_component(path);}
   // Cooperative in-process reload; not a crash-safe hot-upgrade.
@@ -249,7 +261,8 @@ public:
     static_assert(!Service::is_command,"publish<Service>() requires a Report contract");
     if(instance_key.empty())throw std::invalid_argument("Report instance key required");
     return ReportPublisherHandle<Service>(host_->open_report_fixture(
-      Service::id,Service::topic_name,Service::schema_id,instance_key));
+      Service::id,Service::topic_name,Service::schema_id,instance_key,
+      ServiceQosName<Service>::get()));
   }
 
   void use_backend(const std::string& path,uint32_t domain){

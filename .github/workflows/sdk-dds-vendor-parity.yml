@@ -16,9 +16,9 @@ jobs:
           sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
       - name: Build one device module and both adapters
         run: |
-          cmake -S dds/vendors/cyclone -B build/parity-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake -S dds-backends/cyclone -B build/parity-cyclone -DCMAKE_BUILD_TYPE=Release
           cmake --build build/parity-cyclone --parallel 2
-          cmake -S dds/vendors/fastdds -B build/parity-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake -S dds-backends/fastdds -B build/parity-fastdds -DCMAKE_BUILD_TYPE=Release
           cmake --build build/parity-fastdds --parallel 2
       - name: Execute identical client and identical device module against both backends
         run: |

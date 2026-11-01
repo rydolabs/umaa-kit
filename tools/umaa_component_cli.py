@@ -324,6 +324,12 @@ def main(argv=None):
     verify.add_argument("--input", required=True, type=Path)
     g = commands.add_parser("generate")
     g.add_argument("--project", type=Path, default=Path("."))
+    g.add_argument("--yaml", type=Path, action="append",
+                   help="authored ICD Service YAML; repeat for Component services")
+    g.add_argument("--idl", type=Path, help="pinned IDL source (restricted subset)")
+    g.add_argument("--original-icd", type=Path, help="source PDF/file for digest checking")
+    g.add_argument("--fixture", action="store_true",
+                   help="allow Demo:: synthetic fixture only")
     b = commands.add_parser("build")
     b.add_argument("--project", type=Path, default=Path("."))
     b.add_argument("--sdk-prefix", required=True, type=Path)
@@ -350,12 +356,21 @@ def main(argv=None):
                 snapshot = contracts.read_snapshot(args.input)
                 print(json.dumps(contracts.validate_snapshot(snapshot), sort_keys=True))
         elif args.cmd == "generate":
-            generate(args.project)
+            if args.yaml or args.idl or args.original_icd or args.fixture:
+                if not args.yaml or not args.idl:
+                    raise ProjectError("--yaml and --idl are both required for ICD generation")
+                from tools.umaa_icd_component_codegen import generate as generate_icd
+                print(json.dumps(generate_icd(args.project / MANIFEST,
+                     args.yaml, args.idl, args.project,
+                     fixture=args.fixture, original_icd=args.original_icd),
+                     sort_keys=True))
+            else:
+                generate(args.project)
         elif args.cmd == "build":
             run_cmake(args.project, args.sdk_prefix)
         elif args.cmd == "test":
             run_test(args.project)
-    except (ProjectError, contracts.ContractError, OSError, subprocess.CalledProcessError) as exc:
+    except (ProjectError, contracts.ContractError, OSError, subprocess.CalledProcessError, ValueError) as exc:
         print("UMAA COMPONENT CLI ERROR:", exc, file=sys.stderr)
         return 2
     return 0

@@ -9,6 +9,9 @@ on:
       - 'tools/validate_icd_yaml.py'
       - 'tools/umaa_service_contracts.py'
       - 'sdk/tests/test_icd_yaml_contract.py'
+      - 'sdk/tests/test_icd_contract_ir_codegen.py'
+      - 'tools/umaa_contract_ir.py'
+      - 'tools/umaa_icd_component_codegen.py'
       - '.github/workflows/icd-yaml-contract.yml'
   push:
     branches: [main]
@@ -20,6 +23,9 @@ on:
       - 'tools/validate_icd_yaml.py'
       - 'tools/umaa_service_contracts.py'
       - 'sdk/tests/test_icd_yaml_contract.py'
+      - 'sdk/tests/test_icd_contract_ir_codegen.py'
+      - 'tools/umaa_contract_ir.py'
+      - 'tools/umaa_icd_component_codegen.py'
       - '.github/workflows/icd-yaml-contract.yml'
 jobs:
   projection:
@@ -41,3 +47,5 @@ jobs:
         run: python -m tools.validate_icd_yaml
       - name: Run losslessness, schema and safety regressions
         run: python -m unittest discover -s sdk/tests -p 'test_icd_yaml_contract.py' -v
+      - name: Validate Contract IR and compile generated Component with installed SDK
+        run: python -m unittest discover -s sdk/tests -p 'test_icd_contract_ir_codegen.py' -v

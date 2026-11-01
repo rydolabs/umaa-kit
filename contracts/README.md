@@ -30,3 +30,8 @@ Structural validation **does not** mean official UMAA or DDS wire
 compliance. For future original-text ingestion, pin the authoritative
 ICD and IDL hashes first; preserve paragraph/table/figure/requirement
 provenance and verify coverage before enabling SDK runtime bindings.
+
+Vendor-neutral Component generation from separately authored, verified
+YAML + IDL: [Contract IR and Component codegen](../docs/ICD_COMPONENT_CODEGEN.md).
+Its current compiler-tested scope is explicitly limited to source-checked
+scaffolds, not official DDS TypeSupport or automatic runtime conformance.

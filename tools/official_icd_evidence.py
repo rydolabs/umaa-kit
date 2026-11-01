@@ -50,9 +50,9 @@ def inspected_zip(path: Path):
     seen = set()
     total = 0
     for entry in infos:
-        name = entry.filename
+        name = entry.orig_filename  # unnormalized header, including on Windows
         parts = PurePosixPath(name).parts
-        if (not parts or name.startswith("/") or "\\" in name
+        if (name != entry.filename or not parts or name.startswith("/") or "\\" in name
                 or any(part in ( ".", "..") for part in parts)
                 or (len(parts) > 1 and parts[0] not in ("UMAA", "LICENSE"))
                 or name in seen or entry.flag_bits & 1

@@ -64,7 +64,7 @@ vendor callback and the exact ownership/capability semantics.
 A vendor implementation directory should contain:
 
 ```text
-dds/vendors/<name>/
+dds-backends/<name>/
   adapter.cpp                 implements umaa_get_dds_backend_v1()
   type_bindings/              generated IDL TypeSupport, schema/key mapping
   CMakeLists.txt              self-contained vendor SDK dependency

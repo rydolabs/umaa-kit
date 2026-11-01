@@ -8,7 +8,7 @@ Vendor-neutral SDK (sdk/include/umaa)
  Command state / Report lifecycle / Collection / Module ABI
             │
             ▼
-Cyclone DDS adapter (dds/cyclone/include/umaa)
+Cyclone DDS adapter (dds-backends/cyclone/include/umaa)
  DDS C participant, readers and writers; service-specific mappings
             │
             ▼

@@ -1,7 +1,7 @@
 # Repository layout and ownership
 
 This structure is deliberately **not** an all-in-one `src` migration: `sdk/`,
-`dds/cyclone/`, `simulator/`, and `tools/` are consumed by existing CMake,
+`tests/integration/cyclone/`, `simulator/`, and `tools/` are consumed by existing CMake,
 Python, and GitHub Actions paths. Moving them without changing all those
 callers would make already verified tests non-reproducible.
 
@@ -9,7 +9,7 @@ callers would make already verified tests non-reproducible.
 umaa-dev/
 ├── .github/workflows/   GitHub Actions CI and real-DDS validation
 ├── catalog/             Reviewed service and Topic JSON contracts
-├── dds/cyclone/         CycloneDDS C binding, hosts, wire integration
+├── tests/integration/cyclone/         CycloneDDS C binding, hosts, wire integration
 │   ├── include/umaa/    Vendor-specific transport headers
 │   ├── src/             Official-type and synthetic sample programs
 │   └── idl/             Synthetic test IDL (not official UMAA IDL)
@@ -53,7 +53,7 @@ umaa-dev/
 ## File management rules
 
 1. Place **public, vendor-neutral headers** in `sdk/include/umaa/` and
-   Cyclone-specific headers in `dds/cyclone/include/umaa/`.
+   Cyclone-specific headers in `dds-backends/cyclone/include/umaa/`.
 2. Put actual component implementations with their matching SDK or DDS build;
    keep the **independent** oracle under `simulator/`, not in SDK code.
 3. Do not commit official AUVSI IDL archives, unpacked official IDL, build

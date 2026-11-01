@@ -46,7 +46,7 @@ not production-grade durable hardware recovery.
 
 See [current implementation ledger](docs/SDK_IMPLEMENTATION_BACKLOG.md),
 [mixed-network failures](docs/SDK_DDS_MIXED_NETWORK_LIMITS.md) and
-[how to implement another backend](dds/vendors/ADDING_A_BACKEND.md).
+[how to implement another backend](../dds-backends/ADDING_A_BACKEND.md).
 
 ## Modular SDK architecture (MVP, 2026-10-29)
 
@@ -78,7 +78,7 @@ Two **separate projects** for development and independent verification of UMAA s
 ## Where things live
 
 The stable implementation directories are `sdk/` (vendor-neutral core),
-`dds/cyclone/` (real DDS transport), `simulator/` (independent verification),
+`tests/integration/cyclone/` (real DDS transport), `simulator/` (independent verification),
 `catalog/` (reviewed contracts), and `tools/` (build and audit utilities).
 Start at the [documentation index](docs/README.md) and the
 [complete repository map](docs/PROJECT_LAYOUT.md) for file ownership,
@@ -145,7 +145,7 @@ Structure maintenance does not expand the current UMAA service-conformance scope
 
 ## P2 Cyclone Command input Reader (2026-10-27)
 
-`dds/cyclone/include/umaa/cyclone_sample_reader.hpp` provides a reusable
+`dds-backends/cyclone/include/umaa/cyclone_sample_reader.hpp` provides a reusable
 RAII sample Reader shared by Command and Report; the official EngineControl
 host consumes its Command input through `CommandReader`. A rejected command,
 DDS failure or exception faults the epoch and releases sample-owned data.
@@ -274,7 +274,7 @@ separate **DDS backend plugin DLL/SO**. User device code implements a typed
 `Component::provide<Service>(handler)`; the loader owns the module ABI v2.
 The host-side `Application::consume<Service>()` currently supports local
 Command results and typed synthetic Report subscription. DDS vendor code is
-isolated under `dds/vendors/<vendor>/`, behind
+isolated under `dds-backends/<vendor>/`, behind
 `sdk/include/umaa/internal/dds_backend.h`. New vendors MUST NOT change
 application handlers or the common protocol FSM.
 
@@ -295,7 +295,7 @@ The **same user Component DLL/SO** and the **same typed Consumer binary**
 can use the Cyclone DDS or Fast DDS backend without recompilation for a
 synthetic BatteryStatus Report. Both implementations use the same single
 `dds_backend.h` C ABI, with vendor TypeSupport confined to their own
-`dds/vendors/<vendor>/` directory. This establishes ABI-based vendor
+`dds-backends/<vendor>/` directory. This establishes ABI-based vendor
 substitution for the tested development fixture only, not mixed-vendor DDS
 wire interoperability or official UMAA service compatibility.
 

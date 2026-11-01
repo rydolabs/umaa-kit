@@ -115,6 +115,8 @@ def resolve(yaml_path: Path, idl_path: Path | None = None,
             blockers.append("official IDL binding not reviewed")
         if not checks["ddsQosVerified"]:
             blockers.append("mandatory DDS QoS not reviewed")
+        if not checks["ddsBehaviorVerified"]:
+            blockers.append("official DDS wire Topic name and Service behavior not verified")
 
     selected = {}
     seen_topic_names: set[str] = set()

@@ -1,5 +1,5 @@
 // Cyclone C backend: synthetic BatteryStatus TypeBinding only, NOT official UMAA.
-#include "umaa/internal/dds_backend.h"
+#include "umaa/internal/dds_backend_qos.h"
 #include <dds/dds.h>
 #include "DemoBattery.h"
 #include <cerrno>
@@ -11,8 +11,8 @@
 #include <string>
 namespace {
 struct Domain {dds_entity_t participant;};
-struct Writer {dds_entity_t writer,topic;};
-struct Reader {dds_entity_t reader,topic;UmaaDdsOnSampleV1 callback;void* user;};
+struct Writer {dds_entity_t writer,topic,publisher{0};};
+struct Reader {dds_entity_t reader,topic;UmaaDdsOnSampleV1 callback;void* user;dds_entity_t subscriber{0};};
 constexpr uint64_t caps=UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE;
 bool supported(const UmaaDdsTopicV1* t) {
  return t&&t->topic_name&&t->schema_id&&t->qos_profile&&
@@ -32,6 +32,37 @@ dds_qos_t* qos() {
  if(q){dds_qset_reliability(q,DDS_RELIABILITY_RELIABLE,DDS_SECS(2));
        dds_qset_history(q,DDS_HISTORY_KEEP_LAST,16);}
  return q;
+}
+bool qos_valid(const UmaaDdsQosV2* q){
+ return q && q->struct_size==sizeof(UmaaDdsQosV2) && q->partition &&
+   q->reliability<=UMAA_DDS_QOS_RELIABLE &&
+   q->durability<=UMAA_DDS_QOS_TRANSIENT_LOCAL &&
+   q->history_kind<=UMAA_DDS_QOS_KEEP_ALL &&
+   ((q->history_kind==UMAA_DDS_QOS_KEEP_LAST && q->history_depth>0 &&
+     q->history_depth<=4096) ||
+    (q->history_kind==UMAA_DDS_QOS_KEEP_ALL && q->history_depth==0)) &&
+   q->presentation_scope<=UMAA_DDS_QOS_PRESENTATION_TOPIC &&
+   q->ordered_access<=1 && q->coherent_access==0 &&
+   (!q->ordered_access || q->presentation_scope==UMAA_DDS_QOS_PRESENTATION_TOPIC) &&
+   std::strlen(q->partition)<=255;
+}
+dds_qos_t* endpoint_qos(const UmaaDdsQosV2* q) {
+ auto* result=dds_create_qos();if(!result)return nullptr;
+ dds_qset_reliability(result,q->reliability==UMAA_DDS_QOS_RELIABLE?
+   DDS_RELIABILITY_RELIABLE:DDS_RELIABILITY_BEST_EFFORT,DDS_SECS(2));
+ dds_qset_durability(result,q->durability==UMAA_DDS_QOS_TRANSIENT_LOCAL?
+   DDS_DURABILITY_TRANSIENT_LOCAL:DDS_DURABILITY_VOLATILE);
+ dds_qset_history(result,q->history_kind==UMAA_DDS_QOS_KEEP_LAST?
+   DDS_HISTORY_KEEP_LAST:DDS_HISTORY_KEEP_ALL,
+   q->history_kind==UMAA_DDS_QOS_KEEP_LAST?static_cast<int32_t>(q->history_depth):0);
+ return result;
+}
+dds_qos_t* pubsub_qos(const UmaaDdsQosV2* q) {
+ auto* out=dds_create_qos();if(!out)return nullptr;
+ if(*q->partition)dds_qset_partition1(out,q->partition);
+ dds_qset_presentation(out,q->presentation_scope==UMAA_DDS_QOS_PRESENTATION_TOPIC?
+   DDS_PRESENTATION_TOPIC:DDS_PRESENTATION_INSTANCE,false,q->ordered_access!=0);
+ return out;
 }
 void* open_domain(uint32_t id) {
  if(id>230)return nullptr;
@@ -77,6 +108,49 @@ void* open_reader(void* ptr,const UmaaDdsTopicV1* t,UmaaDdsOnSampleV1 cb,void* u
  if(r<0){(void)dds_delete(id);return nullptr;}
  auto* result=new(std::nothrow)Reader{r,id,cb,user};
  if(!result){(void)dds_delete(r);(void)dds_delete(id);}
+ return result;
+}
+void* open_writer_qos(void* ptr,const UmaaDdsTopicV1* t,const UmaaDdsQosV2* request){
+ if(!ptr||!supported(t)||!qos_valid(request))return nullptr;
+ auto* d=static_cast<Domain*>(ptr);
+ const auto id=topic(d);if(id<0)return nullptr;
+ auto* ps=pubsub_qos(request);if(!ps){(void)dds_delete(id);return nullptr;}
+ const auto publisher=dds_create_publisher(d->participant,ps,nullptr);
+ dds_delete_qos(ps);
+ if(publisher<0){(void)dds_delete(id);return nullptr;}
+ auto* endpoint=endpoint_qos(request);
+ if(!endpoint){(void)dds_delete(publisher);(void)dds_delete(id);return nullptr;}
+ auto writer=dds_create_writer(publisher,id,endpoint,nullptr);
+ dds_delete_qos(endpoint);
+ if(writer<0){(void)dds_delete(publisher);(void)dds_delete(id);return nullptr;}
+ bool matched=false;
+ for(int i=0;i<200;i++){
+   dds_publication_matched_status_t status{};
+   if(dds_get_publication_matched_status(writer,&status)<0)break;
+   if(status.current_count>0){matched=true;break;}
+   dds_sleepfor(DDS_MSECS(25));
+ }
+ if(!matched){(void)dds_delete(writer);(void)dds_delete(publisher);(void)dds_delete(id);return nullptr;}
+ auto* result=new(std::nothrow)Writer{writer,id,publisher};
+ if(!result){(void)dds_delete(writer);(void)dds_delete(publisher);(void)dds_delete(id);}
+ return result;
+}
+void* open_reader_qos(void* ptr,const UmaaDdsTopicV1* t,const UmaaDdsQosV2* request,
+                      UmaaDdsOnSampleV1 cb,void* user){
+ if(!ptr||!supported(t)||!qos_valid(request)||!cb)return nullptr;
+ auto* d=static_cast<Domain*>(ptr);
+ const auto id=topic(d);if(id<0)return nullptr;
+ auto* ps=pubsub_qos(request);if(!ps){(void)dds_delete(id);return nullptr;}
+ const auto subscriber=dds_create_subscriber(d->participant,ps,nullptr);
+ dds_delete_qos(ps);
+ if(subscriber<0){(void)dds_delete(id);return nullptr;}
+ auto* endpoint=endpoint_qos(request);
+ if(!endpoint){(void)dds_delete(subscriber);(void)dds_delete(id);return nullptr;}
+ const auto reader=dds_create_reader(subscriber,id,endpoint,nullptr);
+ dds_delete_qos(endpoint);
+ if(reader<0){(void)dds_delete(subscriber);(void)dds_delete(id);return nullptr;}
+ auto* result=new(std::nothrow)Reader{reader,id,cb,user,subscriber};
+ if(!result){(void)dds_delete(reader);(void)dds_delete(subscriber);(void)dds_delete(id);}
  return result;
 }
 int32_t submit(void* ptr,const UmaaDdsSampleV1* s,uint32_t kind) {
@@ -137,17 +211,23 @@ int32_t wait_acks(void* ptr,uint32_t ms){
 }
 void close_writer(void* ptr){
  if(!ptr)return;auto* w=static_cast<Writer*>(ptr);
- (void)dds_delete(w->writer);(void)dds_delete(w->topic);delete w;
+ (void)dds_delete(w->writer);if(w->publisher>0)(void)dds_delete(w->publisher);(void)dds_delete(w->topic);delete w;
 }
 void close_reader(void* ptr){
  if(!ptr)return;auto* r=static_cast<Reader*>(ptr);
- (void)dds_delete(r->reader);(void)dds_delete(r->topic);delete r;
+ (void)dds_delete(r->reader);if(r->subscriber>0)(void)dds_delete(r->subscriber);(void)dds_delete(r->topic);delete r;
 }
 const UmaaDdsBackendV1 api{
  UMAA_DDS_ABI_VERSION,sizeof(UmaaDdsBackendV1),"cyclone-synthetic-battery-only",
  caps,&open_domain,&close_domain,&open_writer,&open_reader,&write,&dispose,
  &unregister_instance,&poll,&wait_acks,&close_writer,&close_reader};
+const UmaaDdsQosBackendV2 qos_api{
+ UMAA_DDS_QOS_ABI_VERSION,sizeof(UmaaDdsQosBackendV2),
+ caps|UMAA_DDS_CAP_ORDERED_ACCESS,&open_writer_qos,&open_reader_qos};
 }
 extern "C" UMAA_DDS_EXPORT const UmaaDdsBackendV1* umaa_get_dds_backend_v1(uint32_t v){
  return v==UMAA_DDS_ABI_VERSION?&api:nullptr;
+}
+extern "C" UMAA_DDS_EXPORT const UmaaDdsQosBackendV2* umaa_get_dds_qos_backend_v2(uint32_t v){
+ return v==UMAA_DDS_QOS_ABI_VERSION?&qos_api:nullptr;
 }

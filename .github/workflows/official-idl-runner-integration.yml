@@ -159,6 +159,7 @@ jobs:
           m=json.loads((root/"native_manifest.json").read_text())
           assert (m["sourceEvidenceServices"],m["sourceEvidenceTopics"],
                   m["nativeDescriptorCount"]) == (53,113,114)
+          assert (m["sourceServiceContractCount"],m["sourceServiceTopicCount"]) == (53,114)
           assert not m["qosApproved"] and not m["payloadCodecGenerated"]
           objs=[temp/"all-typesupport"/"obj"/Path(p).with_suffix(".o")
                 for p in m["nativeIdlFiles"]]
@@ -171,6 +172,16 @@ jobs:
                *[str(p) for p in objs],"-lddsc","-o",str(executable)]
           subprocess.run(cmd,check=True)
           subprocess.run([str(executable)],check=True)
+          contracts_exe=root/"source_service_contract_smoke"
+          subprocess.run([
+              "c++", "-std=c++17", "-I", str(root),
+              str(root/"source_service_contract_smoke.cpp"),
+              "-o", str(contracts_exe)
+          ], check=True)
+          subprocess.run([str(contracts_exe)],check=True)
+          print("OFFICIAL_UMAA_53_SERVICE_CPP_CONTRACTS_PASS",
+                m["sourceServiceContractCount"], "Services",
+                m["sourceServiceTopicCount"], "source types")
           print("OFFICIAL_UMAA_NATIVE_DESCRIPTOR_LINK_AND_LOCAL_PROBE_PASS",
                 m["nativeDescriptorCount"],"types",len(objs),"dependency objects")
           PY

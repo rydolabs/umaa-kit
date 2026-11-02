@@ -17,7 +17,7 @@ using an optional V2 extension. No claim of full UMAA 6.0 conformance.
   requires DDS PRESENTATION access_scope TOPIC and ordered_access=true
   on publishers and subscribers. This is the **only source-reviewed
   normative rule encoded here**; see
-  `contracts/umaa6/qos/eo-large-collections.yaml`.
+  `contracts/qos/umaa6/eo-large-collections.yaml`.
   Neither coherence nor Reliable/Durable/History values are inferred.
   Metadata and element Topics have no cross-topic ordering guarantee,
   and the service-level assembler must still handle out-of-order arrival.

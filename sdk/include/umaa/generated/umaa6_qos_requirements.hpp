@@ -1,4 +1,4 @@
-// GENERATED from contracts/umaa6/qos/eo-large-collections.yaml; DO NOT EDIT
+// GENERATED from contracts/qos/umaa6/eo-large-collections.yaml; DO NOT EDIT
 // Verified EO ICD 6.0 §3.8.1 minimum; not an entire Service QoS profile.
 #pragma once
 #include "umaa/qos_policy.hpp"

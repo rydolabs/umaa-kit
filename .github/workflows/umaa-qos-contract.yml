@@ -2,7 +2,7 @@ name: Source-reviewed UMAA QoS minimum contract
 on:
   pull_request:
     paths:
-      - 'contracts/umaa6/qos/**'
+      - 'contracts/qos/umaa6/**'
       - 'sdk/include/umaa/generated/umaa6_qos_requirements.hpp'
       - 'tools/generate_qos_requirements.py'
       - 'sdk/tests/test_qos_contract_generation.py'
@@ -10,7 +10,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'contracts/umaa6/qos/**'
+      - 'contracts/qos/umaa6/**'
       - 'sdk/include/umaa/generated/umaa6_qos_requirements.hpp'
       - 'tools/generate_qos_requirements.py'
       - 'sdk/tests/test_qos_contract_generation.py'

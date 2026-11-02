@@ -99,6 +99,12 @@ private:
   std::shared_ptr<internal::ComponentRuntime> host_;
 };
 
+template<class T,class=void> struct ServiceIdlType {
+  static constexpr const char* get(){return "";}
+};
+template<class T> struct ServiceIdlType<T,std::void_t<decltype(T::idl_type)>> {
+  static constexpr const char* get(){return T::idl_type;}
+};
 template<class Service> class ReportConsumer final {
   using ReportCallback=std::function<void(const typename Service::Report&,const std::string&)>;
   using DisposeCallback=std::function<void(const std::string&)>;
@@ -233,12 +239,6 @@ public:
   void rethrow_periodic_error(){endpoint_->rethrow_periodic_error();}
 private:
   std::unique_ptr<internal::ReportPublisher> endpoint_;
-};
-template<class T,class=void> struct ServiceIdlType {
-  static constexpr const char* get(){return "";}
-};
-template<class T> struct ServiceIdlType<T,std::void_t<decltype(T::idl_type)>> {
-  static constexpr const char* get(){return T::idl_type;}
 };
 template<class T,class=void> struct ServiceQosName {
   static constexpr const char* get(){return "demo-reliable";}

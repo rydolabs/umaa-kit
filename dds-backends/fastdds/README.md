@@ -5,7 +5,7 @@ This plugin implements the same native DDS backend facade contract as Cyclone DD
 `Application::consume<BatteryStatus>()` can be used without Fast DDS includes.
 
 Requires `libfastrtps-dev`, `libfastcdr-dev`, `fastddsgen`.
-Build with `cmake -S dds/vendors/fastdds -B build/fastdds`.
+Build with `cmake -S dds-backends/fastdds -B build/fastdds`.
 
 Only the synthetic `demo:battery-v1` binding and `demo-reliable` QoS profile
 are supported. Unknown official UMAA types and unimplemented required QoS

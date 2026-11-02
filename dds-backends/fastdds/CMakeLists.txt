@@ -5,11 +5,11 @@ find_package(fastrtps CONFIG REQUIRED)
 find_package(fastcdr CONFIG REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 find_program(FASTDDSGEN fastddsgen REQUIRED)
-set(SDK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../sdk")
+set(SDK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../sdk")
 set(TYPE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated")
 file(MAKE_DIRECTORY "${TYPE_ROOT}")
 execute_process(COMMAND "${FASTDDSGEN}" -replace -d "${TYPE_ROOT}"
-  "${CMAKE_CURRENT_LIST_DIR}/../../cyclone/idl/DemoBattery.idl"
+  "${CMAKE_CURRENT_LIST_DIR}/../../tests/fixtures/idl/DemoBattery.idl"
   RESULT_VARIABLE GEN_RESULT OUTPUT_VARIABLE GEN_OUT ERROR_VARIABLE GEN_ERR)
 if(NOT GEN_RESULT EQUAL 0)
   message(FATAL_ERROR "fastddsgen failed: ${GEN_ERR} ${GEN_OUT}")
@@ -18,7 +18,7 @@ file(GLOB TYPE_SOURCES CONFIGURE_DEPENDS "${TYPE_ROOT}/*.cxx")
 if(NOT TYPE_SOURCES)
   message(FATAL_ERROR "fastddsgen generated no C++ sources")
 endif()
-add_library(umaa_dds_fastdds_demo MODULE adapter.cpp ${TYPE_SOURCES})
+add_library(umaa_dds_fastdds_demo MODULE src/adapter.cpp ${TYPE_SOURCES})
 target_compile_features(umaa_dds_fastdds_demo PRIVATE cxx_std_17)
 target_include_directories(umaa_dds_fastdds_demo PRIVATE "${SDK_ROOT}/include" "${TYPE_ROOT}")
 target_link_libraries(umaa_dds_fastdds_demo PRIVATE fastrtps fastcdr)
@@ -40,7 +40,7 @@ set_tests_properties(umaa_fastdds_backend_real_wire PROPERTIES TIMEOUT 35)
 set(COMMAND_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated-command")
 file(MAKE_DIRECTORY "${COMMAND_ROOT}")
 execute_process(COMMAND "${FASTDDSGEN}" -replace -d "${COMMAND_ROOT}"
-  "${CMAKE_CURRENT_LIST_DIR}/../../cyclone/idl/DemoCommandEvent.idl"
+  "${CMAKE_CURRENT_LIST_DIR}/../../tests/fixtures/idl/DemoCommandEvent.idl"
   RESULT_VARIABLE COMMAND_GEN_RESULT OUTPUT_VARIABLE COMMAND_GEN_OUT
   ERROR_VARIABLE COMMAND_GEN_ERR)
 if(NOT COMMAND_GEN_RESULT EQUAL 0)
@@ -50,7 +50,7 @@ file(GLOB COMMAND_SOURCES CONFIGURE_DEPENDS "${COMMAND_ROOT}/*.cxx")
 if(NOT COMMAND_SOURCES)
   message(FATAL_ERROR "Fast DDS Command generator produced no source")
 endif()
-add_library(umaa_dds_fastdds_command_demo MODULE command_adapter.cpp ${COMMAND_SOURCES})
+add_library(umaa_dds_fastdds_command_demo MODULE src/command_adapter.cpp ${COMMAND_SOURCES})
 target_compile_features(umaa_dds_fastdds_command_demo PRIVATE cxx_std_17)
 target_include_directories(umaa_dds_fastdds_command_demo PRIVATE
   "${SDK_ROOT}/include" "${COMMAND_ROOT}")
@@ -136,7 +136,7 @@ endforeach()
 set(COLLECTION_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated-collection")
 file(MAKE_DIRECTORY "${COLLECTION_ROOT}")
 execute_process(COMMAND "${FASTDDSGEN}" -replace -d "${COLLECTION_ROOT}"
-  "${CMAKE_CURRENT_LIST_DIR}/../../cyclone/idl/DemoCollectionBatch.idl"
+  "${CMAKE_CURRENT_LIST_DIR}/../../tests/fixtures/idl/DemoCollectionBatch.idl"
   RESULT_VARIABLE COLLECTION_GEN_RESULT OUTPUT_VARIABLE COLLECTION_GEN_OUT
   ERROR_VARIABLE COLLECTION_GEN_ERR)
 if(NOT COLLECTION_GEN_RESULT EQUAL 0)
@@ -146,7 +146,7 @@ file(GLOB COLLECTION_SOURCES CONFIGURE_DEPENDS "${COLLECTION_ROOT}/*.cxx")
 if(NOT COLLECTION_SOURCES)
   message(FATAL_ERROR "Fast DDS Collection generated no source")
 endif()
-add_library(umaa_dds_fastdds_collection_demo MODULE collection_adapter.cpp ${COLLECTION_SOURCES})
+add_library(umaa_dds_fastdds_collection_demo MODULE src/collection_adapter.cpp ${COLLECTION_SOURCES})
 target_compile_features(umaa_dds_fastdds_collection_demo PRIVATE cxx_std_17)
 target_include_directories(umaa_dds_fastdds_collection_demo PRIVATE "${SDK_ROOT}/include" "${COLLECTION_ROOT}")
 target_link_libraries(umaa_dds_fastdds_collection_demo PRIVATE fastrtps fastcdr)
@@ -169,3 +169,29 @@ add_test(NAME umaa_fastdds_typed_server_background_real_wire
  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>"
  "$<TARGET_FILE:umaa_fastdds_typed_command_client_cli>" auto)
 set_tests_properties(umaa_fastdds_typed_server_background_real_wire PROPERTIES TIMEOUT 55)
+
+# Same vendor-neutral QoS v2 client; Presentation ordered_access must fail closed.
+add_executable(umaa_fastdds_qos_cli "${SDK_ROOT}/tests/real_dds_qos_cli.cpp")
+target_compile_features(umaa_fastdds_qos_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_fastdds_qos_cli PRIVATE "${SDK_ROOT}/include")
+target_link_libraries(umaa_fastdds_qos_cli PRIVATE UMAA::Runtime)
+add_test(NAME umaa_fastdds_explicit_qos_real_wire
+  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_backend.py"
+  "$<TARGET_FILE:umaa_fastdds_qos_cli>"
+  "$<TARGET_FILE:umaa_dds_fastdds_demo>"
+  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>")
+set_tests_properties(umaa_fastdds_explicit_qos_real_wire PROPERTIES TIMEOUT 38)
+
+add_test(NAME umaa_fastdds_runtime_yaml_qos_real_wire
+  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_qos.py"
+  "$<TARGET_FILE:umaa_fastdds_qos_cli>"
+  "$<TARGET_FILE:umaa_dds_fastdds_demo>"
+  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>" runtime)
+set_tests_properties(umaa_fastdds_runtime_yaml_qos_real_wire PROPERTIES TIMEOUT 42)
+
+add_test(NAME umaa_fastdds_transient_local_qos_real_wire
+  COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_qos.py"
+  "$<TARGET_FILE:umaa_fastdds_qos_cli>"
+  "$<TARGET_FILE:umaa_dds_fastdds_demo>"
+  "$<TARGET_FILE:umaa_fastdds_vehicle_demo>" transient)
+set_tests_properties(umaa_fastdds_transient_local_qos_real_wire PROPERTIES TIMEOUT 42)

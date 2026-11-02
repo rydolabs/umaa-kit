@@ -15,9 +15,9 @@ jobs:
           sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
       - name: Build vendor plugins with the same CLI and component binary
         run: |
-          cmake -S dds/vendors/cyclone -B build/mixed-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake -S dds-backends/cyclone -B build/mixed-cyclone -DCMAKE_BUILD_TYPE=Release
           cmake --build build/mixed-cyclone --parallel 2
-          cmake -S dds/vendors/fastdds -B build/mixed-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake -S dds-backends/fastdds -B build/mixed-fastdds -DCMAKE_BUILD_TYPE=Release
           cmake --build build/mixed-fastdds --parallel 2
       - name: Examine both directions and fail on incomplete reliability or lifecycle
         run: |

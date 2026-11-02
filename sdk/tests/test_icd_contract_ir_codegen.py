@@ -181,6 +181,8 @@ class ContractIRCodegenTests(unittest.TestCase):
         self.assertEqual(2, code.count("c.provide<"))
         trait = (out / "generated/service_contracts.hpp").read_text()
         self.assertIn("decode_command", trait)
+        self.assertIn("static constexpr const char* idl_type =", trait)
+        self.assertIn("Demo::EO::", trait)
         self.assertIn("encode_report", trait)
         self.assertNotIn("dds/dds.h", trait)
         self.assertNotIn("fastdds/", trait)

@@ -158,7 +158,7 @@ jobs:
       - name: Compile real Cyclone DDS producer and independent consumers
         shell: bash
         run: |
-          cmake -S dds/cyclone -B "$RUNNER_TEMP/official-wire-build" \
+          cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/official-wire-build" \
             -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/battery-typesupport" \
             -DUMAA_ENGINE_GENERATED_ROOT="$RUNNER_TEMP/engine-typesupport" \
             -DCMAKE_BUILD_TYPE=Debug

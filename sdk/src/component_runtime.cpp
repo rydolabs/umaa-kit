@@ -124,7 +124,8 @@ bool ReportSubscription::disposed() const {
 }
 std::unique_ptr<ReportSubscription> ComponentRuntime::subscribe_report_fixture(
  const std::string& service,const std::string& topic_name,
- const std::string& schema,const std::string& qos_profile){
+ const std::string& schema,const std::string& qos_profile,
+ const std::string& idl_type){
   if(!state_->domain)throw std::runtime_error("DDS backend not installed");
   if(service.empty())throw std::invalid_argument("Report service ID is required");
   // A Consumer need not load a local Provider device module. The backend's
@@ -151,7 +152,7 @@ std::unique_ptr<ReportSubscription> ComponentRuntime::subscribe_report_fixture(
   auto slot=std::make_unique<ReportSubscription::State>(state_->backend,state_->domain);
   const UmaaDdsTopicV1 descriptor{topic_name.c_str(),schema.c_str(),qos_profile.c_str(),
     UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
-  const auto normative=umaa::generated::reviewed_qos_requirements(service,topic_name);
+  const auto normative=umaa::generated::reviewed_qos_requirements(service,idl_type);
   if(state_->qos_profiles.empty()) {
     if(normative)throw std::runtime_error("mandatory official QoS requires explicit runtime profile");
     slot->reader=slot->domain->reader(descriptor,&ReportSubscription::State::receive,slot.get());
@@ -370,7 +371,7 @@ void ReportPublisher::rethrow_periodic_error(){
 std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
     const std::string& service_id,const std::string& topic_name,
     const std::string& schema_id,const std::string& instance_key,
-    const std::string& qos_profile){
+    const std::string& qos_profile,const std::string& idl_type){
   if(!state_->domain)throw std::runtime_error("DDS backend not loaded");
   std::shared_ptr<umaa::ComponentModule> module;
   {
@@ -387,7 +388,7 @@ std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
   if(!authorized)throw std::runtime_error("report schema or role mismatch");
   const UmaaDdsTopicV1 topic{topic_name.c_str(),schema_id.c_str(),qos_profile.c_str(),
     UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
-  const auto normative=umaa::generated::reviewed_qos_requirements(service_id,topic_name);
+  const auto normative=umaa::generated::reviewed_qos_requirements(service_id,idl_type);
   void* writer=nullptr;
   if(state_->qos_profiles.empty()){
     if(normative)throw std::runtime_error("mandatory official QoS requires explicit runtime profile");

@@ -70,7 +70,8 @@ public:
   void set_qos_profiles(const std::unordered_map<std::string,umaa::qos::Policy>& profiles);
   std::vector<std::string> services() const;
   std::unique_ptr<ReportSubscription> subscribe_report_fixture(const std::string& service,
-     const std::string& topic,const std::string& schema,const std::string& qos);
+     const std::string& topic,const std::string& schema,const std::string& qos,
+     const std::string& idl_type="");
   int32_t call(const std::string& service_id, uint32_t action,
                const std::vector<uint8_t>& payload,
                std::vector<uint8_t>& output, int32_t& business_result,
@@ -80,7 +81,8 @@ public:
   std::unique_ptr<ReportPublisher> open_report_fixture(
     const std::string& service_id,const std::string& topic_name,
     const std::string& schema_id,const std::string& instance_key,
-    const std::string& qos_profile="demo-reliable");
+    const std::string& qos_profile="demo-reliable",
+    const std::string& idl_type="");
   void publish_report_fixture(const std::string& service_id,
                               const std::string& topic_name,
                               const std::string& schema_id,

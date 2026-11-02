@@ -115,6 +115,7 @@ def render_trait(ir: dict) -> str:
              f'  static constexpr const char* schema_id = "{ir["scope"]}:{schema}:{fqtype}";',
              f'  static constexpr bool is_command = {"true" if kind == "Command" else "false"};',
              f'  static constexpr const char* topic_name = {cpp_literal(topic["ddsTopicName"])};',
+             f'  static constexpr const char* idl_type = {cpp_literal(topic["idlType"])};',
              f'  static constexpr const char* qos_profile = {cpp_literal(topic["qosProfileRef"])};',
              f"  using {kind} = ::{fqtype};"]
     if kind == "Command":

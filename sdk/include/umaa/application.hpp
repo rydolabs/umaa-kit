@@ -119,7 +119,8 @@ public:
       throw std::invalid_argument("invalid Report callback or polling interval");
     if(watcher_.joinable())throw std::logic_error("Report watch already started");
     if(!subscription_)subscription_=host_->subscribe_report_fixture(
-       Service::id,Service::topic_name,Service::schema_id,Service::qos_profile);
+       Service::id,Service::topic_name,Service::schema_id,Service::qos_profile,
+       ServiceIdlType<Service>::get());
     watch_stop_.store(false);
     watch_error_=nullptr;
     watcher_=std::thread([this,callback=std::move(on_report),
@@ -168,7 +169,8 @@ public:
   int32_t poll(uint32_t max_samples=1){
     if(watcher_.joinable())throw std::logic_error("manual poll while Report watcher owns Reader");
     if(!subscription_)subscription_=host_->subscribe_report_fixture(
-       Service::id,Service::topic_name,Service::schema_id,Service::qos_profile);
+       Service::id,Service::topic_name,Service::schema_id,Service::qos_profile,
+       ServiceIdlType<Service>::get());
     return subscription_->poll(max_samples);
   }
   bool latest(typename Service::Report& out,std::string& key) const {
@@ -232,6 +234,12 @@ public:
 private:
   std::unique_ptr<internal::ReportPublisher> endpoint_;
 };
+template<class T,class=void> struct ServiceIdlType {
+  static constexpr const char* get(){return "";}
+};
+template<class T> struct ServiceIdlType<T,std::void_t<decltype(T::idl_type)>> {
+  static constexpr const char* get(){return T::idl_type;}
+};
 template<class T,class=void> struct ServiceQosName {
   static constexpr const char* get(){return "demo-reliable";}
 };
@@ -262,7 +270,7 @@ public:
     if(instance_key.empty())throw std::invalid_argument("Report instance key required");
     return ReportPublisherHandle<Service>(host_->open_report_fixture(
       Service::id,Service::topic_name,Service::schema_id,instance_key,
-      ServiceQosName<Service>::get()));
+      ServiceQosName<Service>::get(),ServiceIdlType<Service>::get()));
   }
 
   void use_backend(const std::string& path,uint32_t domain){

@@ -94,6 +94,76 @@ class NativeICDGenerationTests(unittest.TestCase):
                      _binding_map([BINDING]), self.root / "official")
         self.assertFalse((self.root / "official").exists())
 
+    def test_native_runtime_report_disallows_unreviewed_mapping(self):
+        bad = {
+            "typeName": "Demo::EO::BatteryReportType",
+            "keyField": "wrong_key",
+            "valueField": "level_pct",
+            "schemaId": "demo:native-battery-report-v2",
+        }
+        out = self.root / "denied-runtime"
+        with self.assertRaisesRegex(ContractIRError, "Key"):
+            generate(self.manifest, [self.yaml], self.idl_root,
+                     _binding_map([BINDING]), out, fixture=True,
+                     runtime_report=bad)
+        self.assertFalse(out.exists())
+
+    def test_real_native_report_runtime_adapter_both_vendors(self):
+        if not all(shutil.which(x) for x in ("cmake", "idlc", "fastddsgen")):
+            if os.environ.get("UMAA_NATIVE_REQUIRED"):
+                self.fail("actual DDS vendor toolchains required")
+            self.skipTest("native real DDS middleware compilers unavailable")
+        cmd = [
+            sys.executable, "-m", "tools.umaa_component_cli",
+            "generate", "--project", str(self.project),
+            "--yaml", str(self.yaml), "--idl-root", str(self.idl_root),
+            "--idl-binding", BINDING, "--fixture",
+            "--runtime-report", "Demo::EO::BatteryReportType",
+            "--runtime-key", "source_id",
+            "--runtime-value", "level_pct",
+            "--runtime-schema", "demo:native-battery-report-v2",
+        ]
+        created = subprocess.run(cmd, cwd=ROOT, capture_output=True,
+                                 text=True, timeout=150)
+        self.assertEqual(0, created.returncode, created.stdout + created.stderr)
+        summary = json.loads((self.project / "generated/native-generation.json").read_text())
+        self.assertTrue(summary["nativeTypeSupportGenerated"])
+        self.assertTrue(summary["nativeDdsBinding"])
+        self.assertFalse(summary["componentRuntimeBound"])
+        self.assertFalse(summary["officialConformanceClaim"])
+        self.assertEqual(["cyclone", "fastdds"],
+                         sorted(summary["runtimeAdaptersGenerated"]))
+        header = (self.project / "generated/native_report_runtime.hpp").read_text()
+        self.assertIn("demo:native-battery-report-v2", header)
+        self.assertNotIn("fastdds/", header)
+        self.assertNotIn("<dds/", header)
+        for vendor in ("cyclone", "fastdds"):
+            cpp = self.project / ("generated/native_runtime_" + vendor + ".cpp")
+            self.assertTrue(cpp.is_file())
+            self.assertIn("level_pct", cpp.read_text())
+        build = self.root / "native-runtime-build"
+        commands = [
+            ["cmake", "-S", str(self.project), "-B", str(build),
+             "-DUMAA_SDK_ROOT=" + str(ROOT / "sdk"),
+             "-DCMAKE_BUILD_TYPE=Release"],
+            ["cmake", "--build", str(build), "--parallel", "2"],
+            ["ctest", "--test-dir", str(build), "--output-on-failure", "-V"],
+        ]
+        for command in commands:
+            result = subprocess.run(command, cwd=ROOT, capture_output=True,
+                                    text=True, timeout=210)
+            self.assertEqual(
+                0, result.returncode,
+                " ".join(map(str, command)) + "\n" +
+                result.stdout[-5500:] + "\n" + result.stderr[-5500:],
+            )
+        # Confirm actual independent processes, both vendors and the same
+        # high-level SDK client linked without vendor header dependencies.
+        report = subprocess.run(["ctest", "--test-dir", str(build), "-N"],
+                                text=True, capture_output=True, timeout=20)
+        self.assertIn("native_runtime_umaa_native_report_cyclone_real_wire", report.stdout)
+        self.assertIn("native_runtime_umaa_native_report_fastdds_real_wire", report.stdout)
+
     def test_native_generated_idl_complex_fields_compile_and_load(self):
         tools = [shutil.which("cmake"), shutil.which("idlc"),
                  shutil.which("fastddsgen")]

@@ -283,7 +283,9 @@ class HostProjection:
                 raise SourceError("integer outside original IDL bound for " + name)
             return value
         if kind == "double":
-            if type(value) not in (int, float) or not math.isfinite(value):
+            # Avoid converting untrusted huge JSON integers into binary float:
+            # math.isfinite(int(10**1000)) itself can raise OverflowError.
+            if type(value) not in (int, float) or (type(value) is float and not math.isfinite(value)):
                 raise SourceError("finite number expected for " + name)
             try:
                 number = Decimal(str(value))

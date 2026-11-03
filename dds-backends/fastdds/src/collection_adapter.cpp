@@ -33,8 +33,16 @@ struct Writer {Domain* d;Topic* t;Publisher* pub;DataWriter* writer;};
 struct Reader {Domain* d;Topic* t;Subscriber* sub;DataReader* reader;UmaaDdsOnSampleV1 callback;void* user;std::unordered_map<std::string,std::string> instance_keys;};
 bool approved(const UmaaDdsTopicV1* topic){
  return topic && topic->topic_name && topic->schema_id && topic->qos_profile &&
- !std::strcmp(topic->topic_name,"demo/CollectionBatch") &&
- !std::strcmp(topic->schema_id,"demo:collection-batch-v1") &&
+ ((!std::strcmp(topic->topic_name,"demo/CollectionBatch") &&
+   !std::strcmp(topic->schema_id,"demo:collection-batch-v1"))||
+  (!std::strcmp(topic->topic_name,"demo/NativeElement") &&
+   !std::strcmp(topic->schema_id,"demo:native-element-v1"))||
+  (!std::strcmp(topic->topic_name,"demo/NativeMetadata") &&
+   !std::strcmp(topic->schema_id,"demo:native-metadata-v1"))||
+  (!std::strcmp(topic->topic_name,"demo/NativeGeneral") &&
+   !std::strcmp(topic->schema_id,"demo:native-general-v1"))||
+  (!std::strcmp(topic->topic_name,"demo/NativeSpecial") &&
+   !std::strcmp(topic->schema_id,"demo:native-special-v1"))) &&
  !std::strcmp(topic->qos_profile,"demo-reliable") &&
  !(topic->required_features & ~supported);
 }
@@ -61,12 +69,17 @@ void close_domain(void* handle){
  (void)d->p->delete_contained_entities();
  (void)DomainParticipantFactory::get_instance()->delete_participant(d->p);delete d;
 }
-Topic* make_topic(Domain* d){
- return d->p->create_topic("Demo_EO_CollectionBatch",d->type.get_type_name(),TOPIC_QOS_DEFAULT);
+Topic* make_topic(Domain* d,const UmaaDdsTopicV1* binding){
+ const char* physical="Demo_EO_CollectionBatch";
+ if(!std::strcmp(binding->topic_name,"demo/NativeElement"))physical="Demo_EO_NativeElement";
+ else if(!std::strcmp(binding->topic_name,"demo/NativeMetadata"))physical="Demo_EO_NativeMetadata";
+ else if(!std::strcmp(binding->topic_name,"demo/NativeGeneral"))physical="Demo_EO_NativeGeneral";
+ else if(!std::strcmp(binding->topic_name,"demo/NativeSpecial"))physical="Demo_EO_NativeSpecial";
+ return d->p->create_topic(physical,d->type.get_type_name(),TOPIC_QOS_DEFAULT);
 }
 void* open_writer(void* handle,const UmaaDdsTopicV1* topic){
  if(!handle||!approved(topic))return nullptr;
- auto* d=static_cast<Domain*>(handle);auto* t=make_topic(d);if(!t)return nullptr;
+ auto* d=static_cast<Domain*>(handle);auto* t=make_topic(d,topic);if(!t)return nullptr;
  auto* pub=d->p->create_publisher(PUBLISHER_QOS_DEFAULT);
  if(!pub){(void)d->p->delete_topic(t);return nullptr;}
  DataWriterQos qos=DATAWRITER_QOS_DEFAULT;
@@ -97,7 +110,7 @@ void* open_writer(void* handle,const UmaaDdsTopicV1* topic){
 }
 void* open_reader(void* handle,const UmaaDdsTopicV1* topic,UmaaDdsOnSampleV1 cb,void* user){
  if(!handle||!approved(topic)||!cb)return nullptr;
- auto* d=static_cast<Domain*>(handle);auto* t=make_topic(d);if(!t)return nullptr;
+ auto* d=static_cast<Domain*>(handle);auto* t=make_topic(d,topic);if(!t)return nullptr;
  auto* sub=d->p->create_subscriber(SUBSCRIBER_QOS_DEFAULT);
  if(!sub){(void)d->p->delete_topic(t);return nullptr;}
  DataReaderQos qos=DATAREADER_QOS_DEFAULT;
@@ -225,7 +238,7 @@ void close_reader(void* handle){
  (void)r->d->p->delete_subscriber(r->sub);(void)r->d->p->delete_topic(r->t);delete r;
 }
 const UmaaDdsBackendV1 backend={UMAA_DDS_ABI_VERSION,sizeof(UmaaDdsBackendV1),
- "fastdds-synthetic-collection-batch-only",supported,&open_domain,&close_domain,
+ "fastdds-synthetic-native-collection",supported,&open_domain,&close_domain,
  &open_writer,&open_reader,&write,&dispose,&unregister_instance,&poll,
  &wait_for_acks,&close_writer,&close_reader};
 }

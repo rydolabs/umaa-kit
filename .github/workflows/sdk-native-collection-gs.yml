@@ -1,0 +1,61 @@
+name: SDK native split-topic Collection and G/S real DDS
+on:
+  pull_request:
+    paths:
+      - sdk/include/umaa/native_collection_endpoint.hpp
+      - sdk/include/umaa/sdk_v1_application.hpp
+      - sdk/tests/fixtures/synthetic_native_collection_binding.hpp
+      - sdk/tests/real_dds_native_collection_cli.cpp
+      - sdk/tests/run_real_dds_native_collection.py
+      - dds-backends/cyclone/src/collection_adapter.cpp
+      - dds-backends/fastdds/src/collection_adapter.cpp
+      - dds-backends/cyclone/CMakeLists.txt
+      - dds-backends/fastdds/CMakeLists.txt
+      - .github/workflows/sdk-native-collection-gs.yml
+  push:
+    branches: [sdk/native-collection-specialization-20261103]
+    paths:
+      - sdk/include/umaa/native_collection_endpoint.hpp
+      - sdk/include/umaa/sdk_v1_application.hpp
+      - sdk/tests/fixtures/synthetic_native_collection_binding.hpp
+      - sdk/tests/real_dds_native_collection_cli.cpp
+      - sdk/tests/run_real_dds_native_collection.py
+      - dds-backends/**
+      - .github/workflows/sdk-native-collection-gs.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-set-list-gs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install actual DDS middleware and IDL tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
+      - name: Build SDK native Collection integration for both vendors
+        run: |
+          cmake -S dds-backends/cyclone -B build/native-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/native-cyclone --parallel 2
+          cmake -S dds-backends/fastdds -B build/native-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/native-fastdds --parallel 2
+      - name: Verify one identical SDK binary against Cyclone DDS and Fast DDS
+        run: |
+          set -euo pipefail
+          cli="$PWD/build/native-cyclone/umaa_cyclone_native_collection_cli"
+          cyclone="$PWD/build/native-cyclone/libumaa_dds_cyclone_collection_demo.so"
+          fastdds="$PWD/build/native-fastdds/libumaa_dds_fastdds_collection_demo.so"
+          test -f "$cli" && test -f "$cyclone" && test -f "$fastdds"
+          for vendor in "$cyclone" "$fastdds"; do
+            for shape in set list; do
+              echo "NATIVE_COLLECTION_VENDOR=$vendor SHAPE=$shape"
+              python3 sdk/tests/run_real_dds_native_collection.py "$cli" "$vendor" "$shape"
+            done
+          done
+          sha256sum "$cli"
+      - name: Preserve CTest evidence for both vendors
+        if: always()
+        run: |
+          find build/native-* -name 'CTestTestfile.cmake' -o -name 'libumaa_dds_*_collection_demo.so' | sort

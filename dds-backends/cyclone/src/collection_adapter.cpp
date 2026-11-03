@@ -16,8 +16,16 @@ struct Reader {dds_entity_t reader,topic;UmaaDdsOnSampleV1 callback;void* user;}
 constexpr uint64_t caps=UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE;
 bool supported(const UmaaDdsTopicV1* t) {
  return t&&t->topic_name&&t->schema_id&&t->qos_profile&&
- std::strcmp(t->topic_name,"demo/CollectionBatch")==0&&
- std::strcmp(t->schema_id,"demo:collection-batch-v1")==0&&
+ ((std::strcmp(t->topic_name,"demo/CollectionBatch")==0&&
+   std::strcmp(t->schema_id,"demo:collection-batch-v1")==0)||
+  (std::strcmp(t->topic_name,"demo/NativeElement")==0&&
+   std::strcmp(t->schema_id,"demo:native-element-v1")==0)||
+  (std::strcmp(t->topic_name,"demo/NativeMetadata")==0&&
+   std::strcmp(t->schema_id,"demo:native-metadata-v1")==0)||
+  (std::strcmp(t->topic_name,"demo/NativeGeneral")==0&&
+   std::strcmp(t->schema_id,"demo:native-general-v1")==0)||
+  (std::strcmp(t->topic_name,"demo/NativeSpecial")==0&&
+   std::strcmp(t->schema_id,"demo:native-special-v1")==0))&&
  std::strcmp(t->qos_profile,"demo-reliable")==0&&
  !(t->required_features&~caps);
 }
@@ -45,13 +53,22 @@ void close_domain(void* ptr) {
  if(!ptr)return;auto* d=static_cast<Domain*>(ptr);
  (void)dds_delete(d->participant);delete d;
 }
-dds_entity_t topic(Domain* d) {
- return dds_create_topic(d->participant,&Demo_EO_CollectionBatch_desc,
-                         "Demo_EO_CollectionBatch",nullptr,nullptr);
+dds_entity_t topic(Domain* d,const UmaaDdsTopicV1* binding) {
+  const char* physical="Demo_EO_CollectionBatch";
+  if(std::strcmp(binding->topic_name,"demo/NativeElement")==0)
+    physical="Demo_EO_NativeElement";
+  else if(std::strcmp(binding->topic_name,"demo/NativeMetadata")==0)
+    physical="Demo_EO_NativeMetadata";
+  else if(std::strcmp(binding->topic_name,"demo/NativeGeneral")==0)
+    physical="Demo_EO_NativeGeneral";
+  else if(std::strcmp(binding->topic_name,"demo/NativeSpecial")==0)
+    physical="Demo_EO_NativeSpecial";
+  return dds_create_topic(d->participant,&Demo_EO_CollectionBatch_desc,
+                          physical,nullptr,nullptr);
 }
 void* open_writer(void* ptr,const UmaaDdsTopicV1* t) {
  if(!ptr||!supported(t))return nullptr;
- auto* d=static_cast<Domain*>(ptr);auto id=topic(d);
+ auto* d=static_cast<Domain*>(ptr);auto id=topic(d,t);
  if(id<0)return nullptr;
  auto* q=qos();if(!q){(void)dds_delete(id);return nullptr;}
  auto w=dds_create_writer(d->participant,id,q,nullptr);dds_delete_qos(q);
@@ -70,7 +87,7 @@ void* open_writer(void* ptr,const UmaaDdsTopicV1* t) {
 }
 void* open_reader(void* ptr,const UmaaDdsTopicV1* t,UmaaDdsOnSampleV1 cb,void* user) {
  if(!ptr||!supported(t)||!cb)return nullptr;
- auto* d=static_cast<Domain*>(ptr);auto id=topic(d);
+ auto* d=static_cast<Domain*>(ptr);auto id=topic(d,t);
  if(id<0)return nullptr;
  auto* q=qos();if(!q){(void)dds_delete(id);return nullptr;}
  auto r=dds_create_reader(d->participant,id,q,nullptr);dds_delete_qos(q);
@@ -148,7 +165,7 @@ void close_reader(void* ptr){
  (void)dds_delete(r->reader);(void)dds_delete(r->topic);delete r;
 }
 const UmaaDdsBackendV1 api{
- UMAA_DDS_ABI_VERSION,sizeof(UmaaDdsBackendV1),"cyclone-synthetic-collection-batch-only",
+ UMAA_DDS_ABI_VERSION,sizeof(UmaaDdsBackendV1),"cyclone-synthetic-native-collection",
  caps,&open_domain,&close_domain,&open_writer,&open_reader,&write,&dispose,
  &unregister_instance,&poll,&wait_acks,&close_writer,&close_reader};
 }

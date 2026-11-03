@@ -299,9 +299,12 @@ private:
       pending_metadata_=false;
   }
   void handle_metadata(const UmaaDdsSampleV1* s){
-    if(!s||!s->instance_key||key_!=s->instance_key||
-       s->event_kind!=UMAA_DDS_EVENT_DATA)
-      throw std::invalid_argument("invalid native Metadata topic event");
+    if(!s||!s->instance_key||key_!=s->instance_key)
+      throw std::invalid_argument("invalid native Metadata topic/key event");
+    if(s->event_kind==UMAA_DDS_EVENT_UNREGISTER)
+      return; // writer loss is not a Collection metadata deletion
+    if(s->event_kind!=UMAA_DDS_EVENT_DATA)
+      throw std::invalid_argument("unsupported native Metadata lifecycle");
     native_wire::Reader rd(*s);
     if(rd.u8()!=1)throw std::invalid_argument("unsupported native Metadata version");
     umaa::CollectionMetadata m;

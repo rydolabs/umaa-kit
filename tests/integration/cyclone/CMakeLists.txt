@@ -60,6 +60,39 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
             "$<TARGET_FILE:umaa_dds_battery_module>")
   set_tests_properties(official_umaa_battery_sdk_reader_wire PROPERTIES TIMEOUT 35)
 
+  # Official nested Battery Report + separate Cell ListElement TypeSupport
+  # host mapping. Unlike scalar demos, this independently validates both
+  # typed DDS samples, optional fields, instance keys, and Dispose.
+  add_executable(umaa_official_battery_payload_publisher
+    src/official_battery_payload_publisher.cpp)
+  target_compile_features(umaa_official_battery_payload_publisher PRIVATE cxx_std_17)
+  target_include_directories(umaa_official_battery_payload_publisher PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../dds-backends/cyclone/include")
+  target_link_libraries(umaa_official_battery_payload_publisher PRIVATE
+    umaa_official_type_support)
+
+  add_executable(umaa_official_battery_payload_oracle
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/official_battery_payload_oracle.c")
+  target_link_libraries(umaa_official_battery_payload_oracle PRIVATE
+    umaa_official_type_support)
+
+  add_test(NAME official_umaa_battery_payload_wire
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_payload.py"
+      "$<TARGET_FILE:umaa_official_battery_payload_publisher>"
+      "$<TARGET_FILE:umaa_official_battery_payload_oracle>")
+  set_tests_properties(official_umaa_battery_payload_wire PROPERTIES TIMEOUT 45)
+
+  add_test(NAME official_umaa_battery_payload_bad_checkpoint_rejected
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_payload.py"
+      "$<TARGET_FILE:umaa_official_battery_payload_publisher>"
+      "$<TARGET_FILE:umaa_official_battery_payload_oracle>"
+      --bad-checkpoint)
+  set_tests_properties(official_umaa_battery_payload_bad_checkpoint_rejected
+    PROPERTIES TIMEOUT 45)
+
 endif()
 
 

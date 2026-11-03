@@ -558,3 +558,23 @@ the complete PR verified.
 - Added `validate_completed_list_snapshot` for an externally assembled Battery List: exact listID/size, linked chain, timestamped update checkpoint, and NIL empty-list validation (EO ICD §3.8.2–3.8.5). Missing Dispose/tombstone evidence deliberately rejects nonempty timestamp-less updates. This is post-hoc host-only validation, **not** live DDS buffering/coherence/Dispose proof.
 - **PENDING** exact-head PR #48 check completion, including older backend regressions. Preserve Draft/unmerged status.
 - **BLOCKED:** official native DDS TypeSupport↔host codec, full QoS and Component roles, separate Report/ListElement lifecycle/Dispose/coherence, independent actual official Cyclone and Fast DDS E2E; no formal UMAA conformity claim.
+
+
+## 2026-11-04 — official BatteryStatus Cyclone native host codec + independent two-topic DDS wire (Draft #49)
+
+- Based on Draft #48 exact previously verified head `c12ecb0fc8017dfb47459e91245f41e3f6881f43` (**15/15 GitHub checks SUCCESS**). Draft #49 stacks on #48; do not merge or deploy.
+- Added a DDS-header-free C++ SDK host model for original nested BatteryStatus Report, IdentifierType, DateTime, LargeListMetadata, Cell and ListElement; a **Cyclone-only native adapter** maps it into actual compiler-generated AUVSI 6.0 C TypeSupport and decodes it back. Six optional measurement values have bounded, per-sample stable native pointer backing; Key GUIDs are 16 bytes, and timestamp/enum/scalar bounds fail closed. No handwritten DDS CDR.
+- Added a real two-Topic Cyclone DDS publisher and **independent standalone C oracle** verifying all selected Report fields, separate Cell fields, source/list/element IDs, metadata checkpoint and both keyed Dispose events over separate OS processes. An intentional mismatched metadata checkpoint must be detected and rejected by the oracle (exact exit code), not silently accepted.
+- Added source-pinned dedicated `.github/workflows/official-battery-native-wire.yml` to download the original **594-IDL** ZIP (SHA-256 `15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08`) into temporary CI storage; validate the selected original payload declaration closure, generate *only* transitive Battery TypeSupport with idlc, and execute two CTests (positive and deliberate negative). Original source/RTI example/generation outputs are not committed or uploaded. Other existing synthetic and Windows regression workflows remain independent.
+- **PR #49 new head native CI PENDING** at the time of this checkpoint; exact CI run/job, errors and outcomes must be checked and repaired. A green original-scope test does NOT constitute a full official UMAA service, Fast DDS official Runtime, reviewed per-Component QoS or conformance.
+- Still OPEN: Fast DDS native nested Battery mapping and independent E2E; complete cross-topic collection lifecycle including deletion/tombstones/recovery; report Provider business module binding, source GUID and actual Component Definition/Specification; full QoS & deployment; independent negative protocol cases and certification.
+
+
+
+### 2026-11-04 — isolated DDS netem regression investigation
+
+- On PR #49 snapshot `db21cb0931dd091a19ac4da3035031227f93edfa`, the dedicated **official nested Battery TypeSupport / independent C oracle job PASSED**, including positive data/Dispose and deliberate bad checkpoint rejection (run 41729227092). Most legacy jobs passed.
+- One existing `isolated-dds-wire` run (41729227031, job 126241899689) failed only on the **third** 1% packet-loss iteration of the older SDK scalar Battery Report reader: `Battery Report subscriber incomplete`. The preceding two impaired repetitions, independent real DDS tests and blackout recovery steps passed. It is NOT a failure of the new Battery codec job.
+- The original failing job was rerun individually to assess reproducibility; results require exact run-attempt checking.
+- Increased the old scalar official Report **test-only** impaired Writer final-Dispose retention from 1s to 3s and reader impairment poll budget from ~6.25s to ~15s, while still requiring two ordered data events, a keyed Dispose, cache removal and epoch safety. Clean/unimpaired settings unchanged; the receiver now reports the incomplete phase. This is a bounded test robustness adjustment, NOT an invented DDS or UMAA QoS requirement and NOT evidence that application-level Dispose ACK exists.
+- **Current HEAD regressions must be rerun at the new SHA before declaring this fix verified.** If errors persist, capture the exact phase, source and DDS reader info and quarantine the flaky netem case rather than weakening the oracle.

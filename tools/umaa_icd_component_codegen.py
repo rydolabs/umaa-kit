@@ -192,6 +192,70 @@ def render_sdk_v1_smoke(irs: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def render_checked_topic_bindings(irs: list[dict]) -> str:
+    """Emit explicit source-pinned DDS Topic+Schema+Key+QoS identifiers.
+
+    This is a vendor-neutral *contract*, not native DDS TypeSupport. No
+    mandatory QoS bitmask is inferred from an opaque QoS profile name.
+    """
+    lines = [
+        "#pragma once",
+        '#include "umaa/internal/dds_backend.h"',
+        "namespace generated {",
+    ]
+    for ir in irs:
+        name = identifier(ir["serviceId"])
+        lines.append(f"struct {name}ReviewedTopics {{")
+        lines.append("  static constexpr bool native_type_support_generated = false;")
+        for alias, topic in sorted(ir["topics"].items()):
+            tag = identifier(alias)
+            schema = (ir["scope"] + ":" + ir["inputs"]["idlSha256"] +
+                      ":" + topic["idlType"])
+            lines.extend([
+                f"  static UmaaDdsTopicV1 {tag}() {{",
+                "    return {" +
+                ", ".join((cpp_literal(topic["ddsTopicName"]),
+                           cpp_literal(schema),
+                           cpp_literal(topic["qosProfileRef"]), "0u")) +
+                "};",
+                "  }",
+                f"  static constexpr const char* {tag}_idl_type = " +
+                cpp_literal(topic["idlType"]) + ";",
+                f"  static constexpr const char* {tag}_key_fields = " +
+                cpp_literal(",".join(topic["keyFields"])) + ";",
+            ])
+        lines.append("};")
+    lines.extend(["} // namespace generated", ""])
+    return "\n".join(lines)
+
+
+def render_checked_topic_smoke(irs: list[dict]) -> str:
+    lines = [
+        '#include "generated/checked_topic_bindings.hpp"',
+        "#include <string_view>",
+        "int main(){",
+    ]
+    index = 0
+    for ir in irs:
+        name = identifier(ir["serviceId"])
+        lines.append(
+            f"  if(generated::{name}ReviewedTopics::native_type_support_generated)return 2;")
+        for alias, topic in sorted(ir["topics"].items()):
+            tag = identifier(alias)
+            lines += [
+                f"  const auto t{index}=generated::{name}ReviewedTopics::{tag}();",
+                f"  if(std::string_view(t{index}.topic_name)!=" +
+                f"std::string_view({cpp_literal(topic['ddsTopicName'])}))return {10+index};",
+                f"  if(std::string_view(t{index}.schema_id).empty())return {50+index};",
+                f"  if(std::string_view(t{index}.qos_profile)!=" +
+                f"std::string_view({cpp_literal(topic['qosProfileRef'])}))return {90+index};",
+                f"  if(t{index}.required_features!=0)return {120+index};",
+            ]
+            index += 1
+    lines.extend(["  return 0;", "}", ""])
+    return "\n".join(lines)
+
+
 def render_handler(ir: dict) -> str:
     name = identifier(ir["serviceId"])
     kind = service_type(ir)[0]
@@ -290,6 +354,8 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
     write_generated(output / "generated/service_contracts.hpp", "\n".join(traits))
     write_generated(output / "generated/sdk_v1_traits.hpp",
                     render_sdk_v1_traits(irs))
+    write_generated(output / "generated/checked_topic_bindings.hpp",
+                    render_checked_topic_bindings(irs))
     registration = [MARK.rstrip(), '#include "umaa/component.hpp"']
     for ir in providers:
         name = identifier(ir["serviceId"])
@@ -311,6 +377,8 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
     write_generated(output / "tests/codec_smoke.cpp", render_codec_smoke(irs))
     write_generated(output / "tests/sdk_v1_traits_smoke.cpp",
                     render_sdk_v1_smoke(irs))
+    write_generated(output / "tests/checked_topic_bindings_smoke.cpp",
+                    render_checked_topic_smoke(irs))
     expected = [f'  if (services[{i}].service != "{ir["serviceId"]}") return {10+i};'
                 for i, ir in enumerate(providers)]
     smoke = ['#include "umaa/component_module.hpp"', "#include <string>",
@@ -340,6 +408,11 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
              f"target_include_directories(sdk_v1_traits_smoke PRIVATE {d}{{CMAKE_CURRENT_SOURCE_DIR}})",
              "target_link_libraries(sdk_v1_traits_smoke PRIVATE UMAA::Core)",
              "add_test(NAME sdk_v1_traits_smoke COMMAND sdk_v1_traits_smoke)",
+             "add_executable(checked_topic_bindings_smoke tests/checked_topic_bindings_smoke.cpp)",
+             "target_compile_features(checked_topic_bindings_smoke PRIVATE cxx_std_17)",
+             f"target_include_directories(checked_topic_bindings_smoke PRIVATE {d}{{CMAKE_CURRENT_SOURCE_DIR}})",
+             "target_link_libraries(checked_topic_bindings_smoke PRIVATE UMAA::Core)",
+             "add_test(NAME checked_topic_bindings_smoke COMMAND checked_topic_bindings_smoke)",
              "add_executable(component_abi_smoke tests/module_smoke.cpp)",
              "target_compile_features(component_abi_smoke PRIVATE cxx_std_17)",
              "target_link_libraries(component_abi_smoke PRIVATE UMAA::Core)",

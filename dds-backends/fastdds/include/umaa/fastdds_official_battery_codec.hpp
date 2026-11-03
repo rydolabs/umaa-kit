@@ -5,8 +5,15 @@
 // full Collection lifecycle, or a UMAA conformance certificate.
 #pragma once
 #include "umaa/official_battery_host.hpp"
-#include "BatteryReportType.h"
-#include "BatteryReportTypePubSubTypes.h"
+#if __has_include("BatteryReportType.hpp") && __has_include("BatteryReportTypePubSubTypes.hpp")
+  #include "BatteryReportType.hpp"
+  #include "BatteryReportTypePubSubTypes.hpp"
+#elif __has_include("BatteryReportType.h") && __has_include("BatteryReportTypePubSubTypes.h")
+  #include "BatteryReportType.h"
+  #include "BatteryReportTypePubSubTypes.h"
+#else
+  #error "Original Fast DDS-Gen Battery TypeSupport is required"
+#endif
 
 #include <algorithm>
 #include <array>
@@ -23,6 +30,23 @@ using NativeElement = ::UMAA::EO::BatteryStatus::BatteryReportTypeCellsListEleme
 using NativeTime = ::UMAA::Common::Measurement::DateTime;
 using ReportTypeSupport = ::UMAA::EO::BatteryStatus::BatteryReportTypePubSubType;
 using ElementTypeSupport = ::UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElementPubSubType;
+
+template<typename T, typename = void> struct HasOptionalPresence : std::false_type {};
+template<typename T>
+struct HasOptionalPresence<T, std::void_t<
+  decltype(std::declval<const T&>().has_value()),
+  decltype(*std::declval<T&>())
+>> : std::true_type {};
+
+using ChargeField = std::remove_reference_t<decltype(std::declval<NativeReport&>().chargeRemaining())>;
+using CheckpointField = std::remove_reference_t<
+    decltype(std::declval<NativeReport&>().cellsListMetadata().updateElementTimestamp())>;
+using NextElementField = std::remove_reference_t<decltype(std::declval<NativeElement&>().nextElementID())>;
+static_assert(HasOptionalPresence<ChargeField>::value &&
+              HasOptionalPresence<CheckpointField>::value &&
+              HasOptionalPresence<NextElementField>::value,
+              "Official Battery Fast DDS backend requires @optional-preserving "
+              "native TypeSupport; older Fast DDS-Gen must fail closed");
 
 inline void verify_time(const host::DateTime& value) {
   if (value.seconds == INT64_MIN || value.nanoseconds < 0 ||

@@ -191,6 +191,13 @@ class ContractIRCodegenTests(unittest.TestCase):
         self.assertIn("WireService::schema_id", sdk_traits)
         self.assertNotIn("dds/dds.h", sdk_traits)
         self.assertTrue((out / "tests/sdk_v1_traits_smoke.cpp").is_file())
+        topics=(out / "generated/checked_topic_bindings.hpp").read_text()
+        self.assertIn("ReviewedTopics",topics)
+        self.assertIn("native_type_support_generated = false",topics)
+        self.assertIn("static constexpr const char* command01_key_fields",topics)
+        self.assertIn("synthetic-reliable",topics)
+        self.assertIn("return {",topics)
+        self.assertTrue((out / "tests/checked_topic_bindings_smoke.cpp").is_file())
         self.assertNotIn("dds/dds.h", trait)
         self.assertNotIn("fastdds/", trait)
         user = out / "src/handlers/Demo_EO_BatteryStatus.hpp"
@@ -247,6 +254,8 @@ class ContractIRCodegenTests(unittest.TestCase):
         run(["ctest", "--test-dir", str(module_build), "-C", "Release", "--output-on-failure"])
         run(["ctest", "--test-dir", str(module_build), "-C", "Release",
              "--output-on-failure", "-R", "sdk_v1_traits_smoke"])
+        run(["ctest", "--test-dir", str(module_build), "-C", "Release",
+             "--output-on-failure", "-R", "checked_topic_bindings_smoke"])
 
 
 if __name__ == "__main__":

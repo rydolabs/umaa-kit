@@ -83,6 +83,14 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
         raise ContractIRError("duplicate Service ICD YAML")
     if {x["id"] for x in doc["services"]} != set(items):
         raise ContractIRError("Component assembly and Service YAML differ")
+    # Vendor compiler success and self-declared verification flags do not
+    # authorize official runtime mappings. Reject an official Runtime request
+    # before source extraction, tool invocation, or generated output.
+    if runtime_report is not None and not fixture:
+        raise ContractIRError(
+            "official native Runtime Report binding blocked: authoritative "
+            "Topic/Key/QoS, payload codec and lifecycle evidence not implemented"
+        )
     # Every selected DDS Topic must have an EXPLICIT source, not a guessed
     # basename derived from its spelling. Supports Collections and arbitrary
     # IDL grammar because no Python IDL parser is invoked here.

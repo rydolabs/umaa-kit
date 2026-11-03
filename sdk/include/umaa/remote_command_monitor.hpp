@@ -3,7 +3,10 @@
 // No network I/O or official wire interoperability is claimed here.
 #pragma once
 #include "umaa/command_engine.hpp"
+#include <algorithm>
 #include <cstddef>
+#include <string_view>
+#include <vector>
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
@@ -26,23 +29,15 @@ public:
   }
   // Returns false for out-of-order or mismatched observations. A newer
   // illegal state transition faults only that session; it cannot become success.
+  // Legacy state-only observation retained for ABI/source compatibility.
+  // Official TypeBindings must use the reason-bearing overload below.
   bool status(const std::string& session,const std::string& provider,
               State next,std::int64_t source_timestamp) {
-    auto it=sessions_.find(session);
-    if(it==sessions_.end() || it->second.id.destination!=provider)return false;
-    Entry& e=it->second;
-    if(e.faulted || e.status_disposed || source_timestamp<=e.last_status_time ||
-       source_timestamp<e.id.timestamp)return false;
-    if(e.awaiting_update && next==State::ISSUED) {
-      e.status=State::ISSUED;e.awaiting_update=false;
-      e.last_status_time=source_timestamp;return true;
-    }
-    if(e.awaiting_update || !valid(e.status,next)){
-      e.faulted=true;return false;
-    }
-    e.status=next;
-    e.last_status_time=source_timestamp;
-    return true;
+    return status_internal(session,provider,next,std::nullopt,source_timestamp);
+  }
+  bool status(const std::string& session,const std::string& provider,
+              State next,std::string_view reason,std::int64_t source_timestamp) {
+    return status_internal(session,provider,next,reason,source_timestamp);
   }
   // ACK is correlated by provider identity and session. It is not synthesized
   // from Status; without both inputs terminal_result() remains Pending.
@@ -112,6 +107,23 @@ public:
       return false;
     sessions_.erase(it);return true;
   }
+  // EO ICD 6.0 Section 5.1.4.5. The caller MUST Dispose each returned
+  // initiating Command instance on the DDS bus. This notification alone is
+  // NOT a successful hardware cancellation or terminal Status. Sessions are
+  // quarantined until recovery, with no automatic replay.
+  std::vector<std::string> provider_liveliness_lost(const std::string& provider) {
+    std::vector<std::string> to_cancel;
+    for(auto& pair:sessions_) {
+      Entry& e=pair.second;
+      if(e.id.destination!=provider || e.faulted ||
+         (e.status && terminal(*e.status)))continue;
+      e.faulted=true;
+      to_cancel.push_back(pair.first);
+    }
+    std::sort(to_cancel.begin(),to_cancel.end());
+    return to_cancel;
+  }
+
   void ambiguous_delivery(const std::string& session) {
     auto it=sessions_.find(session);
     if(it==sessions_.end())throw std::out_of_range("unknown command session");
@@ -142,6 +154,27 @@ private:
     std::optional<State> status;
     std::int64_t last_status_time{INT64_MIN};
   };
+  bool status_internal(const std::string& session,const std::string& provider,
+                       State next,std::optional<std::string_view> reason,
+                       std::int64_t source_timestamp) {
+    auto it=sessions_.find(session);
+    if(it==sessions_.end() || it->second.id.destination!=provider)return false;
+    Entry& e=it->second;
+    if(e.faulted || e.status_disposed || source_timestamp<=e.last_status_time ||
+       source_timestamp<e.id.timestamp)return false;
+    if(e.awaiting_update && next==State::ISSUED) {
+      if(reason && *reason!="UPDATED") {e.faulted=true;return false;}
+      e.status=State::ISSUED;e.awaiting_update=false;
+      e.last_status_time=source_timestamp;return true;
+    }
+    if(e.awaiting_update || !valid(e.status,next) ||
+       (reason && !command_transition_allowed(e.status,next,*reason))) {
+      e.faulted=true;return false;
+    }
+    e.status=next;
+    e.last_status_time=source_timestamp;
+    return true;
+  }
   std::size_t limit_;
   std::unordered_map<std::string,Entry> sessions_;
 };

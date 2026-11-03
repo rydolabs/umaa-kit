@@ -108,6 +108,34 @@ class NativeICDGenerationTests(unittest.TestCase):
                      runtime_report=bad)
         self.assertFalse(out.exists())
 
+    def test_official_native_runtime_request_fails_before_native_output(self):
+        # The official Runtime must remain unavailable even if an input
+        # advertises verified flags: those flags alone are not normative proof.
+        from tools.umaa_contract_ir import load_service
+        doc, _ = load_service(self.yaml)
+        doc["metadata"]["id"] = "UMAA::EO::BatteryStatus"
+        doc["verification"]["officialIdlVerified"] = True
+        doc["verification"]["ddsQosVerified"] = True
+        official = self.root / "claimed_official.yaml"
+        official.write_text(yaml_text(doc), encoding="utf-8")
+        manifest = self.root / "official.component.json"
+        manifest.write_text(json.dumps({
+            "schemaVersion": "1",
+            "component": {"id": "official_battery", "artifact": "shared-library"},
+            "services": [{"id": "UMAA::EO::BatteryStatus", "role": "provider"}],
+        }), encoding="utf-8")
+        out = self.root / "official-runtime-must-not-exist"
+        with self.assertRaisesRegex(ContractIRError, "official native Runtime Report binding blocked"):
+            generate(manifest, [official], self.idl_root,
+                     _binding_map([BINDING]), out,
+                     runtime_report={
+                         "typeName": "Demo::EO::BatteryReportType",
+                         "keyField": "source_id",
+                         "valueField": "level_pct",
+                         "schemaId": "demo:native-battery-report-v2",
+                     })
+        self.assertFalse(out.exists())
+
     def test_real_native_report_runtime_adapter_both_vendors(self):
         if not all(shutil.which(x) for x in ("cmake", "idlc", "fastddsgen")):
             if os.environ.get("UMAA_NATIVE_REQUIRED"):

@@ -444,7 +444,7 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
         "componentRuntimeBound": False,
         "officialConformanceClaim": False,
         "blockers": [
-            "Native DDS TypeSupport is generated; vendor-neutral host/native payload adapter not proven",
+            ("Synthetic native scalar Report adapter generated; official mapping not proven" if runtime_plugins else "Native DDS TypeSupport is generated; vendor-neutral host/native payload adapter not proven"),
             "Original native TypeSupport Key/QoS semantics are not established by compilation",
             "Component runtime Provider/Consumer registration cannot be emitted safely without reviewed wire codecs",
         ],
@@ -472,13 +472,25 @@ def main(argv=None):
     p.add_argument("--fixture", action="store_true")
     p.add_argument("--original-icd", type=Path)
     p.add_argument("--idl-archive", type=Path)
+    p.add_argument("--runtime-report", help="explicit native Report type")
+    p.add_argument("--runtime-key", help="native Report int32 Key")
+    p.add_argument("--runtime-value", help="native Report int32 value")
+    p.add_argument("--runtime-schema", help="native Report schema identifier")
     args = p.parse_args(argv)
     try:
+        if any((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)) and not all((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)):
+            raise ContractIRError("all synthetic native Runtime Report fields required")
         result = generate(args.manifest, args.yaml, args.idl_root,
                           _binding_map(args.idl_binding), args.out,
                           backends=args.backend, fixture=args.fixture,
                           original_icd=args.original_icd,
-                          idl_archive=args.idl_archive)
+                          idl_archive=args.idl_archive,
+                          runtime_report=({
+                              "typeName": args.runtime_report,
+                              "keyField": args.runtime_key,
+                              "valueField": args.runtime_value,
+                              "schemaId": args.runtime_schema,
+                          } if args.runtime_report else None))
         print("UMAA_ICD_NATIVE_PROJECT_GENERATED", json.dumps(result, sort_keys=True))
         return 0
     except (OSError, ValueError, ICDYamlError) as exc:

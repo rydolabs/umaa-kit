@@ -45,7 +45,7 @@ template<class Service> int subscriber(const char* plugin){
       if(value==25)return {id_b,300};
       return {};
     };
-    for(int i=0;i<550&&!collection->disposed()&&!detail.disposed();++i){
+    for(int i=0;i<550&&!(collection->disposed()&&detail.disposed());++i){
       collection->poll(4);
       detail.poll(4);
       auto resolved=detail.resolve_collection(collection->snapshot(),project);

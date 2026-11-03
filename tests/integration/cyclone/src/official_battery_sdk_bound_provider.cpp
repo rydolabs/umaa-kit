@@ -134,7 +134,11 @@ int main(int argc, char** argv) {
     const auto first = handler.read_report();
     BatteryMapper mapper("battery-sdk-provider", first.source);
     umaa::cyclone::ReportWriter<battery::Report, codec::NativeReport, BatteryMapper>
-        transport("battery-sdk-provider", participant, report_topic,
+        // DDS ReportWriter accepts an explicit Publisher parent as well as a
+        // participant. Use the SAME TOPIC-ordered Publisher as the Cell writer;
+        // the implicit default publisher is INSTANCE-scoped and would be
+        // incompatible with the independent oracle TOPIC-level subscriber.
+        transport("battery-sdk-provider", publisher, report_topic,
                   eq.get(), std::move(mapper), 1, 250, 250);
     umaa::BoundReportProvider<battery::Report> provider(
       "battery-sdk-provider", handler, transport);

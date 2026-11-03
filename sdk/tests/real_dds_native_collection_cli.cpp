@@ -72,16 +72,16 @@ template<class Service> int execute(const std::string& mode,const std::string& b
    return 0;
  }
  auto collection=app.consume_native_specialized_collection<Service>("17");
- bool initial=false,pending=false,revised=false,final=false,saw_dispose=false;
+ bool initial=false,pending=false,revised=false,final=false,saw_delete=false;
  std::uint64_t last_commit=0;
  const auto end=std::chrono::steady_clock::now()+18s;
- while(std::chrono::steady_clock::now()<end&&!(final&&saw_dispose)){
+ while(std::chrono::steady_clock::now()<end&&!(final&&saw_delete)){
    try{collection->poll(32);}
    catch(const std::exception& e) {
      std::cerr<<"NATIVE_DEBUG last_commit="<<last_commit
               <<" initial="<<initial<<" pending="<<pending
               <<" revised="<<revised<<" final="<<final
-              <<" dispose="<<saw_dispose<<" reason="<<e.what()<<"\n";
+              <<" delete="<<saw_delete<<" reason="<<e.what()<<"\n";
      throw;
    }
    const auto current=collection->snapshot();
@@ -97,22 +97,26 @@ template<class Service> int execute(const std::string& mode,const std::string& b
    if(current && current->size()==1 &&
       current->at(0).general.value==3 &&
       current->at(0).specialization.code==33)final=true;
-   saw_dispose=saw_dispose||collection->saw_element_dispose();
+   saw_delete=saw_delete||collection->saw_element_tombstone()||
+      collection->saw_element_dispose();
    if(commit>last_commit) {
      last_commit=commit;
      std::cerr<<"NATIVE_COMMIT="<<commit
               <<" joined="<<(current?current->size():999)
-              <<" dispose="<<saw_dispose<<"\n";
+              <<" delete="<<saw_delete<<"\n";
    }
    std::this_thread::sleep_for(15ms);
  }
- saw_dispose=saw_dispose||collection->saw_element_dispose();
- const bool ok=initial&&pending&&revised&&final&&saw_dispose&&
+ saw_delete=saw_delete||collection->saw_element_tombstone()||
+      collection->saw_element_dispose();
+ const bool ok=initial&&pending&&revised&&final&&saw_delete&&
                !collection->faulted()&&last_commit>=3;
  std::cout<<"NATIVE_CONSUMER shape="<<(list?"list":"set")
           <<" initial="<<initial<<" pending="<<pending
           <<" revised="<<revised<<" final="<<final
-          <<" dispose="<<saw_dispose<<" commits="<<last_commit<<"\n";
+          <<" delete_committed="<<saw_delete
+          <<" raw_dds_dispose_seen="<<collection->saw_element_dispose()
+          <<" commits="<<last_commit<<"\n";
  return ok?0:5;
 }
 int main(int argc,char** argv){

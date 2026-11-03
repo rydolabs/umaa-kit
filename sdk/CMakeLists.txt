@@ -229,3 +229,13 @@ if(UMAA_BUILD_TESTS)
   target_link_libraries(umaa_collection_frame_codec_test PRIVATE UMAA::Core)
   add_test(NAME umaa_collection_frame_codec_test COMMAND umaa_collection_frame_codec_test)
 endif()
+
+# SDK Core API v1: contract identity/correlation and adapters around existing engines.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_sdk_v1_core_test tests/test_sdk_v1_core.cpp)
+  target_link_libraries(umaa_sdk_v1_core_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_sdk_v1_core_test COMMAND umaa_sdk_v1_core_test)
+  add_executable(umaa_sdk_v1_bridge_test tests/test_sdk_v1_bridge.cpp)
+  target_link_libraries(umaa_sdk_v1_bridge_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_sdk_v1_bridge_test COMMAND umaa_sdk_v1_bridge_test)
+endif()

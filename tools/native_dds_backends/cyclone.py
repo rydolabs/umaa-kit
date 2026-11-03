@@ -54,3 +54,21 @@ def type_probe(type_name: str, source: str, keys: list[str]) -> dict:
                      '[(sizeof(((' + native + '*)0)->' + key +
                      ') > 0) ? 1 : -1];')
     return {"language": "C", "extension": ".c", "code": "\n".join(lines) + "\n"}
+
+
+
+def runtime_adapter(binding: dict) -> dict:
+    """Emit real native TypeSupport to stable DDS C ABI Report bridge.
+
+    This is explicitly a scalar synthetic fixture profile. The host uses
+    bounded int32 samples; vendor DDS serialization is handled by the
+    actual compiler TypeSupport, never by a Python parser or manual CDR.
+    """
+    from ._runtime_report import render
+    reference = (Path(__file__).resolve().parents[2] /
+                 "dds-backends/cyclone/src/adapter.cpp")
+    return {
+        "source": render(reference, binding, language="cyclone"),
+        "extension": ".cpp",
+        "language": "CXX",
+    }

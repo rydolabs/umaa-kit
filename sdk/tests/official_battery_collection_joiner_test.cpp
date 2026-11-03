@@ -103,11 +103,10 @@ int main() {
     confirmed(empty, 0, 1);
     initial.timeStamp.seconds += 1;
     initial.cellsListMetadata.updateElementID = guid(0x21);
-    rejected("non-NIL without genuine Dispose", [&]{
-      auto other = ready(); other.on_report(initial);
-      if (other.latest_stable()) throw std::runtime_error("bad initial complete");
-      throw std::runtime_error("pending without tombstone");
-    });
+    auto no_tombstone = ready();
+    no_tombstone.on_report(initial);
+    if (no_tombstone.latest_stable() || no_tombstone.pending_reports() != 1)
+      throw std::runtime_error("timestamp-less non-NIL checkpoint was accepted without Dispose");
 
     // Elements may arrive before metadata on the *other* topic.
     auto reverse = ready();

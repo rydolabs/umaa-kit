@@ -1,0 +1,11 @@
+// User-authored synthetic fixture; intentionally includes a union.
+module NativeDemo {
+  struct Point {
+    long x;
+    long y;
+  };
+  union Measurement switch (long) {
+    case 1: long ticks;
+    default: double ratio;
+  };
+};

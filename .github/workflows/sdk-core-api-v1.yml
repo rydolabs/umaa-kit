@@ -1,0 +1,49 @@
+name: SDK Core API v1
+on:
+  push:
+    branches:
+      - sdk/core-api-v1-20261103
+    paths:
+      - sdk/include/umaa/sdk_v1_core.hpp
+      - sdk/include/umaa/sdk_v1.hpp
+      - sdk/tests/test_sdk_v1_core.cpp
+      - sdk/tests/test_sdk_v1_bridge.cpp
+      - sdk/CMakeLists.txt
+      - .github/workflows/sdk-core-api-v1.yml
+  pull_request:
+    paths:
+      - sdk/include/umaa/sdk_v1_core.hpp
+      - sdk/include/umaa/sdk_v1.hpp
+      - sdk/tests/test_sdk_v1_core.cpp
+      - sdk/tests/test_sdk_v1_bridge.cpp
+      - sdk/CMakeLists.txt
+      - .github/workflows/sdk-core-api-v1.yml
+  workflow_dispatch:
+
+jobs:
+  sdk-core-v1-linux:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        env:
+          CXX: ${{ matrix.compiler }}
+        run: cmake -S sdk -B build/sdk -G Ninja -DUMAA_BUILD_TESTS=ON
+      - name: Build v1 tests
+        run: cmake --build build/sdk --target umaa_sdk_v1_core_test umaa_sdk_v1_bridge_test
+      - name: Run v1 tests
+        run: ctest --test-dir build/sdk --output-on-failure -R 'umaa_sdk_v1_(core|bridge)_test'
+  sdk-core-v1-windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S sdk -B build/sdk -DUMAA_BUILD_TESTS=ON
+      - name: Build v1 tests
+        run: cmake --build build/sdk --config Debug --target umaa_sdk_v1_core_test umaa_sdk_v1_bridge_test
+      - name: Run v1 tests
+        run: ctest --test-dir build/sdk -C Debug --output-on-failure -R 'umaa_sdk_v1_(core|bridge)_test'

@@ -1,0 +1,9 @@
+// User-authored fixture; tests include+bounded sequence+union through DDS compilers.
+#include "NativeCommon.idl"
+module NativeDemo {
+  struct DeviceReport {
+    @key long device_id;
+    sequence<Point, 8> points;
+    Measurement sample;
+  };
+};

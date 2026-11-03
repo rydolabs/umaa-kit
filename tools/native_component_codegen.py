@@ -14,8 +14,10 @@ import json
 from pathlib import Path
 import re
 import sys
+from zipfile import BadZipFile, ZipFile
 
 from tools.native_dds_codegen import native_generate
+from tools.official_idl_compile import collect
 from tools.native_dds_backends import load as load_compiler_plugin
 from tools.umaa_contract_ir import load_service, ContractIRError
 from tools.umaa_component_cli import validate as validate_component
@@ -137,6 +139,24 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
     output = output.resolve()
     if root == output or root in output.parents:
         raise ContractIRError("generated project must be outside source IDL root")
+    if not fixture:
+        # An independently supplied archive digest alone does not prove that
+        # a mutable extracted tree contains the SAME bytes. Authenticate all
+        # selected transitive IDL inputs directly against the pinned ZIP.
+        try:
+            with ZipFile(idl_archive) as original:
+                members = original.namelist()
+                if len(members) != len(set(members)):
+                    raise ContractIRError("duplicate official IDL ZIP entries")
+                for rel in sorted(set(expected.values())):
+                    for dep in collect(root, root / rel):
+                        entry = dep.relative_to(root).as_posix()
+                        if dep.stat().st_size > 4_000_000:
+                            raise ContractIRError("official IDL dependency too large")
+                        if original.read(entry) != dep.read_bytes():
+                            raise ContractIRError("extracted official IDL bytes differ from pinned ZIP: " + entry)
+        except (BadZipFile, KeyError) as exc:
+            raise ContractIRError("official IDL archive missing required source dependency") from exc
     targets = []
     source_results = []
     for rel in sorted(set(expected.values())):

@@ -52,3 +52,25 @@ def generate(root: Path, target: Path, closure: list[Path], output: Path,
         "cmakeFeatures": ["cxx_std_17"],
         "cmakeProperties": {},
     }
+
+
+def type_probe(type_name: str, source: str, keys: list[str]) -> dict:
+    """Check exact C++ native FQN and key field getter existence by compiler."""
+    import re
+    if not re.fullmatch(r"[A-Za-z_]\w*(?:::[A-Za-z_]\w*)+", type_name):
+        raise ValueError("unsafe Fast DDS native type identifier")
+    if any(not re.fullmatch(r"[A-Za-z_]\w*", key) for key in keys):
+        raise ValueError("unsafe Fast DDS key field")
+    lines = [
+        '#include "' + Path(source).stem + '.h"',
+        '#include <type_traits>',
+        '#include <utility>',
+        'using UmaaVerifiedNativeType = ::' + type_name + ';',
+        'static_assert(sizeof(UmaaVerifiedNativeType) > 0, "native type missing");',
+    ]
+    for idx, key in enumerate(keys):
+        lines.append('using UmaaNativeField' + str(idx) +
+                     ' = decltype(std::declval<UmaaVerifiedNativeType&>().' +
+                     key + '());')
+    return {"language": "CXX", "extension": ".cpp",
+            "code": "\n".join(lines) + "\n"}

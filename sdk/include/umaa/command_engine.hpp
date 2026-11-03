@@ -143,7 +143,10 @@ public:
       return {{Event::Kind::Ignored, session, "NOT_EXECUTING", ""}};
     transition(it->second, success ? State::COMPLETED : State::FAILED,
                success ? "SUCCEEDED" : failure_reason, events);
-    if (it->second.command_gone) {
+    if (it->second.command_gone ||
+        lost_sources_.count(it->second.identity.source)) {
+      // No live Consumer remains to dispose the initiating Command. Retire
+      // the responses once the *real* device outcome reaches a terminal state.
       cleanup(session, events);
       sessions_.erase(it);
     }
@@ -161,7 +164,10 @@ public:
     if (!safe_cancel(it->second.identity,it->second.payload))
       return {{Event::Kind::Ignored, session, "TIMEOUT_CANCEL_NOT_SAFE", ""}};
     transition(it->second, State::FAILED, "TIMEOUT", events);
-    if (it->second.command_gone) {
+    if (it->second.command_gone ||
+        lost_sources_.count(it->second.identity.source)) {
+      // No live Consumer remains to dispose the initiating Command. Retire
+      // the responses once the *real* device outcome reaches a terminal state.
       cleanup(session, events);
       sessions_.erase(it);
     }

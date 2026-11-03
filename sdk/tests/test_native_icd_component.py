@@ -129,12 +129,16 @@ class NativeICDGenerationTests(unittest.TestCase):
         summary = json.loads((self.project / "generated/native-generation.json").read_text())
         self.assertTrue(summary["nativeTypeSupportGenerated"])
         self.assertTrue(summary["nativeDdsBinding"])
-        self.assertFalse(summary["componentRuntimeBound"])
+        self.assertTrue(summary["componentRuntimeBound"])
         self.assertFalse(summary["officialConformanceClaim"])
         self.assertEqual(["cyclone", "fastdds"],
                          sorted(summary["runtimeAdaptersGenerated"]))
         header = (self.project / "generated/native_report_runtime.hpp").read_text()
         self.assertIn("demo:native-battery-report-v2", header)
+        self.assertIn("ServiceTraits<::umaa_native_runtime::BatteryStatusTag>", header)
+        self.assertTrue((self.project / "generated/native_report_component.cpp").is_file())
+        user = self.project / "src/native_report_logic.hpp"
+        self.assertTrue(user.is_file())
         self.assertNotIn("fastdds/", header)
         self.assertNotIn("<dds/", header)
         for vendor in ("cyclone", "fastdds"):
@@ -163,6 +167,12 @@ class NativeICDGenerationTests(unittest.TestCase):
                                 text=True, capture_output=True, timeout=20)
         self.assertIn("native_runtime_umaa_native_report_cyclone_real_wire", report.stdout)
         self.assertIn("native_runtime_umaa_native_report_fastdds_real_wire", report.stdout)
+        # Regeneration never overwrites the user's handwritten business logic.
+        user.write_text(user.read_text() + "\n// user implementation preserved\n")
+        repeat = subprocess.run(cmd, cwd=ROOT, capture_output=True,
+                                text=True, timeout=100)
+        self.assertEqual(0, repeat.returncode, repeat.stdout + repeat.stderr)
+        self.assertIn("// user implementation preserved", user.read_text())
 
     def test_native_generated_idl_complex_fields_compile_and_load(self):
         tools = [shutil.which("cmake"), shutil.which("idlc"),

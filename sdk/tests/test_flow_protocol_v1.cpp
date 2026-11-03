@@ -125,6 +125,19 @@ int main(){
   lost=wired.consumer_liveliness_lost("alpha");
   assert(has_status(lost,"CANCELED")&&wired.sessions()==0);
 
+  // Even if cancellation was unsafe at loss time, a genuine device
+  // completion is terminal and allows cleanup without the absent Consumer.
+  wired.consumer_liveliness_restored("alpha");
+  wired.receive({"alpha","target","late-completion",12},{12});
+  device.allow_cancel=false;
+  auto still_active=wired.consumer_liveliness_lost("alpha");
+  assert(still_active.size()==1 && wired.sessions()==1);
+  auto genuinely_done=wired.complete("late-completion",true);
+  assert(has_status(genuinely_done,"COMPLETED"));
+  assert(count_kind(genuinely_done,Event::Kind::DisposeAck)==1);
+  assert(wired.sessions()==0);
+  device.allow_cancel=true;
+
   // Unknown DDS status delivery permanently faults a transport. Never retry
   // a potentially side-effecting Status/Ack/Dispose sequence automatically.
   Sink bad_sink;BoundCommandProvider<P> bad("target",device,bad_sink);

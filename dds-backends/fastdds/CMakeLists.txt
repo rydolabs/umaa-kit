@@ -195,3 +195,21 @@ add_test(NAME umaa_fastdds_transient_local_qos_real_wire
   "$<TARGET_FILE:umaa_dds_fastdds_demo>"
   "$<TARGET_FILE:umaa_fastdds_vehicle_demo>" transient)
 set_tests_properties(umaa_fastdds_transient_local_qos_real_wire PROPERTIES TIMEOUT 42)
+
+# SDK v1 reviewed-traits facade -> ComponentRuntime -> real synthetic DDS.
+# A single device component implements both Command and Report business roles.
+add_executable(umaa_fastdds_sdk_v1_runtime_cli "${SDK_ROOT}/tests/real_dds_sdk_v1_runtime_cli.cpp")
+target_compile_features(umaa_fastdds_sdk_v1_runtime_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_fastdds_sdk_v1_runtime_cli PRIVATE "${SDK_ROOT}/include" "${SDK_ROOT}/tests")
+target_link_libraries(umaa_fastdds_sdk_v1_runtime_cli PRIVATE UMAA::Runtime)
+foreach(scenario IN ITEMS normal cancel update)
+  add_test(NAME "umaa_fastdds_sdk_v1_runtime_${scenario}_real_wire"
+    COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_sdk_v1_runtime.py"
+      "$<TARGET_FILE:umaa_fastdds_sdk_v1_runtime_cli>"
+      "$<TARGET_FILE:umaa_dds_fastdds_command_demo>"
+      "$<TARGET_FILE:umaa_dds_fastdds_demo>"
+      "$<TARGET_FILE:umaa_fastdds_vehicle_demo>"
+      "${scenario}")
+  set_tests_properties("umaa_fastdds_sdk_v1_runtime_${scenario}_real_wire"
+    PROPERTIES TIMEOUT 90)
+endforeach()

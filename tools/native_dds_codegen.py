@@ -20,7 +20,7 @@ from tools.native_dds_backends import discover, load
 from tools.official_idl_compile import collect
 
 _SAFE_ID = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
-_SAFE_CMAKE = re.compile(r"^[A-Za-z0-9_:.\-+=/ ]+$")
+_SAFE_CMAKE = re.compile(r"^[A-Za-z0-9_:.-+=/ ]+$")
 
 
 def sha256(path: Path) -> str:
@@ -160,7 +160,7 @@ def native_generate(root: Path, source: str, output: Path, *,
         "format": "UMAA-native-IDL-generator-v2",
         "vendor": vendor,
         "backends": list(plugins),
-        "source": name.as_posix() if isinstance(name, Path) else Path(source).as_posix(),
+        "source": Path(source).as_posix(),
         "inputSha256": digest,
         "transitiveIdls": len(closure),
         "sourceDependencies": [

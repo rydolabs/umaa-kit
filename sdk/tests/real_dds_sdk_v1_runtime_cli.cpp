@@ -61,13 +61,23 @@ int main(int argc,char** argv) {
       // callbacks. Neither that module nor this CLI imports DDS vendor APIs.
       command_app.load_component(argv[4]);
       report_app.load_component(argv[4]);
-      auto command=command_app.provide_command<EngineControlV1>(
-        "controller","vehicle",180ms,15ms);
+      // Normal runs the SDK-owned background scheduler; cancel/update
+      // control device polling to prevent an artificial early completion.
+      auto command=scenario=="normal"
+          ?command_app.provide_command<EngineControlV1>(
+              "controller","vehicle",180ms,15ms)
+          :command_app.serve_command<EngineControlV1>(
+              "controller","vehicle",180ms);
       auto battery=report_app.publish_report<BatteryStatusV1>("17");
       bool published=false;
       const auto end=std::chrono::steady_clock::now()+16s;
       while(std::chrono::steady_clock::now()<end &&
             !command->faulted()&&command->retired_sessions()==0){
+        if(scenario!="normal"){
+          const bool poll_device=scenario=="update"?
+            command->accepted_requests()>=2:false;
+          command->poll(20,poll_device);
+        }
         if(command->accepted_requests()>=1 && !published){
           battery.update();
           std::this_thread::sleep_for(350ms); // synthetic pacing for observation

@@ -1,7 +1,12 @@
 // Independent Fast DDS C++ oracle. Uses only vendor-generated original IDL,
 // never the SDK host representation nor its conversion/validation code.
+#if __has_include("BatteryReportType.hpp")
+#include "BatteryReportType.hpp"
+#include "BatteryReportTypePubSubTypes.hpp"
+#else
 #include "BatteryReportType.h"
 #include "BatteryReportTypePubSubTypes.h"
+#endif
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
@@ -29,7 +34,7 @@ static bool guid(const Guid& id, uint8_t prefix) {
 }
 
 static void ok(fd::ReturnCode_t code, const char* op) {
-  if (code != fd::ReturnCode_t::RETCODE_OK)
+  if (code != fd::RETCODE_OK)
     throw std::runtime_error(std::string(op) + " failed");
 }
 
@@ -109,7 +114,7 @@ int main() {
         if (topic_id == 0) {
           Report sample{};
           auto res = report_reader->take_next_sample(&sample, &info);
-          if (res == fd::ReturnCode_t::RETCODE_NO_DATA) continue;
+          if (res == fd::RETCODE_NO_DATA) continue;
           ok(res, "take Report");
           if (info.valid_data) {
             if (got_report || !verify_report(sample, rsec, rns))
@@ -122,7 +127,7 @@ int main() {
         } else {
           Element sample{};
           auto res = element_reader->take_next_sample(&sample, &info);
-          if (res == fd::ReturnCode_t::RETCODE_NO_DATA) continue;
+          if (res == fd::RETCODE_NO_DATA) continue;
           ok(res, "take Cell");
           if (info.valid_data) {
             if (got_element || !verify_element(sample, esec, ens))

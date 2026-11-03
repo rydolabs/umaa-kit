@@ -102,6 +102,28 @@ public:
     checked_collection<Service>();
     return app_.consume_collection<Wire>(instance_key,maximum);
   }
+  // Explicit split Elements/Metadata DDS Topic variant of the same typed
+  // Collection contract. The generated binding must expose both topic names.
+  template<class Service>
+  auto publish_split_collection(const std::string& key,std::size_t maximum=1024) {
+    using Wire=typename ServiceTraits<Service>::WireService;
+    static_assert(std::is_same_v<typename ServiceTraits<Service>::Element,
+                                 typename Wire::Value>,
+                  "Collection element differs from wire TypeBinding");
+    checked_collection<Service>();
+    checked_split<Wire>();
+    return app_.publish_split_collection<Wire>(key,maximum);
+  }
+  template<class Service>
+  auto consume_split_collection(const std::string& key,std::size_t maximum=1024) {
+    using Wire=typename ServiceTraits<Service>::WireService;
+    static_assert(std::is_same_v<typename ServiceTraits<Service>::Element,
+                                 typename Wire::Value>,
+                  "Collection element differs from wire TypeBinding");
+    checked_collection<Service>();
+    checked_split<Wire>();
+    return app_.consume_split_collection<Wire>(key,maximum);
+  }
   // A wire session key is explicit, not silently truncated from Guid128.
   // Official UMAA multi-key 128-bit session mapping requires a future
   // versioned DDS ABI; the current synthetic bindings use decimal keys.
@@ -139,6 +161,12 @@ public:
     return app_.consume<Wire>();
   }
 private:
+  template<class Wire> static void checked_split(){
+    if(!Wire::elements_topic||!Wire::metadata_topic||
+       !*Wire::elements_topic||!*Wire::metadata_topic||
+       std::string_view(Wire::elements_topic)==std::string_view(Wire::metadata_topic))
+      throw std::invalid_argument("missing or identical Elements/Metadata DDS Topics");
+  }
   template<class Service> static void checked_collection() {
     using Wire=typename ServiceTraits<Service>::WireService;
     const auto& d=descriptor<Service>();

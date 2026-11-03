@@ -17,7 +17,7 @@
 #include <string>
 #include <thread>
 
-namespace dds = eprosima::fastdds::dds;
+namespace fd = eprosima::fastfd::dds;
 using Report = UMAA::EO::BatteryStatus::BatteryReportType;
 using Element = UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement;
 
@@ -28,8 +28,8 @@ static bool guid(const Guid& id, uint8_t prefix) {
   return true;
 }
 
-static void ok(dds::ReturnCode_t code, const char* op) {
-  if (code != dds::ReturnCode_t::RETCODE_OK)
+static void ok(fd::ReturnCode_t code, const char* op) {
+  if (code != fd::ReturnCode_t::RETCODE_OK)
     throw std::runtime_error(std::string(op) + " failed");
 }
 
@@ -72,27 +72,27 @@ static bool verify_element(const Element& x, std::int64_t& seconds,
 }
 
 int main() {
-  auto* factory = dds::DomainParticipantFactory::get_instance();
-  dds::DomainParticipant* p = nullptr;
+  auto* factory = fd::DomainParticipantFactory::get_instance();
+  fd::DomainParticipant* p = nullptr;
   try {
-    p = factory->create_participant(0, dds::PARTICIPANT_QOS_DEFAULT);
+    p = factory->create_participant(0, fd::PARTICIPANT_QOS_DEFAULT);
     if (!p) throw std::runtime_error("participant failed");
-    dds::TypeSupport t1(new UMAA::EO::BatteryStatus::BatteryReportTypePubSubType());
-    dds::TypeSupport t2(new UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElementPubSubType());
+    fd::TypeSupport t1(new UMAA::EO::BatteryStatus::BatteryReportTypePubSubType());
+    fd::TypeSupport t2(new UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElementPubSubType());
     ok(t1.register_type(p), "report registration");
     ok(t2.register_type(p), "cell registration");
-    auto* topic1 = p->create_topic("BatteryReportType", t1.get_type_name(), dds::TOPIC_QOS_DEFAULT);
+    auto* topic1 = p->create_topic("BatteryReportType", t1.get_type_name(), fd::TOPIC_QOS_DEFAULT);
     auto* topic2 = p->create_topic("BatteryReportTypeCellsListElement", t2.get_type_name(),
-                                   dds::TOPIC_QOS_DEFAULT);
+                                   fd::TOPIC_QOS_DEFAULT);
     if (!topic1 || !topic2) throw std::runtime_error("topics failed");
-    auto subq = dds::SUBSCRIBER_QOS_DEFAULT;
-    subq.presentation().access_scope = dds::TOPIC_PRESENTATION_QOS;
+    auto subq = fd::SUBSCRIBER_QOS_DEFAULT;
+    subq.presentation().access_scope = fd::TOPIC_PRESENTATION_QOS;
     subq.presentation().ordered_access = true;
     auto* sub = p->create_subscriber(subq);
     if (!sub) throw std::runtime_error("subscriber failed");
-    auto q = dds::DATAREADER_QOS_DEFAULT;
-    q.reliability().kind = dds::RELIABLE_RELIABILITY_QOS;
-    q.history().kind = dds::KEEP_LAST_HISTORY_QOS;
+    auto q = fd::DATAREADER_QOS_DEFAULT;
+    q.reliability().kind = fd::RELIABLE_RELIABILITY_QOS;
+    q.history().kind = fd::KEEP_LAST_HISTORY_QOS;
     q.history().depth = 16;
     auto* report_reader = sub->create_datareader(topic1, q);
     auto* element_reader = sub->create_datareader(topic2, q);
@@ -105,30 +105,30 @@ int main() {
     for (int i = 0; i < 450 && !(got_report && got_element &&
                                    disposed_report && disposed_element); ++i) {
       for (int topic_id = 0; topic_id < 2; ++topic_id) {
-        dds::SampleInfo info{};
+        fd::SampleInfo info{};
         if (topic_id == 0) {
           Report sample{};
           auto res = report_reader->take_next_sample(&sample, &info);
-          if (res == dds::ReturnCode_t::RETCODE_NO_DATA) continue;
+          if (res == fd::ReturnCode_t::RETCODE_NO_DATA) continue;
           ok(res, "take Report");
           if (info.valid_data) {
             if (got_report || !verify_report(sample, rsec, rns))
               throw std::runtime_error("invalid or duplicate nested Battery Report");
             got_report = true;
-          } else if (info.instance_state == dds::NOT_ALIVE_DISPOSED_INSTANCE_STATE) {
+          } else if (info.instance_state == fd::NOT_ALIVE_DISPOSED_INSTANCE_STATE) {
             if (!got_report) throw std::runtime_error("Report disposed before data");
             disposed_report = true;
           }
         } else {
           Element sample{};
           auto res = element_reader->take_next_sample(&sample, &info);
-          if (res == dds::ReturnCode_t::RETCODE_NO_DATA) continue;
+          if (res == fd::ReturnCode_t::RETCODE_NO_DATA) continue;
           ok(res, "take Cell");
           if (info.valid_data) {
             if (got_element || !verify_element(sample, esec, ens))
               throw std::runtime_error("invalid or duplicate nested Cell");
             got_element = true;
-          } else if (info.instance_state == dds::NOT_ALIVE_DISPOSED_INSTANCE_STATE) {
+          } else if (info.instance_state == fd::NOT_ALIVE_DISPOSED_INSTANCE_STATE) {
             if (!got_element) throw std::runtime_error("Cell disposed before data");
             disposed_element = true;
           }

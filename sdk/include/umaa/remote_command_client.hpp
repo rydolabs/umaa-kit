@@ -164,6 +164,19 @@ public:
      std::this_thread::sleep_for(std::chrono::milliseconds(20));
    }
  }
+ // Called when an external DDS liveliness observer verifies the target
+ // provider is no longer alive. Dispose all in-flight initiating Commands;
+ // never interpret a successful DDS ACK as hardware cancellation.
+ std::vector<std::string> on_provider_liveliness_lost(
+     std::chrono::milliseconds timeout) {
+   require_active();
+   const auto sessions=monitor_.provider_liveliness_lost(destination_);
+   for(const auto& session:sessions) {
+     if(disposed_.count(session))continue;
+     request_cancel(session,timeout);
+   }
+   return sessions;
+ }
  bool faulted() const noexcept{return faulted_;}
 private:
  struct CallbackContext{RemoteCommandClient* self{};bool ack{};};

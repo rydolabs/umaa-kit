@@ -116,6 +116,9 @@ public:
       return events;
     }catch(...){faulted_=true;throw;}
   }
+  void consumer_liveliness_restored(const std::string& source) {
+    ensure_active();provider_.consumer_liveliness_restored(source);
+  }
   bool faulted() const noexcept {return faulted_||provider_.faulted();}
   std::size_t sessions() const{return provider_.sessions();}
 private:

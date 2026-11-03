@@ -439,11 +439,10 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
                 "list(APPEND UMAA_NATIVE_RUNTIME_PLUGINS " + target + ")",
             ]
         cmake += [
-            'add_library(umaa_native_device MODULE "' + d +
-            '{UMAA_SDK_ROOT}/examples/modules/vehicle_component.cpp")',
+            "add_library(umaa_native_device MODULE generated/native_report_component.cpp)",
             "target_compile_features(umaa_native_device PRIVATE cxx_std_17)",
             'target_include_directories(umaa_native_device PRIVATE "' + d +
-            '{UMAA_SDK_ROOT}/include")',
+            '{UMAA_SDK_ROOT}/include" "' + d + '{CMAKE_CURRENT_SOURCE_DIR}")',
             'add_executable(umaa_native_report_cli "' + d +
             '{UMAA_SDK_ROOT}/tests/real_dds_native_report_cli.cpp")',
             "target_compile_features(umaa_native_report_cli PRIVATE cxx_std_17)",
@@ -494,12 +493,12 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
         },
         "nativeDdsBinding": bool(runtime_plugins),
         "runtimeAdaptersGenerated": [x["backend"] for x in runtime_plugins],
-        "componentRuntimeBound": False,
+        "componentRuntimeBound": bool(runtime_plugins),
         "officialConformanceClaim": False,
         "blockers": [
             ("Synthetic native scalar Report adapter generated; official mapping not proven" if runtime_plugins else "Native DDS TypeSupport is generated; vendor-neutral host/native payload adapter not proven"),
             "Original native TypeSupport Key/QoS semantics are not established by compilation",
-            "Component runtime Provider/Consumer registration cannot be emitted safely without reviewed wire codecs",
+            ("Synthetic Report Provider registration generated and wired to user Handler; official mapping unverified" if runtime_plugins else "Component runtime Provider/Consumer registration cannot be emitted safely without reviewed wire codecs"),
         ],
     }
     metadata = output / "generated/native-generation.json"

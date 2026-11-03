@@ -58,6 +58,9 @@ class TimedCommandProvider final {
       if(event.kind==Event::Kind::DisposeStatus)deadlines_.erase(event.session);
     return events;
   }
+  void consumer_liveliness_restored(const std::string& source) {
+    bound_.consumer_liveliness_restored(source);
+  }
   // Caller drives this from the DDS event loop. Cancellation refusal retains
   // the deadline for a later attempt; it never fabricates terminal status.
   std::vector<Event> expire(TimePoint now = Clock::now()) {

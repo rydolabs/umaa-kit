@@ -9,6 +9,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/topic/TypeSupport.hpp>
 #include <fastdds/dds/core/status/PublicationMatchedStatus.hpp>
+#include <fastdds/dds/core/Time_t.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -19,22 +20,22 @@
 #include <string>
 #include <thread>
 
-namespace dds = eprosima::fastdds::dds;
+namespace fd = eprosima::fastfd::dds;
 namespace host = umaa::official_battery;
-namespace codec = umaa::fastdds::official_battery;
+namespace codec = umaa::fastfd::official_battery;
 
 static host::Guid guid(uint8_t first) {
   host::Guid g{}; g[0] = first; return g;
 }
 
-static void ok(dds::ReturnCode_t result, const char* action) {
-  if (result != dds::ReturnCode_t::RETCODE_OK)
+static void ok(fd::ReturnCode_t result, const char* action) {
+  if (result != fd::ReturnCode_t::RETCODE_OK)
     throw std::runtime_error(std::string(action) + " failed");
 }
 
-static void wait_match(dds::DataWriter* writer) {
+static void wait_match(fd::DataWriter* writer) {
   for (int i = 0; i < 250; ++i) {
-    dds::PublicationMatchedStatus status{};
+    fd::PublicationMatchedStatus status{};
     ok(writer->get_publication_matched_status(status), "get matches");
     if (status.current_count >= 1) return;
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -46,8 +47,8 @@ int main(int argc, char** argv) {
   if (argc != 1 && !(argc == 2 &&
       std::strcmp(argv[1], "--bad-checkpoint") == 0)) return 2;
   const bool bad = argc == 2;
-  auto* factory = dds::DomainParticipantFactory::get_instance();
-  dds::DomainParticipant* participant = nullptr;
+  auto* factory = fd::DomainParticipantFactory::get_instance();
+  fd::DomainParticipant* participant = nullptr;
   try {
     host::Report h{};
     h.source.id = guid(0x33); h.source.parentID = guid(0);
@@ -78,26 +79,26 @@ int main(int argc, char** argv) {
         checked_element.elementID != cell.elementID || checked_element.nextElementID)
       throw std::runtime_error("official Fast DDS codec local host round trip failed");
 
-    participant = factory->create_participant(0, dds::PARTICIPANT_QOS_DEFAULT);
+    participant = factory->create_participant(0, fd::PARTICIPANT_QOS_DEFAULT);
     if (!participant) throw std::runtime_error("participant creation failed");
-    dds::TypeSupport report_type(new codec::ReportTypeSupport());
-    dds::TypeSupport element_type(new codec::ElementTypeSupport());
+    fd::TypeSupport report_type(new codec::ReportTypeSupport());
+    fd::TypeSupport element_type(new codec::ElementTypeSupport());
     ok(report_type.register_type(participant), "register report");
     ok(element_type.register_type(participant), "register element");
     auto* report_topic = participant->create_topic(
-      "BatteryReportType", report_type.get_type_name(), dds::TOPIC_QOS_DEFAULT);
+      "BatteryReportType", report_type.get_type_name(), fd::TOPIC_QOS_DEFAULT);
     auto* element_topic = participant->create_topic(
-      "BatteryReportTypeCellsListElement", element_type.get_type_name(), dds::TOPIC_QOS_DEFAULT);
+      "BatteryReportTypeCellsListElement", element_type.get_type_name(), fd::TOPIC_QOS_DEFAULT);
     if (!report_topic || !element_topic) throw std::runtime_error("create official Topics failed");
-    auto pubq = dds::PUBLISHER_QOS_DEFAULT;
-    pubq.presentation().access_scope = dds::TOPIC_PRESENTATION_QOS;
+    auto pubq = fd::PUBLISHER_QOS_DEFAULT;
+    pubq.presentation().access_scope = fd::TOPIC_PRESENTATION_QOS;
     pubq.presentation().ordered_access = true;
     auto* publisher = participant->create_publisher(pubq);
     if (!publisher) throw std::runtime_error("create publisher failed");
 
-    auto writerq = dds::DATAWRITER_QOS_DEFAULT;
-    writerq.reliability().kind = dds::RELIABLE_RELIABILITY_QOS;
-    writerq.history().kind = dds::KEEP_LAST_HISTORY_QOS;
+    auto writerq = fd::DATAWRITER_QOS_DEFAULT;
+    writerq.reliability().kind = fd::RELIABLE_RELIABILITY_QOS;
+    writerq.history().kind = fd::KEEP_LAST_HISTORY_QOS;
     writerq.history().depth = 16;
     writerq.writer_data_lifecycle().autodispose_unregistered_instances = false;
     auto* report_writer = publisher->create_datawriter(report_topic, writerq);
@@ -109,9 +110,9 @@ int main(int argc, char** argv) {
     ok(element_writer->write(&element), "write Cell");
     ok(report_writer->write(&report), "write Report");
     std::this_thread::sleep_for(std::chrono::milliseconds(350));
-    ok(element_writer->dispose(&element, dds::HANDLE_NIL), "dispose Cell");
-    ok(report_writer->dispose(&report, dds::HANDLE_NIL), "dispose Report");
-    ok(element_writer->wait_for_acknowledgments(eprosima::fastrtps::Duration_t(5, 0)),
+    ok(element_writer->dispose(&element, fd::HANDLE_NIL), "dispose Cell");
+    ok(report_writer->dispose(&report, fd::HANDLE_NIL), "dispose Report");
+    ok(element_writer->wait_for_acknowledgments(fd::Duration_t(5, 0)),
        "wait Cell ACK");
     ok(report_writer->wait_for_acknowledgments(eprosima::fastrtps::Duration_t(5, 0)),
        "wait Report ACK");

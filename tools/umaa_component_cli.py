@@ -367,7 +367,8 @@ def main(argv=None):
             if args.idl_root or args.idl_binding or args.backend or args.idl_archive:
                 if not args.yaml or not args.idl_root or not args.idl_binding or args.idl:
                     raise ProjectError("native ICD codegen requires --yaml, --idl-root and explicit --idl-binding; no --idl")
-                from tools.native_component_codegen import generate as native_project, _binding_map
+                from tools.umaa_icd_component_codegen import generate_native as native_project
+                from tools.native_component_codegen import _binding_map
                 print(json.dumps(native_project(args.project / MANIFEST,
                      args.yaml, args.idl_root, _binding_map(args.idl_binding),
                      args.project, backends=args.backend, fixture=args.fixture,

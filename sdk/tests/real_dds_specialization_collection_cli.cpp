@@ -72,6 +72,7 @@ template<class Service> int subscriber(const char* plugin){
   }
 }
 template<class Service> int publisher(const char* plugin){
+  using Wire=typename umaa::sdk_v1::ServiceTraits<Service>::WireService;
   try{
     umaa::sdk_v1::RuntimeApplication app;
     app.use_backend(plugin,46);
@@ -79,7 +80,7 @@ template<class Service> int publisher(const char* plugin){
     umaa::DdsSpecializationPublisher<SyntheticSpecialization> detail(plugin,46,"17");
     // A snapshot is not visible until BOTH collection halves arrive, then
     // all independent Generalization/Specialization halves are current.
-    if constexpr(umaa::sdk_v1::ServiceTraits<Service>::WireService::kind==umaa::CollectionKind::List){
+    if constexpr(Wire::kind==umaa::CollectionKind::List){
       collection->snapshot(1,{{"a",100,10,"b"},{"b",200,20,""}});
     }else{
       collection->snapshot(1,{{"a",100,10,""},{"b",200,20,""}});
@@ -97,7 +98,7 @@ template<class Service> int publisher(const char* plugin){
     std::this_thread::sleep_for(370ms);
     detail.specialization(id_b,300,2500);
     std::this_thread::sleep_for(180ms);
-    if constexpr(umaa::sdk_v1::ServiceTraits<Service>::WireService::kind==umaa::CollectionKind::List){
+    if constexpr(Wire::kind==umaa::CollectionKind::List){
       collection->revise({umaa::CollectionOperation<std::int32_t>::upsert(
          {"b",300,25,""})},"a");
     }else {

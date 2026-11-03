@@ -203,6 +203,23 @@ int main(){
   assert(good.disposed_ack("missing","target"));
   assert(good.release("missing"));
 
+  // EO ICD §5.1 allows Consumers to omit the Ack reader. Terminal
+  // CommandStatus and safe update must work in explicitly Status-only mode.
+  RemoteCommandMonitor status_only(2,CommandAckPolicy::StatusOnly);
+  status_only.issue({"alpha","target","status-only",300});
+  assert(status_only.status("status-only","target",State::ISSUED,"SUCCEEDED",301));
+  assert(status_only.status("status-only","target",State::COMMANDED,"SUCCEEDED",302));
+  assert(status_only.status("status-only","target",State::EXECUTING,"SUCCEEDED",303));
+  assert(status_only.ready_for_update("status-only"));
+  status_only.begin_update("status-only");
+  assert(status_only.status("status-only","target",State::ISSUED,"UPDATED",304));
+  assert(status_only.status("status-only","target",State::COMMANDED,"SUCCEEDED",305));
+  assert(status_only.status("status-only","target",State::EXECUTING,"SUCCEEDED",306));
+  assert(status_only.status("status-only","target",State::COMPLETED,"SUCCEEDED",307));
+  assert(status_only.result("status-only")==RemoteCommandResult::Completed);
+  assert(status_only.disposed_status("status-only","target"));
+  assert(status_only.release("status-only")); // no Ack reader/disposal required
+
   // A monotonic deadline must be cleared only when liveliness cancellation
   // actually retired the session, not when a device refused.
   Sink timed_sink;Device timed_device;

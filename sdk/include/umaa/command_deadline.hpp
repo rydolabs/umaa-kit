@@ -50,6 +50,14 @@ class TimedCommandProvider final {
       }
     return events;
   }
+  // Host injects trusted DDS liveliness loss; unsafe device cancellation
+  // retains the deadline and pending session for later reconciliation.
+  std::vector<Event> consumer_liveliness_lost(const std::string& source) {
+    auto events=bound_.consumer_liveliness_lost(source);
+    for(const auto& event:events)
+      if(event.kind==Event::Kind::DisposeStatus)deadlines_.erase(event.session);
+    return events;
+  }
   // Caller drives this from the DDS event loop. Cancellation refusal retains
   // the deadline for a later attempt; it never fabricates terminal status.
   std::vector<Event> expire(TimePoint now = Clock::now()) {

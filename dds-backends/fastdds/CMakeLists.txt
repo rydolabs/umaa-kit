@@ -255,7 +255,7 @@ target_include_directories(umaa_fastdds_specialized_collection_cli PRIVATE
 target_link_libraries(umaa_fastdds_specialized_collection_cli PRIVATE UMAA::Runtime)
 foreach(shape IN ITEMS set list)
   add_test(NAME "umaa_fastdds_four_topic_${shape}_real_wire"
-    COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_collection.py"
+    COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_specialization.py"
       "$<TARGET_FILE:umaa_fastdds_specialized_collection_cli>"
       "$<TARGET_FILE:umaa_dds_fastdds_collection_demo>" "${shape}")
   set_tests_properties("umaa_fastdds_four_topic_${shape}_real_wire"

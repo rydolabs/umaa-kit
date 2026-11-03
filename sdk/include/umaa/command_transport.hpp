@@ -80,6 +80,19 @@ public:
     }
   }
 
+  // Trusted DDS consumer liveliness loss. Deliver terminal CANCELED and
+  // retire Status/Ack only after confirmed device cancellation.
+  std::vector<Event> consumer_liveliness_lost(const std::string& source) {
+    require_active();
+    try {
+      auto events=engine_.consumer_liveliness_lost(source);
+      deliver(events);
+      for(const auto& event:events)
+        if(event.kind==Event::Kind::DisposeAck) sessions_.erase(event.session);
+      return events;
+    }catch(...) {state_=State::Faulted;throw;}
+  }
+
   // Deadline detection is a host responsibility; no hidden timer/QoS.
   std::vector<Event> timeout(const std::string& session) {
     require_active();

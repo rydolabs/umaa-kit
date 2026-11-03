@@ -99,17 +99,18 @@ Key field and pinned source SHA):
     ctest --test-dir /tmp/native-demo-build --output-on-failure
 
 The generated build creates two *actual* native TypeSupport-linked DDS
-Runtime plugins, a single vendor-neutral typed Report client executable,
-and a device Business Handler Component. CTest runs independent processes
-through both plugins, checking Report data, key, disposal and ACK behavior.
-The generated service header includes no vendor DDS headers.
+Runtime plugins, a single vendor-neutral SDK v1 RuntimeApplication executable,
+and a schema-matched Component registration plus separately preserved user
+Business Handler header. CTest runs independent processes through both
+plugins and validates publish_report/consume_report, data, key and Dispose.
+The generated ServiceTraits header includes no vendor DDS headers.
 
 This is an **experimental synthetic scalar Report binding**. It is not
 an official BatteryStatus DDS Key/QoS mapping. Existing official ICD YAML
 still fails closed until original IDL/ICD source hashes, normative key
 semantics, QoS requirements, service operations and vendor-native
 host mapping are explicitly validated. No official SDK conformance
-is claimed, and the generic Component provider is not yet auto-generated.
+is claimed; only this synthetic, explicitly bound Report Component is auto-generated. Arbitrary official Component Providers remain blocked.
 
 ## Native ICD workflow
 
@@ -142,10 +143,11 @@ identity. A full official SDK Provider/Consumer Runtime binder still
 needs independently verified native TypeSupport ↔ host-wire mapping.
 Without an explicit synthetic runtime fixture binding, nativeDdsBinding=false
 and componentRuntimeBound=false are deliberate fail-closed statuses. With the
-synthetic Report Runtime hook, nativeDdsBinding=true records that **test**
-adapter compilation; componentRuntimeBound remains false until general
-Component registration is generated and independently verified. A buildable
-native library is NOT a certified UMAA Component DLL/SO.
+synthetic Report Runtime hook, nativeDdsBinding=true records the **test**
+adapter build and componentRuntimeBound=true records the corresponding
+synthetic Component registration tested with SDK v1 Publisher/Consumer.
+Neither status implies official UMAA 6.0 Key/QoS conformance or coverage
+of other services. A buildable native library alone is NOT certification.
 
 Original official source and generated TypeSupport must not be
 redistributed without confirming all applicable rights and recipients;

@@ -99,6 +99,16 @@ class NativeCompilerOrchestrationTests(TestCase):
         self.assertNotIn("CycloneDDS", cmake)
         self.assertEqual(["umaa_native_custom_types"], result["nativeTargets"])
 
+    def test_external_entry_point_discovery_requires_no_code_modification(self):
+        backend = SimpleNamespace(generate=lambda *a, **kw: {})
+        entry = SimpleNamespace(name="thirdparty", load=lambda: backend)
+        points = SimpleNamespace(select=lambda group: [entry] if
+                                 group == "umaa.native_dds_backends" else [])
+        with patch("tools.native_dds_backends.metadata.entry_points",
+                   return_value=points):
+            self.assertIn("thirdparty", discover())
+            self.assertIs(load("thirdparty"), backend)
+
     def test_pin_mismatch_prevents_compiler_and_output(self):
         with patch("subprocess.run") as run:
             with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):

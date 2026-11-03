@@ -18,7 +18,9 @@ bool supported(const UmaaDdsTopicV1* t) {
  return t&&t->topic_name&&t->schema_id&&t->qos_profile&&
  (std::strcmp(t->topic_name,"demo/CollectionBatch")==0 ||
   std::strcmp(t->topic_name,"demo/CollectionElements")==0 ||
-  std::strcmp(t->topic_name,"demo/CollectionMetadata")==0)&&
+  std::strcmp(t->topic_name,"demo/CollectionMetadata")==0 ||
+  std::strcmp(t->topic_name,"demo/SpecializationGeneral")==0 ||
+  std::strcmp(t->topic_name,"demo/SpecializationDetail")==0)&&
  std::strcmp(t->schema_id,"demo:collection-batch-v1")==0&&
  std::strcmp(t->qos_profile,"demo-reliable")==0&&
  !(t->required_features&~caps);
@@ -51,7 +53,11 @@ dds_entity_t topic(Domain* d,const UmaaDdsTopicV1* binding) {
  const char* name=std::strcmp(binding->topic_name,"demo/CollectionElements")==0?
    "Demo_EO_CollectionElements":
    (std::strcmp(binding->topic_name,"demo/CollectionMetadata")==0?
-    "Demo_EO_CollectionMetadata":"Demo_EO_CollectionBatch");
+    "Demo_EO_CollectionMetadata":
+    (std::strcmp(binding->topic_name,"demo/SpecializationGeneral")==0?
+     "Demo_EO_SpecializationGeneral":
+     (std::strcmp(binding->topic_name,"demo/SpecializationDetail")==0?
+      "Demo_EO_SpecializationDetail":"Demo_EO_CollectionBatch")));
  return dds_create_topic(d->participant,&Demo_EO_CollectionBatch_desc,
                          name,nullptr,nullptr);
 }

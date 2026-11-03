@@ -22,7 +22,9 @@ _ORIGINAL_LIMIT = 64 * 1024 * 1024
 
 
 def inspect(archive: Path, yaml_path: Path, original_icd: Path,
-            expected_archive_sha256: str) -> dict:
+            expected_archive_sha256: str, *,
+            battery_pins: Path | None = None,
+            rti_reference_xml: Path | None = None) -> dict:
     """Produce an unapproved, source-checked single-Report handoff record.
 
     The original ICD is authenticated by byte digest only. Its normative
@@ -70,6 +72,26 @@ def inspect(archive: Path, yaml_path: Path, original_icd: Path,
     audited = evidence["services"][0]["topics"][0]["source"]
     if audited["ddsTopicName"] != topic["ddsTopicName"] or audited["keyFields"] != topic["keyFields"]:
         raise SourceError("selected Report Topic/Key declaration mismatch")
+
+    # Optional source-provenance enrichment: cross-check a separate report
+    # + collection-element manifest against the SAME authenticated sources.
+    # This is evidence only. The official Runtime remains fail-closed.
+    battery = None
+    if rti_reference_xml is not None and battery_pins is None:
+        raise SourceError("RTI reference XML requires explicit Battery evidence manifest")
+    if battery_pins is not None:
+        if service_id != "UMAA::EO::BatteryStatus":
+            raise SourceError("Battery source evidence cannot bind a different Service")
+        from tools.official_battery_status_evidence import inspect as inspect_battery
+        battery = inspect_battery(
+            archive, original_icd, manifest=battery_pins,
+            rti_reference_xml=rti_reference_xml,
+        )
+        observed = battery["topicDeclarations"]["report"]
+        if (observed["idlType"] != topic["idlType"] or
+                observed["ddsTopicName"] != topic["ddsTopicName"] or
+                observed["keyFields"] != topic["keyFields"]):
+            raise SourceError("source-pinned Battery Report does not match authored YAML")
 
     operations = service["spec"]["operations"]
     unresolved = sorted(
@@ -122,6 +144,7 @@ def inspect(archive: Path, yaml_path: Path, original_icd: Path,
             "normativeIcdSemanticsReviewed": False,
         },
         "unresolvedOperations": unresolved,
+        "batterySourceEvidence": battery,
         "nativeDdsBinding": False,
         "componentRuntimeBound": False,
         "officialConformanceClaim": False,
@@ -137,11 +160,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--zip", required=True, type=Path)
     parser.add_argument("--yaml", required=True, type=Path)
     parser.add_argument("--original-icd", required=True, type=Path)
+    parser.add_argument("--battery-pins", type=Path,
+                        help="optional exact BatteryStatus Report+Collection source ledger")
+    parser.add_argument("--rti-reference-xml", type=Path,
+                        help="optional RTI-only reference XML, never normative")
     parser.add_argument("--expect-sha256", required=True)
     parser.add_argument("--out", type=Path)
     args = parser.parse_args(argv)
     try:
-        record = inspect(args.zip, args.yaml, args.original_icd, args.expect_sha256)
+        record = inspect(args.zip, args.yaml, args.original_icd, args.expect_sha256,
+                         battery_pins=args.battery_pins,
+                         rti_reference_xml=args.rti_reference_xml)
         body = json.dumps(record, indent=2, sort_keys=True) + "\n"
         if args.out:
             if args.out.is_symlink() or args.out.exists() or any(

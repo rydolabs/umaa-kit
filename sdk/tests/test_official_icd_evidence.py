@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import sys
 import tempfile
 import unittest
@@ -217,6 +218,146 @@ class SourceAuditTest(unittest.TestCase):
         original.write_bytes(b"mutated original")
         with self.assertRaisesRegex(SourceError, "original ICD SHA-256"):
             inspect(self.zip_path, source, original, correct_digest)
+
+    def _synthetic_battery_evidence(self):
+        import json
+        from tools.official_battery_status_evidence import PIN_MANIFEST
+        manifest = json.loads(PIN_MANIFEST.read_text(encoding="utf-8"))
+        original = self.root / "synthetic-original.pdf"
+        original.write_bytes(b"%PDF-1.4\nfake synthetic test bytes; not normative\n")
+        example = self.root / "rti-synthetic-example.xml"
+        example.write_text(
+            '<dds><qos_library name="UMAAQoSLib">'
+            '<qos_profile name="DefaultUMAAParticipant">'
+            '<publisher_qos><presentation>'
+            '<access_scope>TOPIC_PRESENTATION_QOS</access_scope>'
+            '<ordered_access>true</ordered_access>'
+            '</presentation></publisher_qos>'
+            '<subscriber_qos><presentation>'
+            '<access_scope>TOPIC_PRESENTATION_QOS</access_scope>'
+            '<ordered_access>true</ordered_access>'
+            '</presentation></subscriber_qos>'
+            '</qos_profile><qos_profile name="ElementQoS"/>'
+            '</qos_library></dds>', encoding="utf-8")
+        manifest["sourcePins"]["originalEoIcdSha256"] = sha(original.read_bytes())
+        manifest["sourcePins"]["officialIdlArchiveSha256"] = sha(self.zip_path.read_bytes())
+        manifest["sourcePins"]["rtiExampleQosXmlSha256"] = sha(example.read_bytes())
+        with inspected_zip(self.zip_path) as archive:
+            for role, spec in manifest["topics"].items():
+                actual = source_type(archive, spec["idlType"])
+                for name in ("idlPath", "idlSha256", "idlType",
+                             "ddsTopicName", "keyFields", "keyFieldTypes"):
+                    spec[name] = actual[name]
+        path = self.root / "battery-reference.json"
+        path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+        return path, original, example, manifest
+
+    def test_battery_real_source_shapes_and_rti_example_are_evidence_only(self):
+        from tools.official_battery_status_evidence import inspect, main
+        path, original, example, pins = self._synthetic_battery_evidence()
+        report = inspect(self.zip_path, original, manifest=path,
+                         rti_reference_xml=example)
+        self.assertEqual("SOURCE_CHECKED_UNAPPROVED_BATTERY_STATUS_EVIDENCE", report["kind"])
+        self.assertEqual(["source"], report["topicDeclarations"]["report"]["keyFields"])
+        self.assertEqual(["listID", "elementID"],
+                         report["topicDeclarations"]["collectionElement"]["keyFields"])
+        self.assertEqual(report["topicDeclarations"]["report"]["idlPath"],
+                         report["topicDeclarations"]["collectionElement"]["idlPath"])
+        self.assertTrue(report["sourceIntegrity"]["allIdlImportsPresent"])
+        self.assertFalse(report["sourceIntegrity"]["originalIcdClauseTextMachineReviewed"])
+        self.assertTrue(report["rtiExampleQosReference"]["referenceOnly"])
+        self.assertFalse(report["rtiExampleQosReference"]["officialQosApproval"])
+        self.assertEqual("collectionElement", report["collectionElementQosMinimum"]["appliesTo"])
+        self.assertTrue(report["existingReviewedQosMinimum"]["reviewedScopedQosFileMatches"])
+        self.assertFalse(report["existingReviewedQosMinimum"]["fullServiceQosApproved"])
+        self.assertFalse(any(report["readiness"].values()))
+        self.assertNotIn("fake synthetic test bytes", str(report))
+        self.assertIsNone(inspect(self.zip_path, original, manifest=path)["rtiExampleQosReference"])
+        output = self.root / "once.json"
+        args = ["--idl-zip", str(self.zip_path), "--original-icd", str(original),
+                "--manifest", str(path), "--rti-reference-xml", str(example),
+                "--out", str(output)]
+        self.assertEqual(0, main(args))
+        self.assertEqual(report, json.loads(output.read_text()))
+        self.assertEqual(2, main(args))
+
+    def test_report_candidate_integrates_pinned_battery_collection_evidence(self):
+        from tools.official_report_source_handoff import inspect as inspect_report
+        source, original, doc = self._candidate_inputs()
+        pins_file, pinned_original, example, _ = self._synthetic_battery_evidence()
+        original.write_bytes(pinned_original.read_bytes())
+        doc["sources"]["icd"]["originalSha256"] = sha(original.read_bytes())
+        source.write_text(yaml_text(doc), encoding="utf-8")
+        report = inspect_report(
+            self.zip_path, source, original, sha(self.zip_path.read_bytes()),
+            battery_pins=pins_file, rti_reference_xml=example,
+        )
+        attached = report["batterySourceEvidence"]
+        self.assertEqual(["source"], report["report"]["declaredKeyFields"])
+        self.assertEqual(["listID", "elementID"],
+                         attached["topicDeclarations"]["collectionElement"]["keyFields"])
+        self.assertTrue(attached["existingReviewedQosMinimum"]["reviewedScopedQosFileMatches"])
+        self.assertTrue(attached["rtiExampleQosReference"]["referenceOnly"])
+        self.assertFalse(report["readyForOfficialNativeRuntime"])
+        self.assertFalse(report["nativeDdsBinding"])
+        self.assertFalse(attached["readiness"]["officialConformanceClaim"])
+        with self.assertRaisesRegex(SourceError, "requires explicit Battery evidence"):
+            inspect_report(
+                self.zip_path, source, original, sha(self.zip_path.read_bytes()),
+                rti_reference_xml=example,
+            )
+
+    def test_battery_real_source_evidence_fails_on_tampering_and_qos_scope(self):
+        import copy
+        import json
+        from tools.official_battery_status_evidence import inspect
+        path, original, example, good = self._synthetic_battery_evidence()
+        cases = ("key", "topic", "qos-broadening", "qos-cross-topic",
+                 "fake-runtime-approval", "fake-conformance")
+        for case in cases:
+            with self.subTest(case=case):
+                bad = copy.deepcopy(good)
+                if case == "key":
+                    bad["topics"]["report"]["keyFields"] = ["forged"]
+                elif case == "topic":
+                    bad["topics"]["collectionElement"]["ddsTopicName"] = "forged"
+                elif case == "qos-broadening":
+                    bad["collectionElementQosMinimum"]["appliesTo"] = "report"
+                elif case == "qos-cross-topic":
+                    bad["collectionElementQosMinimum"]["crossTopicOrderingGuaranteed"] = True
+                elif case == "fake-runtime-approval":
+                    bad["qualification"]["nativeRuntimeApproved"] = True
+                elif case == "fake-conformance":
+                    bad["qualification"]["officialConformanceClaim"] = True
+                path.write_text(json.dumps(bad), encoding="utf-8")
+                with self.assertRaises(SourceError):
+                    inspect(self.zip_path, original, manifest=path,
+                            rti_reference_xml=example)
+        path.write_text(json.dumps(good), encoding="utf-8")
+        example.write_text(example.read_text().replace(
+            "TOPIC_PRESENTATION_QOS", "GROUP_PRESENTATION_QOS"), encoding="utf-8")
+        bad = copy.deepcopy(good)
+        bad["sourcePins"]["rtiExampleQosXmlSha256"] = sha(example.read_bytes())
+        path.write_text(json.dumps(bad), encoding="utf-8")
+        with self.assertRaisesRegex(SourceError, "topic/ordered Presentation"):
+            inspect(self.zip_path, original, manifest=path, rti_reference_xml=example)
+        path.write_text(json.dumps(good), encoding="utf-8")
+        with self.assertRaisesRegex(SourceError, "RTI example XML source digest"):
+            inspect(self.zip_path, original, manifest=path, rti_reference_xml=example)
+        reviewed_qos = self.root / "altered-qos.yaml"
+        original_qos = (ROOT / "contracts/qos/umaa6/eo-large-collections.yaml").read_text()
+        reviewed_qos.write_text(original_qos.replace('presentationScope: "topic"',
+                                                       'presentationScope: "group"'))
+        with self.assertRaisesRegex(SourceError, "scoped collection-element QoS minimum drift"):
+            inspect(self.zip_path, original, manifest=path, scoped_qos=reviewed_qos)
+        original.write_bytes(b"%PDF-1.4\naltered")
+        with self.assertRaisesRegex(SourceError, "EO ICD PDF source digest"):
+            inspect(self.zip_path, original, manifest=path)
+        original.write_bytes(b"%PDF-1.4\nfake synthetic test bytes; not normative\n")
+        self.blobs["UMAA/EO/BatteryStatus/BatteryReportType.idl"] += b"\n// altered"
+        self.rezip()
+        with self.assertRaisesRegex(SourceError, "official IDL ZIP digest"):
+            inspect(self.zip_path, original, manifest=path)
 
     def test_source_checked_overlay_preserves_unreviewed_contract_and_blocks_overwrite(self):
         from tools.official_icd_overlay import produce

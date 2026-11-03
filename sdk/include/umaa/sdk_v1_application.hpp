@@ -64,6 +64,19 @@ public:
     (void)RuntimeBinding<Service>::checked(FlowKind::CommandResponse);
     return app_.start_remote<Wire>(source,provider,retirement_delay,poll_interval);
   }
+  // Cooperative host event loop: useful for deterministic cancel/update
+  // tests and embedded runtimes that already own a scheduler.
+  template<class Service>
+  auto serve_command(const std::string& source,const std::string& provider,
+      std::chrono::milliseconds retirement_delay=std::chrono::milliseconds(180)) {
+    using Wire=typename RuntimeBinding<Service>::Wire;
+    static_assert(Wire::is_command,"serve_command requires a Command TypeBinding");
+    static_assert(std::is_same_v<typename ServiceTraits<Service>::Command,
+                                 typename Wire::Command>,
+                  "ServiceTraits Command must match the TypeBinding payload");
+    (void)RuntimeBinding<Service>::checked(FlowKind::CommandResponse);
+    return app_.serve_remote<Wire>(source,provider,retirement_delay);
+  }
   // A wire session key is explicit, not silently truncated from Guid128.
   // Official UMAA multi-key 128-bit session mapping requires a future
   // versioned DDS ABI; the current synthetic bindings use decimal keys.

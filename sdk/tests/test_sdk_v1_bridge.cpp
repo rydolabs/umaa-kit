@@ -121,7 +121,9 @@ int main(){
   assert(list.commit_count()==1);
   // Metadata update after deleting a member must produce a consistent view.
   assert(list.dispose("cell-2",300));
-  list.metadata({"cells",1,"cell-2",std::nullopt,"cell-1"});
+  // A linked List delete must also rewire the surviving predecessor.
+  assert(list.upsert({"cell-1",301,10,""}));
+  list.metadata({"cells",1,"cell-1",301,"cell-1"});
   assert(list.snapshot() && list.snapshot()->size()==1);
   assert((*list.snapshot())[0]==10);
 }

@@ -9,6 +9,9 @@ using namespace umaa::sdk_v1;
 struct CommandService {};
 struct ReportService {};
 struct CollectionService {};
+struct SpecializedCollectionService {};
+struct ContactWithRef {int value; SpecializationRef ref;};
+struct ContactDetail {int code;};
 namespace umaa::sdk_v1 {
 template<> struct ServiceTraits<CommandService> {
   using Command=std::string;
@@ -19,6 +22,12 @@ template<> struct ServiceTraits<ReportService> {
   using Report=int;
   inline static constexpr ServiceDescriptor descriptor{
     "demo:battery","demo:report-v1",FlowKind::QuerylessRequestReply,ServiceKind::Status};
+};
+template<> struct ServiceTraits<SpecializedCollectionService> {
+  using Element=ContactWithRef;
+  inline static constexpr ServiceDescriptor descriptor{
+    "demo:specialized-contacts","demo:contacts-v1",FlowKind::QuerylessRequestReply,
+    ServiceKind::Report,CollectionShape::LargeSet,true};
 };
 template<> struct ServiceTraits<CollectionService> {
   using Element=int;
@@ -126,4 +135,34 @@ int main(){
   list.metadata({"cells",1,"cell-1",301,"cell-1"});
   assert(list.snapshot() && list.snapshot()->size()==1);
   assert((*list.snapshot())[0]==10);
+
+  // Composition gate: metadata may arrive before both Collection elements,
+  // and Specialization may arrive after a valid Collection snapshot.
+  auto gid1=Guid128::parse("00000000-0000-0000-0000-000000001111");
+  auto gid2=Guid128::parse("00000000-0000-0000-0000-000000002222");
+  CollectionConsumer<SpecializedCollectionService> contacts;
+  SpecializationJoin<ContactWithRef,ContactDetail> specializations;
+  ContactWithRef general1{1,{gid1,100}}, general2{2,{gid2,200}};
+  contacts.metadata({"contacts",2,"node-2",200,""});
+  assert(!contacts.snapshot());
+  contacts.upsert({"node-1",100,general1,""});
+  contacts.upsert({"node-2",200,general2,""});
+  assert(contacts.snapshot() && contacts.commit_count()==1);
+  specializations.put_general(gid1,100,general1);
+  specializations.put_specialization(gid1,100,ContactDetail{10});
+  specializations.put_general(gid2,200,general2);
+  auto joined=[&]{return specializations.resolve_collection(contacts.snapshot(),
+    [](const ContactWithRef& c){return c.ref;});};
+  assert(!joined()); // second Specialization is still missing
+  specializations.put_specialization(gid2,200,ContactDetail{20});
+  assert(joined() && joined()->size()==2);
+  // A one-sided newer revision must not leak as a complete collection.
+  specializations.put_general(gid2,300,ContactWithRef{3,{gid2,300}});
+  assert(!joined());
+  specializations.put_specialization(gid2,300,ContactDetail{30});
+  // Metadata/element still refer to revision 200; no premature exposure.
+  assert(!joined());
+  contacts.upsert({"node-2",300,ContactWithRef{3,{gid2,300}},""});
+  contacts.metadata({"contacts",2,"node-2",300,""});
+  assert(joined() && joined()->at(1).specialization.code==30);
 }

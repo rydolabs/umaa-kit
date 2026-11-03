@@ -287,7 +287,7 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
         header = [
             "#pragma once", "#include <cstdint>", "#include <cstring>",
             "#include <cstddef>", "namespace umaa_native_runtime {",
-            "struct Report {",
+            "struct ReportService {",
             "  static constexpr bool is_command = false;",
             "  static constexpr const char* id = " + _cxx(runtime_binding["serviceId"]) + ";",
             "  static constexpr const char* schema_id = " + _cxx(runtime_binding["schemaId"]) + ";",
@@ -298,7 +298,7 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
             "    if(!p || n!=sizeof(out.level_pct))return false;",
             "    std::memcpy(&out.level_pct,p,sizeof(out.level_pct));return true;",
             "  }",
-            "};", "} // namespace umaa_native_runtime",
+            "};", "using Report = ReportService;", "} // namespace umaa_native_runtime",
         ]
         _write(output / "generated/native_report_runtime.hpp",
                "\n".join(header) + "\n")

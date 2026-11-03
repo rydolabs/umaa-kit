@@ -28,35 +28,6 @@ template<> struct ServiceTraits<NativeListService>{
 };
 }
 
-static int run(int argc,char** argv){
- if(argc!=4)return 2;
- const std::string mode=argv[1],shape=argv[3];
- if((mode!="producer"&&mode!="consumer")||(shape!="set"&&shape!="list"))return 2;
- using namespace umaa::sdk_v1;
- try{
-  RuntimeApplication app;
-  app.use_backend(argv[2],44);
-  const bool is_list=shape=="list";
-  auto first_id=Guid128::parse("00000000-0000-0000-0000-000000000065");
-  auto second_id=Guid128::parse("00000000-0000-0000-0000-000000000066");
-  NativeContact first{1,{first_id,100}},second{2,{second_id,200}};
-  if(mode=="producer"){
-    // Both streams are distinct DDS topics (Element, Metadata) with
-    // General and Specialized on two further distinct DDS topics.
-    auto publish_set=app.publish_native_collection<NativeSetService>("17");
-    // A List shares the same TypeBinding but requires a different ordered
-    // assembler; avoid constructing two publishers for the same DDS topic.
-    // The template selection occurs at the call site in the dispatcher.
-    (void)publish_set;
-    return 9;
-  }
-  return 9;
- }catch(const std::exception& e){
-  std::cerr<<"Native Collection/GS DDS: "<<e.what()<<"\n";
-  return 7;
- }
-}
-
 template<class Service> int execute(const std::string& mode,const std::string& backend) {
  using namespace umaa::sdk_v1;
  RuntimeApplication app;
@@ -104,7 +75,7 @@ template<class Service> int execute(const std::string& mode,const std::string& b
  bool initial=false,pending=false,revised=false,final=false,saw_dispose=false;
  std::uint64_t last_commit=0;
  const auto end=std::chrono::steady_clock::now()+18s;
- while(std::chrono::steady_clock::now()<end&&!final){
+ while(std::chrono::steady_clock::now()<end&&!(final&&saw_dispose)){
    collection->poll(32);
    const auto current=collection->snapshot();
    const auto commit=collection->commits();

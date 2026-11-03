@@ -231,6 +231,7 @@ public:
   }
   std::uint64_t commit_count() const{return assembler_.commit_count();}
   bool saw_element_dispose() const noexcept{return saw_dispose_;}
+  bool saw_element_tombstone() const noexcept{return saw_tombstone_;}
   bool faulted() const noexcept{return faulted_;}
 private:
   static void on_element(void* ctx,const UmaaDdsSampleV1* sample) noexcept{
@@ -281,6 +282,7 @@ private:
       if(!retired_keys_.count(key) && !assembler_.dispose(key,timestamp))
         throw std::invalid_argument("stale/duplicate Element tombstone");
       marked_disposed_.insert(key);
+      saw_tombstone_=true;
     }else if(kind==1){
       if(retired_keys_.count(key))
         throw std::invalid_argument("Element reappeared after unpaired DDS Dispose");
@@ -333,7 +335,8 @@ private:
   void* element_{},*metadata_{};
   std::string error_;
   std::uint64_t pending_commit_{};
-  bool pending_metadata_{true},faulted_{false},saw_dispose_{false};
+  bool pending_metadata_{true},faulted_{false},saw_dispose_{false},
+       saw_tombstone_{false};
 };
 
 // Generalization/Specialization: independent Topic samples with explicitly
@@ -505,6 +508,7 @@ public:
        [](const General& value){return Service::reference(value);});
   }
   bool saw_element_dispose() const{return collection_.saw_element_dispose();}
+  bool saw_element_tombstone() const{return collection_.saw_element_tombstone();}
   std::uint64_t commits() const{return collection_.commit_count();}
   bool faulted() const{return collection_.faulted()||join_.faulted();}
 private:

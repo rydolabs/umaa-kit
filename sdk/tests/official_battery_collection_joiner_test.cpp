@@ -2,6 +2,7 @@
 // oracles for EO ICD 6.0 3.8.1--3.8.5.
 #include "umaa/official_battery_collection.hpp"
 #include <cassert>
+#include <cstdio>
 #include <functional>
 #include <iostream>
 #include <stdexcept>

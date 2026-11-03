@@ -13,7 +13,6 @@ from pathlib import Path
 import re
 import sys
 
-from sdk.tools.umaa_codegen import parse_idl, render_types
 from tools import umaa_component_cli as cli
 from tools.umaa_contract_ir import resolve, ContractIRError
 
@@ -342,6 +341,9 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
     providers = [mapping[s["id"]] for s in doc["services"] if s["role"] == "provider"]
     if not providers:
         raise ContractIRError("consumer-only Component runtime is not implemented")
+    if not fixture:
+        raise ContractIRError("official/native IDL must use registered vendor compiler path")
+    from sdk.tools.umaa_codegen import parse_idl, render_types  # Demo:: fixture only
     types = parse_idl(idl_path.read_text(encoding="utf-8"))
     output.mkdir(parents=True, exist_ok=True)
     write_generated(output / "generated/types.hpp", render_types(types))

@@ -1,0 +1,103 @@
+name: Original UMAA BatteryStatus nested Fast DDS real wire proof
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/official-battery-fastdds-wire.yml'
+      - 'dds-backends/fastdds/include/umaa/fastdds_official_battery_codec.hpp'
+      - 'sdk/include/umaa/official_battery_host.hpp'
+      - 'tests/integration/fastdds/**'
+      - 'simulator/dds/run_battery_fastdds.py'
+      - 'tools/native_dds_codegen.py'
+      - 'tools/native_dds_backends/fastdds.py'
+      - 'tools/official_battery_payload_structure.py'
+      - 'catalog/official-evidence/eo-battery-payload-v1.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-battery-fastdds-wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      UMAA_ORIGINAL_ZIP_SHA256: 15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08
+      UMAA_ORIGINAL_ZIP_URL: https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl-with-exp-services.zip
+      UMAA_ORIGINAL_BATTERY_IDL_SHA256: 39a2c920cfaba9afc3c15c4c12f5d4470911ab8b7c197c9e27b08284e54b713c
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install authentic Fast DDS / Fast DDS-Gen native toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libfastrtps-dev libfastcdr-dev fastddsgen
+
+      - name: Download and authenticate AUVSI 594-IDL ZIP outside repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 3 \
+            --connect-timeout 20 --max-time 120 "$UMAA_ORIGINAL_ZIP_URL" \
+            --output "$RUNNER_TEMP/official-umaa-idl.zip"
+          printf '%s  %s\n' "$UMAA_ORIGINAL_ZIP_SHA256" "$RUNNER_TEMP/official-umaa-idl.zip" \
+            | sha256sum --check
+
+      - name: Check reviewed Battery nested fields and close original IDL imports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m tools.official_battery_payload_structure \
+            --idl-zip "$RUNNER_TEMP/official-umaa-idl.zip" \
+            --out "$RUNNER_TEMP/battery-structure-evidence.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          j = json.loads((Path(os.environ['RUNNER_TEMP'])/'battery-structure-evidence.json').read_text())
+          assert j['allIdlImportsPresent']
+          assert len(j['verifiedStructs']) == 6 and len(j['verifiedScalarTypedefs']) == 9
+          assert not j['nativeDdsCodec'] and not j['officialRuntimeBinding']
+          print('ORIGINAL_BATTERY_NESTED_SOURCE_VERIFIED')
+          PY
+
+      - name: Generate Fast DDS-Gen original Battery transitive TypeSupport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from tools.official_icd_evidence import inspected_zip
+          source = Path(os.environ['RUNNER_TEMP'])/'official-umaa-idl.zip'
+          dest = Path(os.environ['RUNNER_TEMP'])/'official-idl'
+          dest.mkdir()
+          with inspected_zip(source) as z:
+              if z.testzip() is not None: raise RuntimeError('bad official ZIP member')
+              z.extractall(dest)
+          PY
+          python3 -m tools.native_dds_codegen \
+            --root "$RUNNER_TEMP/official-idl" \
+            --source UMAA/EO/BatteryStatus/BatteryReportType.idl \
+            --vendor fastdds \
+            --source-sha256 "$UMAA_ORIGINAL_BATTERY_IDL_SHA256" \
+            --out "$RUNNER_TEMP/official-fastdds"
+
+      - name: Build original Battery Fast DDS native host bridge and independent oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S tests/integration/fastdds -B "$RUNNER_TEMP/fastdds-battery-build" \
+            -DUMAA_OFFICIAL_FASTDDS_GENERATED_ROOT="$RUNNER_TEMP/official-fastdds/fastdds" \
+            -DCMAKE_BUILD_TYPE=Debug
+          cmake --build "$RUNNER_TEMP/fastdds-battery-build" --parallel 2
+
+      - name: Verify actual two-process Fast DDS data and negative checkpoint oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          ctest --test-dir "$RUNNER_TEMP/fastdds-battery-build" \
+            -R '^official_umaa_battery_fastdds_(nested_wire|bad_checkpoint_rejected)$' \
+            --output-on-failure -V
+
+      - name: Scope declaration
+        if: success()
+        run: |
+          echo 'OFFICIAL_BATTERY_FASTDDS_NESTED_WIRE_PASS'
+          echo 'No official original IDL or vendor-generated TypeSupport uploaded.'
+          echo 'No full Component/QoS conformance, atomic Large List or mixed-vendor claim.'

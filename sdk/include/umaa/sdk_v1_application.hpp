@@ -4,6 +4,7 @@
 #pragma once
 #include "umaa/application.hpp"
 #include "umaa/sdk_v1_core.hpp"
+#include "umaa/native_collection_endpoint.hpp"
 #include <chrono>
 #include <cstdint>
 #include <stdexcept>
@@ -43,6 +44,7 @@ public:
   RuntimeApplication()=default;
   void use_backend(const std::string& path,std::uint32_t domain){
     app_.use_backend(path,domain);
+    backend_path_=path;domain_id_=domain;
   }
   void load_component(const std::string& file){app_.load_component(file);}
   void configure_qos_profiles(
@@ -113,7 +115,62 @@ public:
     (void)RuntimeBinding<Service>::checked(FlowKind::QuerylessRequestReply);
     return app_.consume<Wire>();
   }
+  // Real two-topic Element/Metadata wire, not a synthetic single-frame
+  // batch. Requires a reviewed WireService with independent Topic schemas.
+  template<class Service>
+  auto publish_native_collection(const std::string& key) const {
+    using Traits=ServiceTraits<Service>;
+    using Wire=typename Traits::WireService;
+    static_assert(std::is_same_v<typename Traits::Element,typename Wire::Value>,
+                  "native Collection element TypeBinding mismatch");
+    check_collection<Service>();
+    return std::make_unique<DdsNativeCollectionPublisher<Wire>>(
+      backend_path_,domain_id_,key);
+  }
+  template<class Service>
+  auto consume_native_collection(const std::string& key,
+      std::size_t maximum=1024) const {
+    using Traits=ServiceTraits<Service>;
+    using Wire=typename Traits::WireService;
+    static_assert(std::is_same_v<typename Traits::Element,typename Wire::Value>,
+                  "native Collection element TypeBinding mismatch");
+    check_collection<Service>();
+    return std::make_unique<DdsNativeCollectionConsumer<Wire>>(
+      backend_path_,domain_id_,key,maximum);
+  }
+  template<class Service>
+  auto publish_native_specialization() const {
+    using Wire=typename ServiceTraits<Service>::WireService;
+    check_collection<Service>();
+    if(!descriptor<Service>().has_specializations)
+      throw std::invalid_argument("no approved Specialization binding");
+    return std::make_unique<DdsNativeSpecializationPublisher<Wire>>(
+      backend_path_,domain_id_);
+  }
+  template<class Service>
+  auto consume_native_specialized_collection(const std::string& key,
+      std::size_t maximum=1024) const {
+    using Wire=typename ServiceTraits<Service>::WireService;
+    check_collection<Service>();
+    if(!descriptor<Service>().has_specializations)
+      throw std::invalid_argument("no approved Specialization binding");
+    return std::make_unique<DdsNativeSpecializedCollectionConsumer<Wire>>(
+      backend_path_,domain_id_,key,maximum);
+  }
 private:
+  template<class Service> void check_collection() const {
+    using Wire=typename ServiceTraits<Service>::WireService;
+    const auto& d=descriptor<Service>();
+    if(backend_path_.empty() ||
+       d.collection==CollectionShape::None ||
+       ((d.collection==CollectionShape::LargeSet)!=(Wire::kind==umaa::CollectionKind::Set)) ||
+       d.flow!=FlowKind::QuerylessRequestReply ||
+       d.schema_id!=std::string_view(Wire::metadata_schema) ||
+       d.id!=std::string_view(Wire::service_id))
+      throw std::invalid_argument("unapproved/mismatched native Collection binding");
+  }
   umaa::Application app_;
+  std::string backend_path_;
+  std::uint32_t domain_id_{};
 };
 } // namespace umaa::sdk_v1

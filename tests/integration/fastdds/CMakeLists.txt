@@ -1,14 +1,16 @@
 cmake_minimum_required(VERSION 3.20)
 project(UMAAOfficialBatteryFastDDS LANGUAGES CXX)
 include(CTest)
-find_package(fastrtps CONFIG REQUIRED)
+find_package(fastdds 3 CONFIG REQUIRED)
 find_package(fastcdr CONFIG REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(UMAA_OFFICIAL_FASTDDS_GENERATED_ROOT "" CACHE PATH "Ephemeral original Fast DDS-Gen TypeSupport")
 if(NOT UMAA_OFFICIAL_FASTDDS_GENERATED_ROOT OR
-   NOT EXISTS "${UMAA_OFFICIAL_FASTDDS_GENERATED_ROOT}/BatteryReportType.h" OR
-   NOT EXISTS "${UMAA_OFFICIAL_FASTDDS_GENERATED_ROOT}/BatteryReportTypePubSubTypes.h")
+   (NOT EXISTS "${UMAA_OFFICIAL_FASTDDS_GENERATED_ROOT}/BatteryReportType.h" AND
+    NOT EXISTS "${UMAA_OFFICIAL_FASTDDS_GENERATED_ROOT}/BatteryReportType.hpp") OR
+   (NOT EXISTS "${UMAA_OFFICIAL_FASTDDS_GENERATED_ROOT}/BatteryReportTypePubSubTypes.h" AND
+    NOT EXISTS "${UMAA_OFFICIAL_FASTDDS_GENERATED_ROOT}/BatteryReportTypePubSubTypes.hpp"))
   message(FATAL_ERROR "Original official Fast DDS-Gen Battery TypeSupport missing")
 endif()
 set(GENERATED "${UMAA_OFFICIAL_FASTDDS_GENERATED_ROOT}")
@@ -22,7 +24,8 @@ target_compile_features(umaa_battery_fastdds_official_type_support PUBLIC cxx_st
 # IdentifierType.h -> Measurement/Measurements.h). Its backend plugin mirrors
 # generated headers below the source paths; add those generated directories
 # without ever adding or redistributing original IDL source directories.
-file(GLOB_RECURSE ORIGINAL_GENERATED_HEADERS CONFIGURE_DEPENDS "${GENERATED}/*.h")
+file(GLOB_RECURSE ORIGINAL_GENERATED_HEADERS CONFIGURE_DEPENDS
+  "${GENERATED}/*.h" "${GENERATED}/*.hpp")
 set(TYPE_SUPPORT_INCLUDE_DIRS "${GENERATED}")
 foreach(header IN LISTS ORIGINAL_GENERATED_HEADERS)
   get_filename_component(header_dir "${header}" DIRECTORY)
@@ -31,7 +34,7 @@ endforeach()
 list(REMOVE_DUPLICATES TYPE_SUPPORT_INCLUDE_DIRS)
 target_include_directories(umaa_battery_fastdds_official_type_support PUBLIC
   ${TYPE_SUPPORT_INCLUDE_DIRS})
-target_link_libraries(umaa_battery_fastdds_official_type_support PUBLIC fastrtps fastcdr)
+target_link_libraries(umaa_battery_fastdds_official_type_support PUBLIC fastdds fastcdr)
 
 add_executable(umaa_fastdds_official_battery_publisher
   official_battery_payload_publisher.cpp)

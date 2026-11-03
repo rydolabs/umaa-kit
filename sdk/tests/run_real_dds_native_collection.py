@@ -36,7 +36,7 @@ def main():
             or consumer.returncode != 0
             or f"NATIVE_PRODUCER shape={shape}" not in producer.stdout
             or f"NATIVE_CONSUMER shape={shape}" not in output
-            or "initial=1 pending=1 revised=1 final=1 dispose=1" not in output
+            or "initial=1 pending=1 revised=1 final=1 delete_committed=1" not in output
         )
     finally:
         if consumer.poll() is None:

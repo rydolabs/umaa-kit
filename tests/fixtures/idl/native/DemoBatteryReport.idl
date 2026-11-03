@@ -1,0 +1,12 @@
+// Synthetic ICD fixture; actual DDS compiler input with include, sequence, union.
+#include "NativeCommon.idl"
+module Demo {
+  module EO {
+    struct BatteryReportType {
+      @key long source_id;
+      long level_pct;
+      sequence<NativeDemo::Point, 8> points;
+      NativeDemo::Measurement measurement;
+    };
+  };
+};

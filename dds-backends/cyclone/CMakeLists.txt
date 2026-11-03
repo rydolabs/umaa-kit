@@ -228,3 +228,20 @@ foreach(shape IN ITEMS set list)
   set_tests_properties("umaa_cyclone_sdk_v1_split_${shape}_real_wire"
     PROPERTIES TIMEOUT 55)
 endforeach()
+
+# Four actual DDS Topics: Elements, Metadata, Generalization, Specialization.
+# All topics use synthetic fixture TypeSupport; no official GROUP QoS claim.
+add_executable(umaa_cyclone_specialized_collection_cli
+  "${SDK_ROOT}/tests/real_dds_specialization_collection_cli.cpp")
+target_compile_features(umaa_cyclone_specialized_collection_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_cyclone_specialized_collection_cli PRIVATE
+  "${SDK_ROOT}/include" "${SDK_ROOT}/tests")
+target_link_libraries(umaa_cyclone_specialized_collection_cli PRIVATE UMAA::Runtime)
+foreach(shape IN ITEMS set list)
+  add_test(NAME "umaa_cyclone_four_topic_${shape}_real_wire"
+    COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_specialization.py"
+      "$<TARGET_FILE:umaa_cyclone_specialized_collection_cli>"
+      "$<TARGET_FILE:umaa_dds_cyclone_collection_demo>" "${shape}")
+  set_tests_properties("umaa_cyclone_four_topic_${shape}_real_wire"
+    PROPERTIES TIMEOUT 65)
+endforeach()

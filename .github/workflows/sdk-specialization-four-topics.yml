@@ -1,0 +1,56 @@
+name: SDK four-topic Collection and Specialization real DDS
+on:
+  push:
+    branches: [sdk/specialization-dual-topics-v1-20261103]
+  pull_request:
+    paths:
+      - sdk/include/umaa/dds_specialization_endpoint.hpp
+      - sdk/tests/real_dds_specialization_collection_cli.cpp
+      - sdk/tests/test_specialization_packet.cpp
+      - sdk/tests/fixtures/synthetic_specialization_binding.hpp
+      - sdk/CMakeLists.txt
+      - dds-backends/cyclone/**
+      - dds-backends/fastdds/**
+      - .github/workflows/sdk-specialization-four-topics.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  portable:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S sdk -B build/portable -DUMAA_BUILD_TESTS=ON
+      - run: cmake --build build/portable --config Release --target umaa_specialization_packet_test umaa_split_collection_joiner_test
+      - run: ctest --test-dir build/portable -C Release --output-on-failure -R 'umaa_(specialization_packet|split_collection_joiner)_test'
+  real-dds:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
+      - run: |
+          cmake -S dds-backends/cyclone -B build/four-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/four-cyclone --parallel 2
+          cmake -S dds-backends/fastdds -B build/four-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/four-fastdds --parallel 2
+      - name: Same typed executable, four distinct actual DDS Topics
+        run: |
+          set -euo pipefail
+          exe="$PWD/build/four-cyclone/umaa_cyclone_specialized_collection_cli"
+          test -f "$exe"
+          for vendor in cyclone fastdds; do
+            plugin="$PWD/build/four-$vendor/libumaa_dds_${vendor}_collection_demo.so"
+            for shape in set list; do
+              echo "4-topic vendor=$vendor Collection=$shape"
+              python3 sdk/tests/run_real_dds_specialization.py "$exe" "$plugin" "$shape"
+            done
+          done
+          sha256sum "$exe"

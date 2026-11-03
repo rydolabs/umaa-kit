@@ -266,3 +266,13 @@ if(UMAA_BUILD_TESTS)
   add_test(NAME umaa_split_collection_joiner_test
     COMMAND umaa_split_collection_joiner_test)
 endif()
+
+# 128-bit synthetic generalization/specialization binary contract.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_specialization_packet_test
+    tests/test_specialization_packet.cpp)
+  target_include_directories(umaa_specialization_packet_test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+  target_link_libraries(umaa_specialization_packet_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_specialization_packet_test COMMAND umaa_specialization_packet_test)
+endif()

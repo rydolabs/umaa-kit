@@ -6,6 +6,9 @@ on:
       - 'tools/official_icd_overlay.py'
       - 'tools/official_report_source_handoff.py'
       - 'tools/official_battery_status_evidence.py'
+      - 'tools/official_battery_payload_structure.py'
+      - 'catalog/official-evidence/eo-battery-payload-v1.json'
+      - 'sdk/tests/test_official_battery_payload_structure.py'
       - 'catalog/official-evidence/**'
       - 'contracts/qos/umaa6/eo-large-collections.yaml'
       - 'sdk/tests/test_official_icd_evidence.py'
@@ -17,6 +20,9 @@ on:
       - 'tools/official_icd_overlay.py'
       - 'tools/official_report_source_handoff.py'
       - 'tools/official_battery_status_evidence.py'
+      - 'tools/official_battery_payload_structure.py'
+      - 'catalog/official-evidence/eo-battery-payload-v1.json'
+      - 'sdk/tests/test_official_battery_payload_structure.py'
       - 'catalog/official-evidence/**'
       - 'contracts/qos/umaa6/eo-large-collections.yaml'
       - 'sdk/tests/test_official_icd_evidence.py'
@@ -37,3 +43,5 @@ jobs:
         run: python -m pip install 'PyYAML==6.0.2' 'jsonschema==4.23.0'
       - name: Validate source-pinned Report and BatteryStatus QoS evidence, Topic/Key, Collection and ZIP safety
         run: python -m unittest discover -s sdk/tests -p test_official_icd_evidence.py -v
+      - name: Validate source-checked Battery nested host projection (synthetic only)
+        run: python -m unittest discover -s sdk/tests -p test_official_battery_payload_structure.py -v

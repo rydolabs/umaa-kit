@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "kind": "UNAPPROVED_OFFICIAL_BATTERY_PAYLOAD_STRUCTURE",
+  "serviceId": "UMAA::EO::BatteryStatus",
+  "idlArchiveSha256": "15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08",
+  "pinsFile": "catalog/official-evidence/eo-battery-status-6.0.json",
+  "sourceSha256": {
+    "UMAA/EO/BatteryStatus/BatteryReportType.idl": "39a2c920cfaba9afc3c15c4c12f5d4470911ab8b7c197c9e27b08284e54b713c",
+    "UMAA/EO/BatteryStatus/BatteryCellDataType.idl": "6026ba3e2987be2ecdaaa78f8481cc1f07c6af6156982954d6bb64f5614b9324",
+    "UMAA/Common/IdentifierType.idl": "2a14edf39bc249a946189eb06b386dfbfdc2c86b11ae63da32d18eaef64bbf71",
+    "UMAA/Common/LargeListMetadata.idl": "fddb13af1828b962f655746d26b7000ef0b49719af421e0df8c38dd4e3e47d5b",
+    "UMAA/Common/Measurement/Measurements.idl": "118cea19a9e7e1514a831e75e959f6120576db4f317340caf9a7cc799e31b7bf",
+    "UMAA/Common/MaritimeEnumeration/MaritimeEnumerationSets.idl": "5fd859113fa50a6942365f31ba6db3d436bf92c13041f105d4037e7a3940ec08"
+  },
+  "structures": {
+    "UMAA::EO::BatteryStatus::BatteryReportType": {
+      "source": "UMAA/EO/BatteryStatus/BatteryReportType.idl",
+      "fields": [
+        {
+          "name": "chargeRemaining",
+          "type": "UMAA::Common::Measurement::EnergyPercent",
+          "annotation": "optional"
+        },
+        {
+          "name": "current",
+          "type": "UMAA::Common::Measurement::PowerBusCurrent",
+          "annotation": "optional"
+        },
+        {
+          "name": "energyUsageRate",
+          "type": "UMAA::Common::Measurement::ElectricalPower",
+          "annotation": "optional"
+        },
+        {
+          "name": "hours",
+          "type": "UMAA::Common::Measurement::DurationHours",
+          "annotation": "optional"
+        },
+        {
+          "name": "state",
+          "type": "UMAA::Common::MaritimeEnumeration::PowerPlantStateEnumModule::PowerPlantStateEnumType",
+          "annotation": ""
+        },
+        {
+          "name": "temp",
+          "type": "UMAA::Common::Measurement::Temperature",
+          "annotation": "optional"
+        },
+        {
+          "name": "voltage",
+          "type": "UMAA::Common::Measurement::PowerBusVoltage",
+          "annotation": "optional"
+        },
+        {
+          "name": "timeStamp",
+          "type": "UMAA::Common::Measurement::DateTime",
+          "annotation": ""
+        },
+        {
+          "name": "source",
+          "type": "UMAA::Common::IdentifierType",
+          "annotation": "key"
+        },
+        {
+          "name": "cellsListMetadata",
+          "type": "UMAA::Common::LargeListMetadata",
+          "annotation": ""
+        }
+      ]
+    },
+    "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement": {
+      "source": "UMAA/EO/BatteryStatus/BatteryReportType.idl",
+      "fields": [
+        {
+          "name": "element",
+          "type": "UMAA::EO::BatteryStatus::BatteryCellDataType",
+          "annotation": ""
+        },
+        {
+          "name": "listID",
+          "type": "UMAA::Common::Measurement::NumericGUID",
+          "annotation": "key"
+        },
+        {
+          "name": "elementID",
+          "type": "UMAA::Common::Measurement::NumericGUID",
+          "annotation": "key"
+        },
+        {
+          "name": "elementTimestamp",
+          "type": "UMAA::Common::Measurement::DateTime",
+          "annotation": ""
+        },
+        {
+          "name": "nextElementID",
+          "type": "UMAA::Common::Measurement::NumericGUID",
+          "annotation": "optional"
+        }
+      ]
+    },
+    "UMAA::EO::BatteryStatus::BatteryCellDataType": {
+      "source": "UMAA/EO/BatteryStatus/BatteryCellDataType.idl",
+      "fields": [
+        {
+          "name": "current",
+          "type": "UMAA::Common::Measurement::PowerBusCurrent",
+          "annotation": ""
+        },
+        {
+          "name": "temperature",
+          "type": "UMAA::Common::Measurement::Temperature",
+          "annotation": ""
+        },
+        {
+          "name": "voltage",
+          "type": "UMAA::Common::Measurement::PowerBusVoltage",
+          "annotation": ""
+        }
+      ]
+    },
+    "UMAA::Common::IdentifierType": {
+      "source": "UMAA/Common/IdentifierType.idl",
+      "fields": [
+        {
+          "name": "id",
+          "type": "UMAA::Common::Measurement::NumericGUID",
+          "annotation": ""
+        },
+        {
+          "name": "parentID",
+          "type": "UMAA::Common::Measurement::NumericGUID",
+          "annotation": ""
+        }
+      ]
+    },
+    "UMAA::Common::LargeListMetadata": {
+      "source": "UMAA/Common/LargeListMetadata.idl",
+      "fields": [
+        {
+          "name": "listID",
+          "type": "UMAA::Common::Measurement::NumericGUID",
+          "annotation": ""
+        },
+        {
+          "name": "updateElementID",
+          "type": "UMAA::Common::Measurement::NumericGUID",
+          "annotation": ""
+        },
+        {
+          "name": "updateElementTimestamp",
+          "type": "UMAA::Common::Measurement::DateTime",
+          "annotation": "optional"
+        },
+        {
+          "name": "startingElementID",
+          "type": "UMAA::Common::Measurement::NumericGUID",
+          "annotation": ""
+        },
+        {
+          "name": "size",
+          "type": "long",
+          "annotation": ""
+        }
+      ]
+    },
+    "UMAA::Common::Measurement::DateTime": {
+      "source": "UMAA/Common/Measurement/Measurements.idl",
+      "fields": [
+        {
+          "name": "seconds",
+          "type": "DateTimeSeconds",
+          "annotation": ""
+        },
+        {
+          "name": "nanoseconds",
+          "type": "DateTimeNanoseconds",
+          "annotation": ""
+        }
+      ]
+    }
+  },
+  "scalarTypedefs": {
+    "NumericGUID": {
+      "source": "UMAA/Common/Measurement/Measurements.idl",
+      "base": "octet",
+      "arrayLength": 16
+    },
+    "DateTimeSeconds": {
+      "source": "UMAA/Common/Measurement/Measurements.idl",
+      "base": "long long",
+      "min": "-9223372036854775807",
+      "max": "9223372036854775807"
+    },
+    "DateTimeNanoseconds": {
+      "source": "UMAA/Common/Measurement/Measurements.idl",
+      "base": "long",
+      "min": 0,
+      "max": 999999999
+    },
+    "EnergyPercent": {
+      "source": "UMAA/Common/Measurement/Measurements.idl",
+      "base": "double",
+      "min": 0,
+      "max": 1000
+    },
+    "PowerBusCurrent": {
+      "source": "UMAA/Common/Measurement/Measurements.idl",
+      "base": "double",
+      "min": -100000,
+      "max": 100000
+    },
+    "ElectricalPower": {
+      "source": "UMAA/Common/Measurement/Measurements.idl",
+      "base": "double",
+      "min": 0,
+      "max": 100000000
+    },
+    "DurationHours": {
+      "source": "UMAA/Common/Measurement/Measurements.idl",
+      "base": "double",
+      "min": 0,
+      "max": 10505
+    },
+    "Temperature": {
+      "source": "UMAA/Common/Measurement/Measurements.idl",
+      "base": "double",
+      "min": -273,
+      "max": 1000
+    },
+    "PowerBusVoltage": {
+      "source": "UMAA/Common/Measurement/Measurements.idl",
+      "base": "double",
+      "min": -100000,
+      "max": 100000
+    }
+  },
+  "enumDefinition": {
+    "name": "PowerPlantStateEnumType",
+    "source": "UMAA/Common/MaritimeEnumeration/MaritimeEnumerationSets.idl",
+    "values": [
+      "FAULT",
+      "OFF",
+      "ON"
+    ]
+  },
+  "hostRepresentation": {
+    "guid": "lowercase 32-character hex encoding of octet[16]",
+    "optional": "omitted property denotes absent; JSON null is rejected",
+    "dateTime": "object with integer seconds and nanoseconds",
+    "scope": "host-side structural validation only; no DDS serialization"
+  },
+  "readiness": {
+    "officialRuntimeBinding": false,
+    "nativeDdsCodec": false,
+    "collectionLifecycle": false,
+    "formalConformance": false
+  }
+}

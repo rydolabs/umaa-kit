@@ -101,6 +101,12 @@ public:
         events.push_back({Event::Kind::Ignored, id.session, "SOURCE_CONFLICT", ""});
         return events;
       }
+      // A previously stranded hardware command cannot be updated when a
+      // source returns after liveliness loss: reconcile it out of band first.
+      if(current.consumer_lost) {
+        events.push_back({Event::Kind::Ignored,id.session,"ORPHANED_COMMAND",""});
+        return events;
+      }
       // Once an initiating Command has been disposed, an arriving newer
       // sample must not reactivate work even when cancellation was refused.
       if (current.command_gone) {
@@ -143,7 +149,7 @@ public:
       return {{Event::Kind::Ignored, session, "NOT_EXECUTING", ""}};
     transition(it->second, success ? State::COMPLETED : State::FAILED,
                success ? "SUCCEEDED" : failure_reason, events);
-    if (it->second.command_gone ||
+    if (it->second.command_gone || it->second.consumer_lost ||
         lost_sources_.count(it->second.identity.source)) {
       // No live Consumer remains to dispose the initiating Command. Retire
       // the responses once the *real* device outcome reaches a terminal state.
@@ -164,7 +170,7 @@ public:
     if (!safe_cancel(it->second.identity,it->second.payload))
       return {{Event::Kind::Ignored, session, "TIMEOUT_CANCEL_NOT_SAFE", ""}};
     transition(it->second, State::FAILED, "TIMEOUT", events);
-    if (it->second.command_gone ||
+    if (it->second.command_gone || it->second.consumer_lost ||
         lost_sources_.count(it->second.identity.source)) {
       // No live Consumer remains to dispose the initiating Command. Retire
       // the responses once the *real* device outcome reaches a terminal state.
@@ -212,6 +218,7 @@ public:
     for(const auto& session:candidates) {
       auto it=sessions_.find(session);
       if(it==sessions_.end())continue;
+      it->second.consumer_lost=true;
       if(!safe_cancel(it->second.identity,it->second.payload)) {
         events.push_back({Event::Kind::Ignored,session,"LIVELINESS_CANCEL_NOT_SAFE",""});
         continue;
@@ -245,7 +252,13 @@ public:
   std::size_t size() const { return sessions_.size(); }
 
 private:
-  struct Session { Identity identity; Payload payload; State state; bool command_gone{false}; };
+  struct Session {
+    Identity identity;
+    Payload payload;
+    State state;
+    bool command_gone{false};
+    bool consumer_lost{false};
+  };
   static void cleanup(const std::string& session, std::vector<Event>& events) {
     events.push_back({Event::Kind::DisposeStatus, session, "", ""});
     events.push_back({Event::Kind::DisposeAck, session, "", ""});

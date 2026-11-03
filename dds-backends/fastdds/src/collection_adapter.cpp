@@ -35,7 +35,9 @@ bool approved(const UmaaDdsTopicV1* topic){
  return topic && topic->topic_name && topic->schema_id && topic->qos_profile &&
  (!std::strcmp(topic->topic_name,"demo/CollectionBatch") ||
   !std::strcmp(topic->topic_name,"demo/CollectionElements") ||
-  !std::strcmp(topic->topic_name,"demo/CollectionMetadata")) &&
+  !std::strcmp(topic->topic_name,"demo/CollectionMetadata") ||
+  !std::strcmp(topic->topic_name,"demo/SpecializationGeneral") ||
+  !std::strcmp(topic->topic_name,"demo/SpecializationDetail")) &&
  !std::strcmp(topic->schema_id,"demo:collection-batch-v1") &&
  !std::strcmp(topic->qos_profile,"demo-reliable") &&
  !(topic->required_features & ~supported);
@@ -67,7 +69,11 @@ Topic* make_topic(Domain* d,const UmaaDdsTopicV1* binding){
  const char* name=!std::strcmp(binding->topic_name,"demo/CollectionElements")?
    "Demo_EO_CollectionElements":
    (!std::strcmp(binding->topic_name,"demo/CollectionMetadata")?
-    "Demo_EO_CollectionMetadata":"Demo_EO_CollectionBatch");
+    "Demo_EO_CollectionMetadata":
+    (!std::strcmp(binding->topic_name,"demo/SpecializationGeneral")?
+     "Demo_EO_SpecializationGeneral":
+     (!std::strcmp(binding->topic_name,"demo/SpecializationDetail")?
+      "Demo_EO_SpecializationDetail":"Demo_EO_CollectionBatch")));
  return d->p->create_topic(name,d->type.get_type_name(),TOPIC_QOS_DEFAULT);
 }
 void* open_writer(void* handle,const UmaaDdsTopicV1* topic){

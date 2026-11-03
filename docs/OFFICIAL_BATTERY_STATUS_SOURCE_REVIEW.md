@@ -78,3 +78,28 @@ Fail-closed official Runtime generation from PR #45 remains unchanged.
   LargeListMetadata and separate element samples, keyed Dispose semantics.
 - Verified Collection ordering/recovery, standalone vendor E2E and negative
   oracles, lifecycle and compliance traceability.
+
+
+## Integrating evidence into the existing Report handoff
+
+When a separately authored (not canonical generated) official-reference
+BatteryStatus YAML is supplied with the **same source hashes**, the existing
+tools/official_report_source_handoff.py can attach the checked manifest to
+its unapproved Report candidate:
+
+    python3 -m tools.official_report_source_handoff \
+      --zip "/private/umaa-6.0-idl-with-exp-services(2).zip" \
+      --yaml "/private/UMAA-BatteryStatus-authored.yaml" \
+      --original-icd "/private/UMAA-SPEC-EOICD-1(3).pdf" \
+      --expect-sha256 "15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08" \
+      --battery-pins "catalog/official-evidence/eo-battery-status-6.0.json" \
+      --rti-reference-xml "/private/umaa_qos_lib.xml"
+
+The authored YAML must satisfy the existing Service schema and identify
+the original official ICD, official ZIP digest, reviewed Report Topic and
+Key declarations. The *secondary-transcription* generated baseline does not
+qualify and must not be rewritten in place.
+
+The additional evidence is returned as batterySourceEvidence; all Runtime,
+QoS-completeness and conformance readiness flags remain FALSE. Collection
+lifecycle and detailed payload conversions remain gated. 

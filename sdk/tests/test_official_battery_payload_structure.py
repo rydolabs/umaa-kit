@@ -156,7 +156,7 @@ class BatteryPayloadStructureTest(unittest.TestCase):
         model = HostProjection(inspect(self.archive, self.spec_file, self.pins_file))
         type_name = "UMAA::EO::BatteryStatus::BatteryReportType"
         for case in ("missing-state", "unknown", "null", "bad-guid", "bad-state",
-                     "numeric-bool", "nan", "bound", "nanos", "seconds",
+                     "numeric-bool", "nan", "huge-number", "bound", "nanos", "seconds",
                      "negative-size", "nested-extra", "optional-unknown"):
             sample = self.report()
             if case == "missing-state":
@@ -173,6 +173,8 @@ class BatteryPayloadStructureTest(unittest.TestCase):
                 sample["chargeRemaining"] = True
             elif case == "nan":
                 sample["voltage"] = float("nan")
+            elif case == "huge-number":
+                sample["chargeRemaining"] = 10 ** 1000
             elif case == "bound":
                 sample["chargeRemaining"] = 1000.00001
             elif case == "nanos":

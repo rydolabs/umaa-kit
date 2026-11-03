@@ -179,3 +179,21 @@ add_test(NAME umaa_cyclone_ordered_topic_qos_real_wire
   "$<TARGET_FILE:umaa_dds_cyclone_demo>"
   "$<TARGET_FILE:umaa_cyclone_vehicle_component>" ordered)
 set_tests_properties(umaa_cyclone_ordered_topic_qos_real_wire PROPERTIES TIMEOUT 42)
+
+# SDK v1 reviewed-traits facade -> ComponentRuntime -> real synthetic DDS.
+# A single device component implements both Command and Report business roles.
+add_executable(umaa_cyclone_sdk_v1_runtime_cli "${SDK_ROOT}/tests/real_dds_sdk_v1_runtime_cli.cpp")
+target_compile_features(umaa_cyclone_sdk_v1_runtime_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_cyclone_sdk_v1_runtime_cli PRIVATE "${SDK_ROOT}/include" "${SDK_ROOT}/tests")
+target_link_libraries(umaa_cyclone_sdk_v1_runtime_cli PRIVATE UMAA::Runtime)
+foreach(scenario IN ITEMS normal cancel update)
+  add_test(NAME "umaa_cyclone_sdk_v1_runtime_${scenario}_real_wire"
+    COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_sdk_v1_runtime.py"
+      "$<TARGET_FILE:umaa_cyclone_sdk_v1_runtime_cli>"
+      "$<TARGET_FILE:umaa_dds_cyclone_command_demo>"
+      "$<TARGET_FILE:umaa_dds_cyclone_demo>"
+      "$<TARGET_FILE:umaa_cyclone_vehicle_component>"
+      "${scenario}")
+  set_tests_properties("umaa_cyclone_sdk_v1_runtime_${scenario}_real_wire"
+    PROPERTIES TIMEOUT 90)
+endforeach()

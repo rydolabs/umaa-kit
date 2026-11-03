@@ -255,3 +255,14 @@ if(UMAA_BUILD_TESTS)
   add_test(NAME umaa_sdk_v1_specialized_collection_test
     COMMAND umaa_sdk_v1_specialized_collection_test)
 endif()
+
+# Two-Topic Collection commit fence correctness and recovery.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_split_collection_joiner_test
+    tests/test_split_collection_joiner.cpp)
+  target_include_directories(umaa_split_collection_joiner_test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+  target_link_libraries(umaa_split_collection_joiner_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_split_collection_joiner_test
+    COMMAND umaa_split_collection_joiner_test)
+endif()

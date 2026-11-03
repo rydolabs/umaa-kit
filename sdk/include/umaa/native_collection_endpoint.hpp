@@ -438,9 +438,12 @@ private:
       throw std::invalid_argument("specialization DDS key/identity mismatch");
     if(is_general){
       General value{};
-      if(!Service::decode_general(bytes.data(),bytes.size(),value) ||
+      if(!Service::decode_general(bytes.data(),bytes.size(),value))
+        throw std::invalid_argument("invalid Generalization payload");
+      const auto linked=Service::reference(value);
+      if(linked.id!=id||linked.timestamp_ns!=time ||
          !join_.put_general(id,time,std::move(value)))
-        throw std::invalid_argument("invalid/stale Generalization");
+        throw std::invalid_argument("Generalization ID/revision mismatch or replay");
     }else{
       Specialized value{};
       if(!Service::decode_specialized(bytes.data(),bytes.size(),value) ||

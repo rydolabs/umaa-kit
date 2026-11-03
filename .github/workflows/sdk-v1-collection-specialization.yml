@@ -1,0 +1,48 @@
+name: SDK v1 Collection and Specialization integration
+on:
+  push:
+    branches: [sdk/collections-specialization-v1-20261103]
+  pull_request:
+    paths:
+      - sdk/include/umaa/sdk_v1_application.hpp
+      - sdk/include/umaa/sdk_v1_specialized_collection.hpp
+      - sdk/tests/real_dds_sdk_v1_collection_cli.cpp
+      - sdk/tests/test_sdk_v1_specialized_collection.cpp
+      - sdk/CMakeLists.txt
+      - dds-backends/cyclone/CMakeLists.txt
+      - dds-backends/fastdds/CMakeLists.txt
+      - .github/workflows/sdk-v1-collection-specialization.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protocol:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S sdk -B build/protocol -DUMAA_BUILD_TESTS=ON
+      - run: cmake --build build/protocol --target umaa_sdk_v1_specialized_collection_test umaa_sdk_v1_core_test umaa_sdk_v1_bridge_test
+      - run: ctest --test-dir build/protocol --output-on-failure -R 'umaa_sdk_v1_(specialized_collection|core|bridge)_test'
+  real-dds:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
+      - run: |
+          cmake -S dds-backends/cyclone -B build/cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/cyclone --parallel 2
+          cmake -S dds-backends/fastdds -B build/fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/fastdds --parallel 2
+      - run: |
+          set -euo pipefail
+          exe="$PWD/build/cyclone/umaa_cyclone_sdk_v1_collection_cli"
+          for vendor in cyclone fastdds; do
+            plugin="$PWD/build/$vendor/libumaa_dds_${vendor}_collection_demo.so"
+            for shape in set list; do
+              python3 sdk/tests/run_real_dds_collection.py "$exe" "$plugin" "$shape"
+            done
+          done
+          sha256sum "$exe"

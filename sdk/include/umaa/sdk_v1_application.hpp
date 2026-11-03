@@ -4,6 +4,7 @@
 #pragma once
 #include "umaa/application.hpp"
 #include "umaa/sdk_v1_core.hpp"
+#include "umaa/collection_transport.hpp"
 #include <chrono>
 #include <cstdint>
 #include <stdexcept>
@@ -77,6 +78,30 @@ public:
     (void)RuntimeBinding<Service>::checked(FlowKind::CommandResponse);
     return app_.serve_remote<Wire>(source,provider,retirement_delay);
   }
+  // Collection transport is deliberately separate from Report/Command:
+  // it carries bounded coherent *application frames*, not official DDS GROUP
+  // or per-Element/Metadata native Topic transactions. A reviewed binding
+  // must explicitly declare the same Set/List shape as ServiceTraits.
+  template<class Service>
+  auto publish_collection(const std::string& instance_key,
+                          std::size_t maximum=1024) {
+    using Wire=typename ServiceTraits<Service>::WireService;
+    static_assert(std::is_same_v<typename ServiceTraits<Service>::Element,
+                                 typename Wire::Value>,
+                  "Collection element must match the explicit wire binding");
+    checked_collection<Service>();
+    return app_.publish_collection<Wire>(instance_key,maximum);
+  }
+  template<class Service>
+  auto consume_collection(const std::string& instance_key,
+                          std::size_t maximum=1024) {
+    using Wire=typename ServiceTraits<Service>::WireService;
+    static_assert(std::is_same_v<typename ServiceTraits<Service>::Element,
+                                 typename Wire::Value>,
+                  "Collection element must match the explicit wire binding");
+    checked_collection<Service>();
+    return app_.consume_collection<Wire>(instance_key,maximum);
+  }
   // A wire session key is explicit, not silently truncated from Guid128.
   // Official UMAA multi-key 128-bit session mapping requires a future
   // versioned DDS ABI; the current synthetic bindings use decimal keys.
@@ -114,6 +139,20 @@ public:
     return app_.consume<Wire>();
   }
 private:
+  template<class Service> static void checked_collection() {
+    using Wire=typename ServiceTraits<Service>::WireService;
+    const auto& d=descriptor<Service>();
+    const auto expected=d.collection==CollectionShape::LargeSet?
+        umaa::CollectionKind::Set:umaa::CollectionKind::List;
+    if(d.collection==CollectionShape::None ||
+       (d.collection!=CollectionShape::LargeSet &&
+        d.collection!=CollectionShape::LargeList) ||
+       Wire::kind!=expected || d.schema_id!=std::string_view(Wire::schema_id) ||
+       std::string_view(Wire::collection_id).empty() ||
+       std::string_view(Wire::topic_name).empty() ||
+       std::string_view(Wire::qos_profile).empty())
+      throw std::invalid_argument("SDK v1 Collection wire contract mismatch");
+  }
   umaa::Application app_;
 };
 } // namespace umaa::sdk_v1

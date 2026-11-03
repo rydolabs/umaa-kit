@@ -246,3 +246,12 @@ if(UMAA_BUILD_TESTS)
   target_link_libraries(umaa_flow_protocol_v1_test PRIVATE UMAA::Core)
   add_test(NAME umaa_flow_protocol_v1_test COMMAND umaa_flow_protocol_v1_test)
 endif()
+
+# SDK v1 Large Collection + Generalization/Specialization composition.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_sdk_v1_specialized_collection_test
+    tests/test_sdk_v1_specialized_collection.cpp)
+  target_link_libraries(umaa_sdk_v1_specialized_collection_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_sdk_v1_specialized_collection_test
+    COMMAND umaa_sdk_v1_specialized_collection_test)
+endif()

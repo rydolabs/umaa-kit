@@ -106,6 +106,19 @@ public:
       return events;
     }catch(...){faulted_=true;throw;}
   }
+  std::vector<Event> consumer_liveliness_lost(const std::string& source) {
+    ensure_active();
+    try {
+      auto events=provider_.consumer_liveliness_lost(source);
+      for(const auto& event:events)
+        if(event.kind==Event::Kind::DisposeAck)
+          executor_.session_ids.erase(event.session);
+      return events;
+    }catch(...){faulted_=true;throw;}
+  }
+  void consumer_liveliness_restored(const std::string& source) {
+    ensure_active();provider_.consumer_liveliness_restored(source);
+  }
   bool faulted() const noexcept {return faulted_||provider_.faulted();}
   std::size_t sessions() const{return provider_.sessions();}
 private:

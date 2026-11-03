@@ -3,7 +3,10 @@
 // No network I/O or official wire interoperability is claimed here.
 #pragma once
 #include "umaa/command_engine.hpp"
+#include <algorithm>
 #include <cstddef>
+#include <string_view>
+#include <vector>
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
@@ -12,9 +15,14 @@
 #include <utility>
 namespace umaa {
 enum class RemoteCommandResult { Pending, Completed, Failed, Canceled };
+// EO ICD 6.0 Section 5.1: CommandAckReport subscription is OPTIONAL for a
+// Consumer. Preserve the original strict behavior for existing callers.
+enum class CommandAckPolicy { Required, StatusOnly };
 class RemoteCommandMonitor final {
 public:
-  explicit RemoteCommandMonitor(std::size_t limit=1024):limit_(limit) {
+  explicit RemoteCommandMonitor(std::size_t limit=1024,
+      CommandAckPolicy ack_policy=CommandAckPolicy::Required)
+      :limit_(limit),ack_policy_(ack_policy) {
     if(!limit)throw std::invalid_argument("zero command session limit");
   }
   void issue(const Identity& id) {
@@ -26,23 +34,15 @@ public:
   }
   // Returns false for out-of-order or mismatched observations. A newer
   // illegal state transition faults only that session; it cannot become success.
+  // Legacy state-only observation retained for ABI/source compatibility.
+  // Official TypeBindings must use the reason-bearing overload below.
   bool status(const std::string& session,const std::string& provider,
               State next,std::int64_t source_timestamp) {
-    auto it=sessions_.find(session);
-    if(it==sessions_.end() || it->second.id.destination!=provider)return false;
-    Entry& e=it->second;
-    if(e.faulted || e.status_disposed || source_timestamp<=e.last_status_time ||
-       source_timestamp<e.id.timestamp)return false;
-    if(e.awaiting_update && next==State::ISSUED) {
-      e.status=State::ISSUED;e.awaiting_update=false;
-      e.last_status_time=source_timestamp;return true;
-    }
-    if(e.awaiting_update || !valid(e.status,next)){
-      e.faulted=true;return false;
-    }
-    e.status=next;
-    e.last_status_time=source_timestamp;
-    return true;
+    return status_internal(session,provider,next,std::nullopt,source_timestamp);
+  }
+  bool status(const std::string& session,const std::string& provider,
+              State next,std::string_view reason,std::int64_t source_timestamp) {
+    return status_internal(session,provider,next,reason,source_timestamp);
   }
   // ACK is correlated by provider identity and session. It is not synthesized
   // from Status; without both inputs terminal_result() remains Pending.
@@ -60,8 +60,10 @@ public:
     const auto it=sessions_.find(session);
     if(it==sessions_.end())throw std::out_of_range("unknown Command session");
     const auto& e=it->second;
-    return !e.faulted && !e.awaiting_update && e.acked && e.status &&
-           *e.status==State::EXECUTING && !e.status_disposed && !e.ack_disposed;
+    return !e.faulted && !e.awaiting_update &&
+           (ack_policy_==CommandAckPolicy::StatusOnly || e.acked) && e.status &&
+           *e.status==State::EXECUTING && !e.status_disposed &&
+           (ack_policy_==CommandAckPolicy::StatusOnly || !e.ack_disposed);
   }
   void begin_update(const std::string& session) {
     if(!ready_for_update(session))
@@ -78,7 +80,8 @@ public:
     const auto it=sessions_.find(session);
     if(it==sessions_.end())throw std::out_of_range("unknown command session");
     const Entry& e=it->second;
-    if(e.faulted || !e.acked || !e.status)return RemoteCommandResult::Pending;
+    if(e.faulted || (ack_policy_==CommandAckPolicy::Required && !e.acked) ||
+       !e.status)return RemoteCommandResult::Pending;
     switch(*e.status) {
       case State::COMPLETED:return RemoteCommandResult::Completed;
       case State::FAILED:return RemoteCommandResult::Failed;
@@ -103,15 +106,34 @@ public:
   bool release(const std::string& session) {
     auto it=sessions_.find(session);
     if(it==sessions_.end() || !it->second.status_disposed ||
-       !it->second.ack_disposed)return false;
+       (ack_policy_==CommandAckPolicy::Required &&
+        !it->second.ack_disposed))return false;
     // Never discard an otherwise healthy Pending session just because both
     // DDS instances disappeared: that would silently lose a device command.
     // Faulted sessions can be explicitly quarantined and released.
     const Entry& e=it->second;
-    if(!e.faulted && (!e.acked || !e.status || !terminal(*e.status)))
-      return false;
+    if(!e.faulted &&
+       ((ack_policy_==CommandAckPolicy::Required && !e.acked) ||
+        !e.status || !terminal(*e.status)))return false;
     sessions_.erase(it);return true;
   }
+  // EO ICD 6.0 Section 5.1.4.5. The caller MUST Dispose each returned
+  // initiating Command instance on the DDS bus. This notification alone is
+  // NOT a successful hardware cancellation or terminal Status. Sessions are
+  // quarantined until recovery, with no automatic replay.
+  std::vector<std::string> provider_liveliness_lost(const std::string& provider) {
+    std::vector<std::string> to_cancel;
+    for(auto& pair:sessions_) {
+      Entry& e=pair.second;
+      if(e.id.destination!=provider || e.faulted ||
+         (e.status && terminal(*e.status)))continue;
+      e.faulted=true;
+      to_cancel.push_back(pair.first);
+    }
+    std::sort(to_cancel.begin(),to_cancel.end());
+    return to_cancel;
+  }
+
   void ambiguous_delivery(const std::string& session) {
     auto it=sessions_.find(session);
     if(it==sessions_.end())throw std::out_of_range("unknown command session");
@@ -142,7 +164,29 @@ private:
     std::optional<State> status;
     std::int64_t last_status_time{INT64_MIN};
   };
+  bool status_internal(const std::string& session,const std::string& provider,
+                       State next,std::optional<std::string_view> reason,
+                       std::int64_t source_timestamp) {
+    auto it=sessions_.find(session);
+    if(it==sessions_.end() || it->second.id.destination!=provider)return false;
+    Entry& e=it->second;
+    if(e.faulted || e.status_disposed || source_timestamp<=e.last_status_time ||
+       source_timestamp<e.id.timestamp)return false;
+    if(e.awaiting_update && next==State::ISSUED) {
+      if(reason && *reason!="UPDATED") {e.faulted=true;return false;}
+      e.status=State::ISSUED;e.awaiting_update=false;
+      e.last_status_time=source_timestamp;return true;
+    }
+    if(e.awaiting_update || !valid(e.status,next) ||
+       (reason && !command_transition_allowed(e.status,next,*reason))) {
+      e.faulted=true;return false;
+    }
+    e.status=next;
+    e.last_status_time=source_timestamp;
+    return true;
+  }
   std::size_t limit_;
+  CommandAckPolicy ack_policy_;
   std::unordered_map<std::string,Entry> sessions_;
 };
 } // namespace umaa

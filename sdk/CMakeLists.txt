@@ -239,3 +239,10 @@ if(UMAA_BUILD_TESTS)
   target_link_libraries(umaa_sdk_v1_bridge_test PRIVATE UMAA::Core)
   add_test(NAME umaa_sdk_v1_bridge_test COMMAND umaa_sdk_v1_bridge_test)
 endif()
+
+# UMAA EO Flow Control protocol tests: state/reason, peer liveliness and cleanup.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_flow_protocol_v1_test tests/test_flow_protocol_v1.cpp)
+  target_link_libraries(umaa_flow_protocol_v1_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_flow_protocol_v1_test COMMAND umaa_flow_protocol_v1_test)
+endif()

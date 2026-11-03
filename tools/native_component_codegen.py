@@ -216,9 +216,9 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
             stem = "native_probe_" + idlh + "_" + typeh + "_" + backend
             filename = "tests/" + stem + probe["extension"]
             _write(output / filename, probe["code"])
-            includes = ["generated/native/" + idlh + "/" + backend + "/" + folder
-                        for folder in result["nativeBuildSpecifications"][backend]["includeDirs"]]
-            probe_jobs.append((stem, filename, probe["language"], includes))
+            probe_includes = ["generated/native/" + idlh + "/" + backend + "/" + folder
+                              for folder in result["nativeBuildSpecifications"][backend]["includeDirs"]]
+            probe_jobs.append((stem, filename, probe["language"], probe_includes))
     descriptors = ["#pragma once", "#include <cstddef>", "namespace umaa_native_contract {",
                    "struct Topic {const char* alias;const char* name;const char* idlType;"
                    "const char* keyFields;const char* qos;};"]

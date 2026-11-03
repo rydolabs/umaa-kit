@@ -98,3 +98,34 @@ List atomic update/lifecycle, independently tested official Cyclone/Fast DDS
 E2E, Component role/specification review, and formal conformity. Synthetic
 Runtime adapters from Draft #44 and the official Runtime fail-closed gate from
 Draft #45 remain unchanged.
+
+
+## Completed *host snapshot* validation (not live DDS)
+
+`validate_completed_list_snapshot(HostProjection, report, elements)`
+accepts an externally assembled, final Report sample and the correspondingly
+observed ListElement sample set. It first validates every typed nested field,
+then checks:
+
+- exactly the metadata-declared number of elements, unique `elementID` and
+  matching `listID` on every element;
+- the `startingElementID`/optional `nextElementID` linked-list chain is
+  complete, without dangling references, cycles, extra tails, or disconnected
+  elements; the output is ordered according to that *declared* chain;
+- for nonempty updates, the metadata `updateElementID` AND
+  `updateElementTimestamp` match the observed checkpoint element;
+- initial empty Large List metadata use a NIL `updateElementID` per EO ICD
+  §3.8.5; nonempty updates without timestamps fail closed, because a
+  Dispose-only synchronization requires independent DDS tombstone evidence.
+
+The normative anchors for this limited host-side consistency check are EO ICD
+6.0 §3.8.2 (printed page 15), §3.8.3 (page 16), §3.8.4 (page 19),
+§3.8.5 (page 20), and the official original LargeListMetadata/element IDL.
+
+**This does not buffer out-of-order Report/Element DDS topics, detect lost or
+replayed samples, prove DDS ordered access, observe Dispose/tombstones, confirm
+all pending update cycles, or synchronize a live subscriber.** Consumers
+must collect events and independently establish cycle completeness before
+applying this post-hoc validator; the returned `nativeDdsCoherenceProved`
+is always FALSE. In particular, a delete-only update cannot be approved by
+a host-only snapshot.

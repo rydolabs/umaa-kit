@@ -49,7 +49,7 @@ python3 -m tools.official_report_source_handoff \
   --zip /private/official-idl.zip \
   --yaml /private/authored/UMAA-Report.yaml \
   --original-icd /private/original-ICD.pdf \
-  --expect-sha256 <the-explicit-verified-64-hex-digest> \
+  --expect-sha256 "$OFFICIAL_IDL_SHA256" \
   --out /tmp/umaa-report-source-candidate.json
 ```
 

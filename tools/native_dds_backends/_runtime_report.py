@@ -51,7 +51,7 @@ def render(reference: Path, binding: dict, *, language: str) -> str:
     # independent Writer/Reader, sample lifecycle, strict unknown schema,
     # QoS capabilities, ACK and error handling.
     substitutions = [
-        ("DemoBatteryPubSubTypes.h", header + "PubSubTypes.h"),
+        *(([("DemoBatteryPubSubTypes.h", header + "PubSubTypes.h")] if language == "fastdds" else [])),
         ("DemoBattery.h", header + ".h"),
         (original, native),
         (old_c, raw_type),

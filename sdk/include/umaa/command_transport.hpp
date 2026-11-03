@@ -93,6 +93,11 @@ public:
     }catch(...) {state_=State::Faulted;throw;}
   }
 
+  void consumer_liveliness_restored(const std::string& source) {
+    require_active();
+    engine_.consumer_liveliness_restored(source);
+  }
+
   // Deadline detection is a host responsibility; no hidden timer/QoS.
   std::vector<Event> timeout(const std::string& session) {
     require_active();

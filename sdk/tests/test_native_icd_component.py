@@ -118,7 +118,7 @@ class NativeICDGenerationTests(unittest.TestCase):
         self.assertEqual(2, contract["irVersion"])
         self.assertTrue(contract["readiness"]["nativeTypeSupportGenerated"])
         self.assertFalse(contract["readiness"]["nativeDdsBinding"])
-        self.assertFalse(contract["topics"]["report01"]["keyAnnotationVerified"])
+        self.assertFalse(next(iter(contract["topics"].values()))["keyAnnotationVerified"])
         self.assertEqual(2, meta["nativeTypeProbesGenerated"])
         self.assertEqual(["cyclone", "fastdds"], sorted(meta["nativeCompilerBackends"]))
         self.assertIn("runtime_binding_verified = false",

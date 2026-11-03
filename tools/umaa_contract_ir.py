@@ -14,7 +14,6 @@ from pathlib import Path
 import re
 import sys
 
-from sdk.tools.umaa_codegen import SchemaError, parse_idl
 from tools.validate_icd_yaml import (
     ICDYamlError, require_dependencies, strict_load,
     validate_document_elements, validate_topic_references,
@@ -88,10 +87,16 @@ def resolve(yaml_path: Path, idl_path: Path | None = None,
     else:
         data = idl_path.read_bytes()
         idl_digest = sha256(data)
-        try:
-            idl_types = parse_idl(data.decode("utf-8"))
-        except (UnicodeError, SchemaError) as exc:
-            blockers.append("IDL not supported by restricted parser: " + str(exc))
+        if fixture:
+            # Compatibility only: the legacy host-only Demo:: scaffold.
+            # Official/native ICD paths NEVER interpret IDL with regex.
+            from sdk.tools.umaa_codegen import SchemaError, parse_idl
+            try:
+                idl_types = parse_idl(data.decode("utf-8"))
+            except (UnicodeError, SchemaError) as exc:
+                blockers.append("IDL not supported by restricted fixture parser: " + str(exc))
+        else:
+            blockers.append("official ICD must use native DDS compiler plugin path")
 
     pinned_idl = doc["sources"]["idl"]["bundleSha256"]
     if pinned_idl is None:

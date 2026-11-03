@@ -87,6 +87,17 @@ def native_generate(root: Path, source: str, output: Path, *,
                      str(dep)],
                     check=True, timeout=180,
                 )
+            # Fast DDS-Gen writes flat filenames but preserves original
+            # include locations in generated C++ headers. Recreate just
+            # the derived header layout, without copying source IDLs or
+            # compiling duplicate .cxx translation units.
+            for dep in closure:
+                mirrored = dest / dep.relative_to(root).parent
+                mirrored.mkdir(parents=True, exist_ok=True)
+                for header in dest.iterdir():
+                    if (header.is_file() and header.name.startswith(dep.stem)
+                            and header.suffix in (".h", ".hpp", ".ipp")):
+                        shutil.copy2(header, mirrored / header.name)
             native = sorted(dest.rglob("*.cxx"))
             if not any(p.name.startswith(name.stem) and
                        "PubSubType" in p.name for p in native):

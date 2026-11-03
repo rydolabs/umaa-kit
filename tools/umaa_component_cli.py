@@ -338,6 +338,10 @@ def main(argv=None):
                    help="registered DDS compiler plugin; omit for all installed")
     g.add_argument("--idl-archive", type=Path,
                    help="original SHA-pinned IDL ZIP for official source verification")
+    g.add_argument("--runtime-report", help="explicit native synthetic Report type")
+    g.add_argument("--runtime-key", help="int32 Report native Key member")
+    g.add_argument("--runtime-value", help="int32 Report native data member")
+    g.add_argument("--runtime-schema", help="explicit Report schema identity")
     b = commands.add_parser("build")
     b.add_argument("--project", type=Path, default=Path("."))
     b.add_argument("--sdk-prefix", required=True, type=Path)
@@ -345,6 +349,8 @@ def main(argv=None):
     t.add_argument("--project", type=Path, default=Path("."))
     args = parser.parse_args(argv)
     try:
+        if args.cmd == "generate" and any((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)) and not all((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)):
+            raise ProjectError("all native Runtime Report fields required")
         if args.cmd == "new":
             new(args.name, args.output or Path(args.name))
         elif args.cmd == "service":
@@ -364,7 +370,7 @@ def main(argv=None):
                 snapshot = contracts.read_snapshot(args.input)
                 print(json.dumps(contracts.validate_snapshot(snapshot), sort_keys=True))
         elif args.cmd == "generate":
-            if args.idl_root or args.idl_binding or args.backend or args.idl_archive:
+            if args.idl_root or args.idl_binding or args.backend or args.idl_archive or args.runtime_report or args.runtime_key or args.runtime_value or args.runtime_schema:
                 if not args.yaml or not args.idl_root or not args.idl_binding or args.idl:
                     raise ProjectError("native ICD codegen requires --yaml, --idl-root and explicit --idl-binding; no --idl")
                 from tools.umaa_icd_component_codegen import generate_native as native_project
@@ -372,7 +378,13 @@ def main(argv=None):
                 print(json.dumps(native_project(args.project / MANIFEST,
                      args.yaml, args.idl_root, _binding_map(args.idl_binding),
                      args.project, backends=args.backend, fixture=args.fixture,
-                     original_icd=args.original_icd, idl_archive=args.idl_archive),
+                     original_icd=args.original_icd, idl_archive=args.idl_archive,
+                     runtime_report=({
+                        "typeName": args.runtime_report,
+                        "keyField": args.runtime_key,
+                        "valueField": args.runtime_value,
+                        "schemaId": args.runtime_schema,
+                     } if args.runtime_report else None)),
                      sort_keys=True))
             elif args.yaml or args.idl or args.original_icd or args.fixture:
                 # Old host-only scalar fixture generator is deliberately

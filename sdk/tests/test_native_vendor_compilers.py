@@ -109,6 +109,30 @@ class NativeCompilerOrchestrationTests(TestCase):
             self.assertIn("thirdparty", discover())
             self.assertIs(load("thirdparty"), backend)
 
+    def test_native_report_runtime_plugin_contract_no_vendor_core_changes(self):
+        binding = {
+            "typeName": "Demo::EO::BatteryReportType",
+            "idlSource": "DemoBatteryReport.idl",
+            "keyField": "source_id",
+            "valueField": "level_pct",
+            "topicName": "demo/NativeBatteryReport",
+            "schemaId": "demo:native-battery-report-v2",
+            "qosProfile": "synthetic-reliable",
+            "serviceId": "Demo::EO::BatteryStatus",
+        }
+        for name in ("cyclone", "fastdds"):
+            info = load(name).runtime_adapter(binding)
+            self.assertEqual("CXX", info["language"])
+            self.assertEqual(".cpp", info["extension"])
+            self.assertIn("DemoBatteryReport.h", info["source"])
+            self.assertIn("demo:native-battery-report-v2", info["source"])
+            self.assertIn("level_pct", info["source"])
+            self.assertIn("UMAA_DDS_EVENT_DISPOSE", info["source"])
+            self.assertIn("umaa_get_dds_backend_v1", info["source"])
+            self.assertNotIn('"DemoBattery.h"', info["source"])
+        with self.assertRaisesRegex(ValueError, "unsafe"):
+            load("cyclone").runtime_adapter({**binding, "valueField": "foo;evil()"})
+
     def test_pin_mismatch_prevents_compiler_and_output(self):
         with patch("subprocess.run") as run:
             with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):

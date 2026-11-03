@@ -71,7 +71,8 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
              idl_bindings: dict[str, str], output: Path, *,
              backends: list[str] | None = None, fixture: bool = False,
              original_icd: Path | None = None,
-             idl_archive: Path | None = None) -> dict:
+             idl_archive: Path | None = None,
+             runtime_report: dict | None = None) -> dict:
     if not yaml_paths or output.is_symlink():
         raise ContractIRError("missing Service YAML or symlinked output")
     doc = validate_component(json.loads(manifest.read_text(encoding="utf-8")),
@@ -121,6 +122,38 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
                 raise ContractIRError(service_id + ": unresolved Operation " + operation)
     if set(idl_bindings) != set(expected):
         raise ContractIRError("unreferenced TypeSupport bindings prohibited")
+    # A native Runtime Adapter needs explicit service, Key, field, schema,
+    # Topic and QoS mapping. Never infer these from compiled TypeSupport.
+    # This first slice permits ONLY the synthetic BatteryStatus fixture.
+    runtime_binding = None
+    if runtime_report is not None:
+        if not fixture or len(items) != 1 or set(runtime_report) != {
+            "typeName", "keyField", "valueField", "schemaId"
+        }:
+            raise ContractIRError("runtime Report requires one synthetic fixture and complete codec")
+        service_id, (service, _) = next(iter(items.items()))
+        reports = [topic for topic in service["spec"]["topics"].values()
+                   if topic["role"] == "report"]
+        if (service_id != "Demo::EO::BatteryStatus" or
+            len(service["spec"]["topics"]) != 1 or len(reports) != 1):
+            raise ContractIRError("only reviewed synthetic BatteryStatus Report may bind")
+        topic = reports[0]
+        if (runtime_report["typeName"] != topic["idlType"] or
+            topic["keyFields"] != [runtime_report["keyField"]] or
+            topic["direction"] != "provider-to-consumer" or
+            not runtime_report["schemaId"]):
+            raise ContractIRError("runtime codec or Key differs from explicit ICD Topic")
+        runtime_binding = {
+            "typeName": runtime_report["typeName"],
+            "idlSource": expected[topic["idlType"]],
+            "keyField": runtime_report["keyField"],
+            "valueField": runtime_report["valueField"],
+            "schemaId": runtime_report["schemaId"],
+            "topicName": topic["ddsTopicName"],
+            "qosProfile": topic["qosProfileRef"],
+            "serviceId": service_id,
+        }
+
     if fixture:
         # Legacy synthetic fixture pins a single IDL file, not an archive.
         pins = {s["sources"]["idl"]["bundleSha256"] for s, _ in services}
@@ -219,6 +252,109 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
             probe_includes = ["generated/native/" + idlh + "/" + backend + "/" + folder
                               for folder in result["nativeBuildSpecifications"][backend]["includeDirs"]]
             probe_jobs.append((stem, filename, probe["language"], probe_includes))
+    runtime_plugins = []
+    if runtime_binding is not None:
+        from tools.native_dds_backends._runtime_report import validate as validate_runtime
+        validate_runtime(runtime_binding)
+        rel = runtime_binding["idlSource"]
+        source_hash = _hash(rel.encode())[:16]
+        result = by_source[rel]
+        for backend in result["backends"]:
+            plugin = load_compiler_plugin(backend)
+            if not callable(getattr(plugin, "runtime_adapter", None)):
+                raise ContractIRError("DDS backend lacks native Runtime Adapter hook: " + backend)
+            output_info = plugin.runtime_adapter(runtime_binding)
+            if (not isinstance(output_info, dict) or
+                set(output_info) != {"source", "extension", "language"} or
+                output_info["extension"] != ".cpp" or
+                output_info["language"] != "CXX" or
+                not isinstance(output_info["source"], str) or not output_info["source"]):
+                raise ContractIRError("invalid native Runtime Adapter contract")
+            filename = "generated/native_runtime_" + backend + ".cpp"
+            _write(output / filename, output_info["source"])
+            spec = result["nativeBuildSpecifications"][backend]
+            runtime_plugins.append({
+                "backend": backend,
+                "source": filename,
+                "target": "umaa_native_report_" + backend,
+                "nativeTarget": "umaa_native_" + source_hash + "_" + backend + "_types",
+                "includeDirs": [
+                    "generated/native/" + source_hash + "/" + backend + "/" + directory
+                    for directory in spec["includeDirs"]
+                ],
+                "libraries": spec["cmakeLibraries"],
+            })
+        header = [
+            "#pragma once", "#include <cstdint>", "#include <cstring>",
+            "#include <cstddef>", "#include <vector>",
+            '#include "umaa/sdk_v1_application.hpp"',
+            "namespace umaa_native_runtime {",
+            "struct ReportService {",
+            "  static constexpr bool is_command = false;",
+            "  static constexpr const char* id = " + _cxx(runtime_binding["serviceId"]) + ";",
+            "  static constexpr const char* schema_id = " + _cxx(runtime_binding["schemaId"]) + ";",
+            "  static constexpr const char* topic_name = " + _cxx(runtime_binding["topicName"]) + ";",
+            "  static constexpr const char* qos_profile = " + _cxx(runtime_binding["qosProfile"]) + ";",
+            "  struct Report { std::int32_t level_pct{}; };",
+            "  static std::vector<std::uint8_t> encode_report(const Report& value) {",
+            "    std::vector<std::uint8_t> bytes(sizeof(value.level_pct));",
+            "    std::memcpy(bytes.data(), &value.level_pct, bytes.size());",
+            "    return bytes;",
+            "  }",
+            "  static bool decode_report(const std::uint8_t* p,std::size_t n,Report& out) {",
+            "    if(!p || n!=sizeof(out.level_pct))return false;",
+            "    std::memcpy(&out.level_pct,p,sizeof(out.level_pct));return true;",
+            "  }",
+            "};", "using Report = ReportService;",
+            "struct BatteryStatusTag {};",
+            "} // namespace umaa_native_runtime",
+            "namespace umaa::sdk_v1 {",
+            "template<> struct ServiceTraits<::umaa_native_runtime::BatteryStatusTag> {",
+            "  using WireService = ::umaa_native_runtime::ReportService;",
+            "  using Report = WireService::Report;",
+            "  inline static constexpr ServiceDescriptor descriptor{",
+            "    WireService::id, WireService::schema_id,",
+            "    FlowKind::QuerylessRequestReply, ServiceKind::Status,",
+            "    CollectionShape::None, false};",
+            "};",
+            "} // namespace umaa::sdk_v1",
+        ]
+        _write(output / "generated/native_report_runtime.hpp",
+               "\n".join(header) + "\n")
+        # Protocol registration is SDK-owned. Only user business logic is
+        # created once and intentionally preserved on subsequent generations.
+        user_file = output / "src/native_report_logic.hpp"
+        if user_file.is_symlink() or any(p.is_symlink() for p in user_file.parents):
+            raise ContractIRError("unsafe user business Handler path")
+        if not user_file.exists():
+            user_file.parent.mkdir(parents=True, exist_ok=True)
+            user_file.write_text(
+                '#pragma once\n#include "umaa/component.hpp"\n'
+                '#include "generated/native_report_runtime.hpp"\n'
+                'namespace user {\n'
+                'class NativeReportLogic final : public '
+                'umaa::ReportSource<umaa_native_runtime::ReportService> {\n'
+                'public:\n'
+                '  umaa_native_runtime::ReportService::Report read() override {\n'
+                '    return {80}; // DEMO ONLY: replace with actual sensor/business data\n'
+                '  }\n'
+                '};\n'
+                '} // namespace user\n', encoding="utf-8")
+        component_code = [
+            '#include "umaa/component.hpp"',
+            '#include "generated/native_report_runtime.hpp"',
+            '#include "src/native_report_logic.hpp"',
+            'namespace {',
+            'void register_services(umaa::Component& component) {',
+            '  static user::NativeReportLogic handler;',
+            '  component.provide<umaa_native_runtime::ReportService>(handler);',
+            '}',
+            '} // anonymous namespace',
+            'UMAA_EXPORT_COMPONENT_V2("native-generated-report", register_services)',
+        ]
+        _write(output / "generated/native_report_component.cpp",
+               "\n".join(component_code) + "\n")
+
     descriptors = ["#pragma once", "#include <cstddef>", "namespace umaa_native_contract {",
                    "struct Topic {const char* alias;const char* name;const char* idlType;"
                    "const char* keyFields;const char* qos;};"]
@@ -278,6 +414,53 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
         else:
             cmake.append("set_target_properties(" + stem +
                          " PROPERTIES C_STANDARD 11)")
+    if runtime_plugins:
+        # Generated CMake uses each provider's declarative TypeSupport
+        # requirements. It never branches on middleware vendor names.
+        cmake += [
+            "if(NOT UMAA_SDK_ROOT)",
+            '  message(FATAL_ERROR "UMAA_SDK_ROOT is required for native Runtime Adapter")',
+            "endif()",
+            'set(UMAA_BUILD_TESTS OFF CACHE BOOL "" FORCE)',
+            'add_subdirectory("' + d + '{UMAA_SDK_ROOT}" umaa-generated-sdk)',
+            'set(UMAA_NATIVE_RUNTIME_PLUGINS "")',
+        ]
+        for runtime in runtime_plugins:
+            target = runtime["target"]
+            cmake += [
+                "add_library(" + target + " MODULE " + runtime["source"] + ")",
+                "target_compile_features(" + target + " PRIVATE cxx_std_17)",
+                "target_include_directories(" + target + " PRIVATE " +
+                " ".join('"' + d + "{CMAKE_CURRENT_SOURCE_DIR}/" + p + '"'
+                         for p in runtime["includeDirs"]) + ' "' + d +
+                '{UMAA_SDK_ROOT}/include")',
+                "target_link_libraries(" + target + " PRIVATE " +
+                " ".join([runtime["nativeTarget"]] + runtime["libraries"]) + ")",
+                "list(APPEND UMAA_NATIVE_RUNTIME_PLUGINS " + target + ")",
+            ]
+        cmake += [
+            "add_library(umaa_native_device MODULE generated/native_report_component.cpp)",
+            "target_compile_features(umaa_native_device PRIVATE cxx_std_17)",
+            'target_include_directories(umaa_native_device PRIVATE "' + d +
+            '{UMAA_SDK_ROOT}/include" "' + d + '{CMAKE_CURRENT_SOURCE_DIR}")',
+            'add_executable(umaa_native_report_cli "' + d +
+            '{UMAA_SDK_ROOT}/tests/real_dds_native_report_cli.cpp")',
+            "target_compile_features(umaa_native_report_cli PRIVATE cxx_std_17)",
+            'target_include_directories(umaa_native_report_cli PRIVATE "' + d +
+            '{CMAKE_CURRENT_SOURCE_DIR}")',
+            "target_link_libraries(umaa_native_report_cli PRIVATE UMAA::Runtime)",
+            "find_package(Python3 REQUIRED COMPONENTS Interpreter)",
+            "foreach(plugin IN LISTS UMAA_NATIVE_RUNTIME_PLUGINS)",
+            '  add_test(NAME "native_runtime_' + d + '{plugin}_real_wire"',
+            '    COMMAND "' + d + '{Python3_EXECUTABLE}" "' + d +
+            '{UMAA_SDK_ROOT}/tests/run_real_dds_backend.py"',
+            '    "$<TARGET_FILE:umaa_native_report_cli>"',
+            '    "$<TARGET_FILE:' + d + '{plugin}>"',
+            '    "$<TARGET_FILE:umaa_native_device>")',
+            '  set_tests_properties("native_runtime_' + d + '{plugin}_real_wire"',
+            "    PROPERTIES TIMEOUT 55)",
+            "endforeach()",
+        ]
     cmake += [
         "add_executable(umaa_native_contract_smoke tests/native_contract_smoke.cpp)",
         "target_compile_features(umaa_native_contract_smoke PRIVATE cxx_std_17)",
@@ -308,13 +491,14 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
                                generated_sources=by_source, fixture=fixture)
             for path in yaml_paths
         },
-        "nativeDdsBinding": False,
-        "componentRuntimeBound": False,
+        "nativeDdsBinding": bool(runtime_plugins),
+        "runtimeAdaptersGenerated": [x["backend"] for x in runtime_plugins],
+        "componentRuntimeBound": bool(runtime_plugins),
         "officialConformanceClaim": False,
         "blockers": [
-            "Native DDS TypeSupport is generated; vendor-neutral host/native payload adapter not proven",
+            ("Synthetic native scalar Report adapter generated; official mapping not proven" if runtime_plugins else "Native DDS TypeSupport is generated; vendor-neutral host/native payload adapter not proven"),
             "Original native TypeSupport Key/QoS semantics are not established by compilation",
-            "Component runtime Provider/Consumer registration cannot be emitted safely without reviewed wire codecs",
+            ("Synthetic Report Provider registration generated and wired to user Handler; official mapping unverified" if runtime_plugins else "Component runtime Provider/Consumer registration cannot be emitted safely without reviewed wire codecs"),
         ],
     }
     metadata = output / "generated/native-generation.json"
@@ -340,13 +524,25 @@ def main(argv=None):
     p.add_argument("--fixture", action="store_true")
     p.add_argument("--original-icd", type=Path)
     p.add_argument("--idl-archive", type=Path)
+    p.add_argument("--runtime-report", help="explicit native Report type")
+    p.add_argument("--runtime-key", help="native Report int32 Key")
+    p.add_argument("--runtime-value", help="native Report int32 value")
+    p.add_argument("--runtime-schema", help="native Report schema identifier")
     args = p.parse_args(argv)
     try:
+        if any((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)) and not all((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)):
+            raise ContractIRError("all synthetic native Runtime Report fields required")
         result = generate(args.manifest, args.yaml, args.idl_root,
                           _binding_map(args.idl_binding), args.out,
                           backends=args.backend, fixture=args.fixture,
                           original_icd=args.original_icd,
-                          idl_archive=args.idl_archive)
+                          idl_archive=args.idl_archive,
+                          runtime_report=({
+                              "typeName": args.runtime_report,
+                              "keyField": args.runtime_key,
+                              "valueField": args.runtime_value,
+                              "schemaId": args.runtime_schema,
+                          } if args.runtime_report else None))
         print("UMAA_ICD_NATIVE_PROJECT_GENERATED", json.dumps(result, sort_keys=True))
         return 0
     except (OSError, ValueError, ICDYamlError) as exc:

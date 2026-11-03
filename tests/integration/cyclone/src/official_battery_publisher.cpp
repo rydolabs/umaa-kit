@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     // after ACK while a late-repaired final Dispose is not yet observable by
     // the independent application-level reader under 1% packet loss.
     const bool impaired = std::getenv("UMAA_NETEM_RETAIN_FINAL");
-    const std::uint32_t grace_ms = impaired ? 1000u : 0u;
+    const std::uint32_t grace_ms = impaired ? 3000u : 0u;
     umaa::cyclone::ReportWriter<double, UMAA_EO_BatteryStatus_BatteryReportType,
                                 BatteryMapper> transport(
         "battery-demo", participant, topic, qos.get(), BatteryMapper{},

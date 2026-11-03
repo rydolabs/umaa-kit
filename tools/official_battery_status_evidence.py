@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from tools.official_icd_evidence import (
     SourceError, check_idl_imports, inspected_zip, sha, source_type,
 )
+from tools.validate_icd_yaml import require_dependencies, strict_load
 
 PIN_MANIFEST = (
     Path(__file__).resolve().parents[1] /
@@ -24,6 +25,9 @@ PIN_MANIFEST = (
 MAX_PDF = 64 * 1024 * 1024
 MAX_XML = 1024 * 1024
 MAX_MANIFEST = 16 * 1024
+REVIEWED_QOS = (
+    Path(__file__).resolve().parents[1] / "contracts/qos/umaa6/eo-large-collections.yaml"
+)
 
 
 def _read_regular(path: Path, maximum: int, what: str) -> bytes:
@@ -31,6 +35,30 @@ def _read_regular(path: Path, maximum: int, what: str) -> bytes:
             path.stat().st_size <= 0 or path.stat().st_size > maximum):
         raise SourceError(what + " absent, symlinked or oversized")
     return path.read_bytes()
+
+
+def _reviewed_qos_minimum(path: Path, service: str, element: str, minimum: dict) -> dict:
+    """Cross-check the existing scoped EO normative-minimum ledger.
+
+    This is NOT a full QoS policy, nor a normative PDF content parser.
+    """
+    yaml, _ = require_dependencies()
+    record = strict_load(path, yaml)
+    if (record.get("kind") != "QosRequirements" or
+            record.get("schemaVersion") != "1" or
+            record.get("source") != {
+                "document": "UMAA-SPEC-EOICD-v6.0", "section": "3.8.1", "page": 14
+            }):
+        raise SourceError("existing scoped QoS source locator mismatch")
+    rows = [x for x in record.get("entries", []) if x.get("serviceId") == service]
+    if (len(rows) != 1 or rows[0].get("idlType") != element or
+            rows[0].get("required") != {
+                "presentationScope": "topic", "orderedAccess": True
+            } or minimum.get("appliesTo") != "collectionElement"):
+        raise SourceError("existing scoped collection-element QoS minimum drift")
+    return {"reviewedScopedQosFileMatches": True,
+            "requiredScope": "collection-element only",
+            "fullServiceQosApproved": False}
 
 
 def _reference_xml(xml_path: Path, digest: str) -> dict:
@@ -71,7 +99,8 @@ def _reference_xml(xml_path: Path, digest: str) -> dict:
 
 def inspect(archive: Path, original_icd: Path, *,
             manifest: Path = PIN_MANIFEST,
-            rti_reference_xml: Path | None = None) -> dict:
+            rti_reference_xml: Path | None = None,
+            scoped_qos: Path = REVIEWED_QOS) -> dict:
     """Authenticate source bytes and existing Topic/Key IDL declarations.
 
     This intentionally does NOT interpret PDF semantics, infer a complete DDS
@@ -124,6 +153,9 @@ def inspect(archive: Path, original_icd: Path, *,
             qos.get("crossTopicOrderingGuaranteed") is not False):
         raise SourceError("unsupported or broadened pinned collection QoS minimum")
 
+    reviewed_qos = _reviewed_qos_minimum(
+        scoped_qos, declared["serviceId"], observed["collectionElement"]["idlType"], qos
+    )
     sample = (
         _reference_xml(rti_reference_xml, pins["rtiExampleQosXmlSha256"])
         if rti_reference_xml is not None else None
@@ -147,6 +179,7 @@ def inspect(archive: Path, original_icd: Path, *,
         "icdEvidenceLocators": declared["icdEvidence"],
         "topicDeclarations": observed,
         "collectionElementQosMinimum": qos,
+        "existingReviewedQosMinimum": reviewed_qos,
         "rtiExampleQosReference": sample,
         "readiness": {
             "officialQosComplete": False,
@@ -173,11 +206,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--original-icd", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, default=PIN_MANIFEST)
     parser.add_argument("--rti-reference-xml", type=Path)
+    parser.add_argument("--reviewed-qos", type=Path, default=REVIEWED_QOS)
     parser.add_argument("--out", type=Path)
     args = parser.parse_args(argv)
     try:
         result = inspect(args.idl_zip, args.original_icd, manifest=args.manifest,
-                         rti_reference_xml=args.rti_reference_xml)
+                         rti_reference_xml=args.rti_reference_xml,
+                         scoped_qos=args.reviewed_qos)
         output = json.dumps(result, sort_keys=True, indent=2) + "\n"
         if args.out is not None:
             if (args.out.is_symlink() or args.out.exists() or

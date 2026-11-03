@@ -1,0 +1,62 @@
+name: UMAA Flow Protocol v1
+on:
+  push:
+    branches: [sdk/flow-control-v1-20261103]
+    paths:
+      - sdk/include/umaa/command_engine.hpp
+      - sdk/include/umaa/remote_command_monitor.hpp
+      - sdk/include/umaa/command_transport.hpp
+      - sdk/include/umaa/command_deadline.hpp
+      - sdk/include/umaa/sdk_v1.hpp
+      - sdk/include/umaa/component_command_provider.hpp
+      - sdk/include/umaa/remote_command_client.hpp
+      - sdk/tests/test_flow_protocol_v1.cpp
+      - sdk/CMakeLists.txt
+      - .github/workflows/sdk-flow-protocol-v1.yml
+  pull_request:
+    paths:
+      - sdk/include/umaa/command_engine.hpp
+      - sdk/include/umaa/remote_command_monitor.hpp
+      - sdk/include/umaa/command_transport.hpp
+      - sdk/include/umaa/command_deadline.hpp
+      - sdk/include/umaa/sdk_v1.hpp
+      - sdk/include/umaa/component_command_provider.hpp
+      - sdk/include/umaa/remote_command_client.hpp
+      - sdk/tests/test_flow_protocol_v1.cpp
+      - sdk/CMakeLists.txt
+      - .github/workflows/sdk-flow-protocol-v1.yml
+  workflow_dispatch:
+jobs:
+  flow-linux:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        env:
+          CXX: ${{ matrix.compiler }}
+        run: cmake -S sdk -B build/flow -G Ninja -DUMAA_BUILD_TESTS=ON
+      - name: Build all protocol regression targets
+        run: |
+          cmake --build build/flow --target \
+            umaa_flow_protocol_v1_test \
+            umaa_sdk_v1_core_test umaa_sdk_v1_bridge_test \
+            umaa_command_engine_test umaa_remote_command_monitor_test \
+            umaa_command_deadline_test umaa_command_transport_test \
+            umaa_command_identity_routing_test umaa_report_lifecycle_test \
+            umaa_report_transport_test
+      - name: Run protocol regressions
+        run: ctest --test-dir build/flow --output-on-failure -R '(umaa_flow_protocol_v1_test|umaa_sdk_v1_(core|bridge)_test|umaa_command_(engine|deadline|transport|identity_routing)_test|umaa_remote_command_monitor_test|umaa_report_(lifecycle|transport)_test)'
+  flow-windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S sdk -B build/flow -DUMAA_BUILD_TESTS=ON
+      - name: Build protocol regression targets
+        run: cmake --build build/flow --config Debug --target umaa_flow_protocol_v1_test umaa_sdk_v1_core_test umaa_sdk_v1_bridge_test umaa_command_engine_test umaa_remote_command_monitor_test umaa_command_deadline_test umaa_command_transport_test umaa_command_identity_routing_test umaa_report_lifecycle_test umaa_report_transport_test
+      - name: Run protocol regressions
+        run: ctest --test-dir build/flow -C Debug --output-on-failure -R '(umaa_flow_protocol_v1_test|umaa_sdk_v1_(core|bridge)_test|umaa_command_(engine|deadline|transport|identity_routing)_test|umaa_remote_command_monitor_test|umaa_report_(lifecycle|transport)_test)'

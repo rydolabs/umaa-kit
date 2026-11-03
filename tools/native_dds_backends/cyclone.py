@@ -34,3 +34,23 @@ def generate(root: Path, target: Path, closure: list[Path], output: Path,
         "cmakeFeatures": [],
         "cmakeProperties": {"C_STANDARD": "11"},
     }
+
+
+def type_probe(type_name: str, source: str, keys: list[str]) -> dict:
+    """Compiler-checked C identity and key FIELD EXISTENCE (not @key policy)."""
+    import re
+    if not re.fullmatch(r"[A-Za-z_]\w*(?:::[A-Za-z_]\w*)+", type_name):
+        raise ValueError("unsafe Cyclone native type identifier")
+    if any(not re.fullmatch(r"[A-Za-z_]\w*", key) for key in keys):
+        raise ValueError("unsafe Cyclone key field")
+    native = type_name.replace("::", "_")
+    header = Path(source).with_suffix(".h").as_posix()
+    lines = [
+        '#include "' + header + '"',
+        'typedef char umaa_native_type_present[(sizeof(' + native + ') > 0) ? 1 : -1];',
+    ]
+    for idx, key in enumerate(keys):
+        lines.append('typedef char umaa_native_field_' + str(idx) +
+                     '[(sizeof(((' + native + '*)0)->' + key +
+                     ') > 0) ? 1 : -1];')
+    return {"language": "C", "extension": ".c", "code": "\n".join(lines) + "\n"}

@@ -197,3 +197,18 @@ foreach(scenario IN ITEMS normal cancel update)
   set_tests_properties("umaa_cyclone_sdk_v1_runtime_${scenario}_real_wire"
     PROPERTIES TIMEOUT 90)
 endforeach()
+
+# True four-topic synthetic DDS: Element + Metadata + General + Special.
+# Unlike the earlier CollectionBatch fixture, logical collection changes are
+# split across independent DDS topics and verified by application timestamp.
+add_executable(umaa_cyclone_native_collection_cli "${SDK_ROOT}/tests/real_dds_native_collection_cli.cpp")
+target_compile_features(umaa_cyclone_native_collection_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_cyclone_native_collection_cli PRIVATE "${SDK_ROOT}/include" "${SDK_ROOT}/tests")
+target_link_libraries(umaa_cyclone_native_collection_cli PRIVATE UMAA::Runtime)
+foreach(shape IN ITEMS set list)
+  add_test(NAME "umaa_cyclone_native_${shape}_gs_real_wire"
+    COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_native_collection.py"
+      "$<TARGET_FILE:umaa_cyclone_native_collection_cli>" "$<TARGET_FILE:umaa_dds_cyclone_collection_demo>" "${shape}")
+  set_tests_properties("umaa_cyclone_native_${shape}_gs_real_wire"
+    PROPERTIES TIMEOUT 75)
+endforeach()

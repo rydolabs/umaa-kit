@@ -215,6 +215,76 @@ def resolve(yaml_path: Path, idl_path: Path | None = None,
     }
 
 
+def resolve_native(yaml_path: Path, *, type_sources: dict[str, str],
+                   generated_sources: dict[str, dict],
+                   fixture: bool = False) -> dict:
+    """Vendor-neutral ICD Contract IR from ACTUAL native TypeSupport evidence.
+
+    No Python IDL parser is imported or run here. This IR is suitable for
+    source-pinned build/codegen metadata but not an approved service runtime
+    binding: DDS compiler success cannot prove ICD normative QoS, @key
+    semantics or host payload conversions.
+    """
+    doc, yaml_digest = load_service(yaml_path)
+    service = doc["metadata"]["id"]
+    if fixture != service.startswith("Demo::"):
+        raise ContractIRError("invalid fixture mode for native ICD Contract IR")
+    topics = {}
+    for alias, binding in sorted(doc["spec"]["topics"].items()):
+        name = binding["idlType"]
+        source = type_sources.get(name)
+        if not source or source not in generated_sources:
+            raise ContractIRError("native TypeSupport source not compiled for " + name)
+        artifact = generated_sources[source]
+        if (artifact.get("format") != "UMAA-native-IDL-generator-v2" or
+            not artifact.get("nativeTypeSupportGenerated") or
+            artifact.get("source") != source or not artifact.get("backends") or
+            not artifact.get("sourceDependencies")):
+            raise ContractIRError("invalid native compiler evidence for " + name)
+        if not binding["ddsTopicName"] or not binding["qosProfileRef"]:
+            raise ContractIRError("unresolved native DDS Topic or QoS")
+        if not isinstance(binding["keyFields"], list):
+            raise ContractIRError("unresolved native Key fields")
+        topics[alias] = {
+            "idlType": name, "sourceFile": source,
+            "ddsTopicName": binding["ddsTopicName"], "role": binding["role"],
+            "direction": binding["direction"],
+            "qosProfileRef": binding["qosProfileRef"],
+            "declaredKeyFields": binding["keyFields"],
+            "nativeCompilerBackends": artifact["backends"],
+            "nativeTypeSourceSha256": artifact["inputSha256"],
+            "typeExistenceProbeGenerated": True,
+            "keyMemberProbeGenerated": True,
+            "keyAnnotationVerified": False,
+            "normativeQosVerifiedByCompiler": False,
+        }
+    return {
+        "irVersion": 2,
+        "mode": "native-compiler-evidence",
+        "serviceId": service,
+        "scope": "synthetic-fixture" if fixture else "official-source-reviewed",
+        "yamlSha256": yaml_digest,
+        "declaredIdlBundleSha256": doc["sources"]["idl"]["bundleSha256"],
+        "topics": topics,
+        "protocols": doc["spec"]["protocols"],
+        "collections": doc["spec"]["collections"],
+        "specializations": doc["spec"]["specializations"],
+        "operations": doc["spec"]["operations"],
+        "readiness": {
+            "nativeTypeSupportGenerated": True,
+            "nativeTypeProbesCompiled": False,
+            "nativeDdsBinding": False,
+            "componentRuntimeBound": False,
+            "officialConformanceClaim": False,
+            "blockers": [
+                "Key annotation and mandatory DDS QoS are not verified by compiler success",
+                "Vendor TypeSupport to SDK wire codec and native DDS adapter not generated",
+                "Runtime Provider/Consumer registration requires reviewed protocol mapping",
+            ],
+        },
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Inspect source-aware YAML+IDL Contract IR")
     parser.add_argument("--yaml", type=Path, required=True)

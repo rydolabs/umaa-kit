@@ -249,12 +249,25 @@ private:
     if(!s||!s->instance_key||!*s->instance_key)
       throw std::invalid_argument("Element missing DDS key");
     const std::string key=s->instance_key;
+    if(s->event_kind==UMAA_DDS_EVENT_UNREGISTER) {
+      // NO_WRITERS is NOT a confirmed deletion. Leave state unresolved.
+      return;
+    }
     if(s->event_kind==UMAA_DDS_EVENT_DISPOSE){
-      // The immediately preceding timed marker carries the application
-      // timestamp. An unmatched DDS Dispose cannot safely resurrect data.
-      if(!marked_disposed_.count(key))
-        throw std::invalid_argument("Element DDS Dispose without timestamped marker");
-      saw_dispose_=true;return;
+      // Some DDS stacks surface the instance as NOT_ALIVE_DISPOSED without
+      // delivering the preceding marker as a distinct valid_data sample.
+      // Accept a genuine DDS Dispose only for a previously observed key and
+      // permanently fence it against stale resurrection until trusted resync.
+      if(!marked_disposed_.count(key)) {
+        if(!observed_keys_.count(key))
+          throw std::invalid_argument("DDS Dispose for unknown Element key");
+        assembler_.dispose(key);
+        retired_keys_.insert(key);
+      }
+      saw_dispose_=true;
+      if(pending_metadata_&&assembler_.commit_count()>pending_commit_)
+        pending_metadata_=false;
+      return;
     }
     if(s->event_kind!=UMAA_DDS_EVENT_DATA)
       throw std::invalid_argument("unexpected Element DDS lifecycle");
@@ -265,10 +278,12 @@ private:
     if(timestamp<=0)throw std::invalid_argument("invalid Element timestamp");
     if(kind==2){
       rd.end();
-      if(!assembler_.dispose(key,timestamp))
+      if(!retired_keys_.count(key) && !assembler_.dispose(key,timestamp))
         throw std::invalid_argument("stale/duplicate Element tombstone");
       marked_disposed_.insert(key);
     }else if(kind==1){
+      if(retired_keys_.count(key))
+        throw std::invalid_argument("Element reappeared after unpaired DDS Dispose");
       const auto next=rd.str();
       const auto data=rd.bytes();
       rd.end();
@@ -277,6 +292,7 @@ private:
         throw std::invalid_argument("native Element codec mismatch");
       if(!assembler_.upsert({key,timestamp,std::move(value),next}))
         throw std::invalid_argument("stale/duplicate Element revision");
+      observed_keys_.insert(key);
       marked_disposed_.erase(key);
     }else throw std::invalid_argument("unsupported Element operation");
     if(pending_metadata_&&assembler_.commit_count()>pending_commit_)
@@ -309,6 +325,8 @@ private:
   std::string key_;
   umaa::CollectionAssembler<Value> assembler_;
   std::unordered_set<std::string> marked_disposed_;
+  std::unordered_set<std::string> observed_keys_;
+  std::unordered_set<std::string> retired_keys_;
   void* element_{},*metadata_{};
   std::string error_;
   std::uint64_t pending_commit_{};
@@ -425,7 +443,11 @@ private:
     catch(...){self->error_="unexpected Specialization exception";self->faulted_=true;}
   }
   void receive(const UmaaDdsSampleV1* s,bool is_general){
-    if(!s||s->event_kind!=UMAA_DDS_EVENT_DATA||!s->instance_key)
+    if(!s||!s->instance_key)
+      throw std::invalid_argument("missing specialization lifecycle key");
+    if(s->event_kind==UMAA_DDS_EVENT_UNREGISTER)
+      return; // DDS NO_WRITERS is not deletion, not a valid revision
+    if(s->event_kind!=UMAA_DDS_EVENT_DATA)
       throw std::invalid_argument("unsupported specialization lifecycle");
     native_wire::Reader rd(*s);
     if(rd.u8()!=1)throw std::invalid_argument("unsupported specialization version");

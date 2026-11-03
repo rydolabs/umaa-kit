@@ -89,6 +89,9 @@ public:
   std::vector<umaa::Event> consumer_liveliness_lost(Identifier source){
     return engine_.consumer_liveliness_lost(canonical_id(source));
   }
+  void consumer_liveliness_restored(Identifier source){
+    engine_.consumer_liveliness_restored(canonical_id(source));
+  }
   std::vector<umaa::Event> fail_unrecoverable(){return engine_.fail_unrecoverable();}
   std::size_t active_sessions() const {return engine_.size();}
 private:

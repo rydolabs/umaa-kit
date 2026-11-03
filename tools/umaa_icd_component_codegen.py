@@ -13,7 +13,6 @@ from pathlib import Path
 import re
 import sys
 
-from sdk.tools.umaa_codegen import parse_idl, render_types
 from tools import umaa_component_cli as cli
 from tools.umaa_contract_ir import resolve, ContractIRError
 
@@ -342,6 +341,9 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
     providers = [mapping[s["id"]] for s in doc["services"] if s["role"] == "provider"]
     if not providers:
         raise ContractIRError("consumer-only Component runtime is not implemented")
+    if not fixture:
+        raise ContractIRError("official/native IDL must use registered vendor compiler path")
+    from sdk.tools.umaa_codegen import parse_idl, render_types  # Demo:: fixture only
     types = parse_idl(idl_path.read_text(encoding="utf-8"))
     output.mkdir(parents=True, exist_ok=True)
     write_generated(output / "generated/types.hpp", render_types(types))
@@ -439,19 +441,52 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
     return summary
 
 
+def generate_native(manifest: Path, yaml_paths: list[Path], idl_root: Path,
+                    idl_bindings: dict[str, str], output: Path, *,
+                    backends: list[str] | None = None,
+                    fixture: bool = False,
+                    original_icd: Path | None = None,
+                    idl_archive: Path | None = None) -> dict:
+    """Unified ICD codegen API: native compiler plugins, never regex IDL parsing."""
+    from tools.native_component_codegen import generate as native_project
+    return native_project(manifest, yaml_paths, idl_root, idl_bindings, output,
+                          backends=backends, fixture=fixture,
+                          original_icd=original_icd, idl_archive=idl_archive)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Source-checked YAML+IDL Component v2 scaffold")
     p.add_argument("--manifest", type=Path, required=True)
     p.add_argument("--yaml", type=Path, action="append", required=True)
-    p.add_argument("--idl", type=Path, required=True)
+    p.add_argument("--idl", type=Path, help="legacy Demo:: fixture only")
+    p.add_argument("--idl-root", type=Path,
+                   help="source tree for native DDS compiler plugins")
+    p.add_argument("--idl-binding", action="append",
+                   help="explicit Type::Name=relative.idl source binding")
+    p.add_argument("--backend", action="append",
+                   help="registered compiler backend plugin; repeat as needed")
+    p.add_argument("--idl-archive", type=Path,
+                   help="SHA-pinned original official IDL ZIP")
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--original-icd", type=Path)
     p.add_argument("--fixture", action="store_true",
                    help="explicit Demo:: synthetic fixture; never certifies official UMAA")
     args = p.parse_args(argv)
     try:
-        result = generate(args.manifest, args.yaml, args.idl, args.out,
-                          fixture=args.fixture, original_icd=args.original_icd)
+        if args.idl_root or args.idl_binding or args.backend or args.idl_archive:
+            if not args.idl_root or not args.idl_binding or args.idl:
+                raise ContractIRError("native ICD codegen requires --idl-root and --idl-binding, no --idl")
+            from tools.native_component_codegen import _binding_map
+            result = generate_native(args.manifest, args.yaml, args.idl_root,
+                                     _binding_map(args.idl_binding), args.out,
+                                     backends=args.backend, fixture=args.fixture,
+                                     original_icd=args.original_icd,
+                                     idl_archive=args.idl_archive)
+        else:
+            if not args.fixture or not args.idl:
+                raise ContractIRError("legacy scalar parser requires explicit Demo:: --fixture and --idl")
+            result = generate(args.manifest, args.yaml, args.idl, args.out,
+                              fixture=True, original_icd=args.original_icd)
         print("ICD_COMPONENT_GENERATED: " + json.dumps(result, sort_keys=True))
         return 0
     except (OSError, ValueError, cli.ProjectError) as exc:

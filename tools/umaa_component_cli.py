@@ -330,6 +330,14 @@ def main(argv=None):
     g.add_argument("--original-icd", type=Path, help="source PDF/file for digest checking")
     g.add_argument("--fixture", action="store_true",
                    help="allow Demo:: synthetic fixture only")
+    g.add_argument("--idl-root", type=Path,
+                   help="native vendor compiler IDL tree; no Python IDL parser")
+    g.add_argument("--idl-binding", action="append",
+                   help="explicit Type::Name=relative.idl mapping; repeat by Topic type")
+    g.add_argument("--backend", action="append",
+                   help="registered DDS compiler plugin; omit for all installed")
+    g.add_argument("--idl-archive", type=Path,
+                   help="original SHA-pinned IDL ZIP for official source verification")
     b = commands.add_parser("build")
     b.add_argument("--project", type=Path, default=Path("."))
     b.add_argument("--sdk-prefix", required=True, type=Path)
@@ -356,13 +364,27 @@ def main(argv=None):
                 snapshot = contracts.read_snapshot(args.input)
                 print(json.dumps(contracts.validate_snapshot(snapshot), sort_keys=True))
         elif args.cmd == "generate":
-            if args.yaml or args.idl or args.original_icd or args.fixture:
+            if args.idl_root or args.idl_binding or args.backend or args.idl_archive:
+                if not args.yaml or not args.idl_root or not args.idl_binding or args.idl:
+                    raise ProjectError("native ICD codegen requires --yaml, --idl-root and explicit --idl-binding; no --idl")
+                from tools.umaa_icd_component_codegen import generate_native as native_project
+                from tools.native_component_codegen import _binding_map
+                print(json.dumps(native_project(args.project / MANIFEST,
+                     args.yaml, args.idl_root, _binding_map(args.idl_binding),
+                     args.project, backends=args.backend, fixture=args.fixture,
+                     original_icd=args.original_icd, idl_archive=args.idl_archive),
+                     sort_keys=True))
+            elif args.yaml or args.idl or args.original_icd or args.fixture:
+                # Old host-only scalar fixture generator is deliberately
+                # unavailable for official/native SDK generation.
+                if not args.fixture:
+                    raise ProjectError("official ICD generation requires native --idl-root and --idl-binding")
                 if not args.yaml or not args.idl:
-                    raise ProjectError("--yaml and --idl are both required for ICD generation")
+                    raise ProjectError("--yaml and --idl are required for legacy Demo:: fixture")
                 from tools.umaa_icd_component_codegen import generate as generate_icd
                 print(json.dumps(generate_icd(args.project / MANIFEST,
                      args.yaml, args.idl, args.project,
-                     fixture=args.fixture, original_icd=args.original_icd),
+                     fixture=True, original_icd=args.original_icd),
                      sort_keys=True))
             else:
                 generate(args.project)

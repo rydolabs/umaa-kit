@@ -1,28 +1,27 @@
 #include <iostream>
-#include <string>
 #if defined(_WIN32)
 #include <windows.h>
 int main(int argc,char** argv){
-  if(argc!=3)return 2;
-  for(int i=1;i<3;++i){
-    auto module=LoadLibraryA(argv[i]);
-    if(!module){std::cerr<<"Native TypeSupport DLL load failed: "<<argv[i]<<"\n";return 3;}
-    FreeLibrary(module);
+  if(argc<2)return 2;
+  for(int i=1;i<argc;++i){
+    auto library=LoadLibraryA(argv[i]);
+    if(!library){std::cerr<<"Native DDS TypeSupport DLL load failed: "<<argv[i]<<"\n";return 3;}
+    FreeLibrary(library);
   }
-  std::cout<<"NATIVE_VENDOR_TYPESUPPORT_LIBRARIES_LOADED\n";
+  std::cout<<"NATIVE_VENDOR_TYPESUPPORT_LIBRARIES_LOADED count="<<(argc-1)<<"\n";
   return 0;
 }
 #else
 #include <dlfcn.h>
 int main(int argc,char** argv){
-  if(argc!=3)return 2;
-  for(int i=1;i<3;++i){
-    auto module=dlopen(argv[i],RTLD_NOW|RTLD_LOCAL);
-    if(!module){std::cerr<<"Native TypeSupport SO load failed: "<<argv[i]
+  if(argc<2)return 2;
+  for(int i=1;i<argc;++i){
+    auto library=dlopen(argv[i],RTLD_NOW|RTLD_LOCAL);
+    if(!library){std::cerr<<"Native DDS TypeSupport SO load failed: "<<argv[i]
                         <<" "<<dlerror()<<"\n";return 3;}
-    dlclose(module);
+    dlclose(library);
   }
-  std::cout<<"NATIVE_VENDOR_TYPESUPPORT_LIBRARIES_LOADED\n";
+  std::cout<<"NATIVE_VENDOR_TYPESUPPORT_LIBRARIES_LOADED count="<<(argc-1)<<"\n";
   return 0;
 }
 #endif

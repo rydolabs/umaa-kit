@@ -1,10 +1,16 @@
 name: Native IDL compilers -> SDK TypeSupport (Cyclone/Fast DDS)
 on:
   push:
-    branches: [sdk/native-vendor-idl-codegen-20261103]
+    branches: [sdk/native-vendor-idl-codegen-20261103, sdk/pluggable-native-codegen-v1-20261103]
   pull_request:
     paths:
       - tools/native_dds_codegen.py
+      - tools/native_dds_backends/**
+      - tools/native_component_codegen.py
+      - tools/umaa_component_cli.py
+      - tools/umaa_contract_ir.py
+      - tools/umaa_icd_component_codegen.py
+      - sdk/tests/test_native_icd_component.py
       - sdk/tests/test_native_vendor_compilers.py
       - tests/fixtures/idl/native/**
       - tests/integration/native_compilers/**
@@ -94,3 +100,20 @@ jobs:
         run: |
           echo "UMAA_OFFICIAL_NATIVE_TYPESUPPORT_BUILD_VERIFIED"
           echo "Original official files and generated vendor code remain under RUNNER_TEMP."
+
+  native-icd-component:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      UMAA_NATIVE_REQUIRED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install verified YAML validation and genuine DDS IDL toolchains
+        run: |
+          python3 -m pip install --disable-pip-version-check PyYAML==6.0.2 jsonschema==4.23.0
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
+      - name: ICD YAML -> installed compiler plugins -> generated CMake -> real shared libraries
+        run: python3 -m unittest discover -s sdk/tests -p test_native_icd_component.py -v
+      - name: Preserve explicit legacy fixture regression
+        run: python3 -m unittest discover -s sdk/tests -p test_icd_contract_ir_codegen.py -v

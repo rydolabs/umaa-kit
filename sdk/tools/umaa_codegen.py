@@ -131,6 +131,8 @@ def render_types(types: dict) -> str:
 
 
 def generate(idl: pathlib.Path, catalog: pathlib.Path, service: str, output: pathlib.Path):
+    if not service.startswith("Demo::"):
+        raise SchemaError("legacy scalar IDL generator is Demo:: fixture only; use native backend registry")
     types = parse_idl(idl.read_text(encoding="utf-8"))
     item = load_service(catalog, service, types)
     short = service.split("::")[-1]

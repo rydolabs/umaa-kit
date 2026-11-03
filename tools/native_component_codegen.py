@@ -361,6 +361,54 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
         else:
             cmake.append("set_target_properties(" + stem +
                          " PROPERTIES C_STANDARD 11)")
+    if runtime_plugins:
+        # Generated CMake uses each provider's declarative TypeSupport
+        # requirements. It never branches on middleware vendor names.
+        cmake += [
+            "if(NOT UMAA_SDK_ROOT)",
+            '  message(FATAL_ERROR "UMAA_SDK_ROOT is required for native Runtime Adapter")',
+            "endif()",
+            'set(UMAA_BUILD_TESTS OFF CACHE BOOL "" FORCE)',
+            'add_subdirectory("' + d + '{UMAA_SDK_ROOT}" umaa-generated-sdk)',
+            'set(UMAA_NATIVE_RUNTIME_PLUGINS "")',
+        ]
+        for runtime in runtime_plugins:
+            target = runtime["target"]
+            cmake += [
+                "add_library(" + target + " MODULE " + runtime["source"] + ")",
+                "target_compile_features(" + target + " PRIVATE cxx_std_17)",
+                "target_include_directories(" + target + " PRIVATE " +
+                " ".join('"' + d + "{CMAKE_CURRENT_SOURCE_DIR}/" + p + '"'
+                         for p in runtime["includeDirs"]) + ' "' + d +
+                '{UMAA_SDK_ROOT}/include")',
+                "target_link_libraries(" + target + " PRIVATE " +
+                " ".join([runtime["nativeTarget"]] + runtime["libraries"]) + ")",
+                "list(APPEND UMAA_NATIVE_RUNTIME_PLUGINS " + target + ")",
+            ]
+        cmake += [
+            'add_library(umaa_native_device MODULE "' + d +
+            '{UMAA_SDK_ROOT}/examples/modules/vehicle_component.cpp")',
+            "target_compile_features(umaa_native_device PRIVATE cxx_std_17)",
+            'target_include_directories(umaa_native_device PRIVATE "' + d +
+            '{UMAA_SDK_ROOT}/include")',
+            'add_executable(umaa_native_report_cli "' + d +
+            '{UMAA_SDK_ROOT}/tests/real_dds_native_report_cli.cpp")',
+            "target_compile_features(umaa_native_report_cli PRIVATE cxx_std_17)",
+            'target_include_directories(umaa_native_report_cli PRIVATE "' + d +
+            '{CMAKE_CURRENT_SOURCE_DIR}")',
+            "target_link_libraries(umaa_native_report_cli PRIVATE UMAA::Runtime)",
+            "find_package(Python3 REQUIRED COMPONENTS Interpreter)",
+            "foreach(plugin IN LISTS UMAA_NATIVE_RUNTIME_PLUGINS)",
+            '  add_test(NAME "native_runtime_' + d + '{plugin}_real_wire"',
+            '    COMMAND "' + d + '{Python3_EXECUTABLE}" "' + d +
+            '{UMAA_SDK_ROOT}/tests/run_real_dds_backend.py"',
+            '    "$<TARGET_FILE:umaa_native_report_cli>"',
+            '    "$<TARGET_FILE:' + d + '{plugin}>"',
+            '    "$<TARGET_FILE:umaa_native_device>")',
+            '  set_tests_properties("native_runtime_' + d + '{plugin}_real_wire"',
+            "    PROPERTIES TIMEOUT 55)",
+            "endforeach()",
+        ]
     cmake += [
         "add_executable(umaa_native_contract_smoke tests/native_contract_smoke.cpp)",
         "target_compile_features(umaa_native_contract_smoke PRIVATE cxx_std_17)",
@@ -391,7 +439,8 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
                                generated_sources=by_source, fixture=fixture)
             for path in yaml_paths
         },
-        "nativeDdsBinding": False,
+        "nativeDdsBinding": bool(runtime_plugins),
+        "runtimeAdaptersGenerated": [x["backend"] for x in runtime_plugins],
         "componentRuntimeBound": False,
         "officialConformanceClaim": False,
         "blockers": [

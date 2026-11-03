@@ -93,6 +93,8 @@ def native_generate(root: Path, source: str, output: Path, *,
             # compiling duplicate .cxx translation units.
             for dep in closure:
                 mirrored = dest / dep.relative_to(root).parent
+                if mirrored == dest:
+                    continue  # flat synthetic IDL already has the right location
                 mirrored.mkdir(parents=True, exist_ok=True)
                 for header in dest.iterdir():
                     if (header.is_file() and header.name.startswith(dep.stem)

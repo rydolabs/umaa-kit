@@ -286,7 +286,8 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
             })
         header = [
             "#pragma once", "#include <cstdint>", "#include <cstring>",
-            "#include <cstddef>", '#include "umaa/sdk_v1_application.hpp"',
+            "#include <cstddef>", "#include <vector>",
+            '#include "umaa/sdk_v1_application.hpp"',
             "namespace umaa_native_runtime {",
             "struct ReportService {",
             "  static constexpr bool is_command = false;",
@@ -295,6 +296,11 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
             "  static constexpr const char* topic_name = " + _cxx(runtime_binding["topicName"]) + ";",
             "  static constexpr const char* qos_profile = " + _cxx(runtime_binding["qosProfile"]) + ";",
             "  struct Report { std::int32_t level_pct{}; };",
+            "  static std::vector<std::uint8_t> encode_report(const Report& value) {",
+            "    std::vector<std::uint8_t> bytes(sizeof(value.level_pct));",
+            "    std::memcpy(bytes.data(), &value.level_pct, bytes.size());",
+            "    return bytes;",
+            "  }",
             "  static bool decode_report(const std::uint8_t* p,std::size_t n,Report& out) {",
             "    if(!p || n!=sizeof(out.level_pct))return false;",
             "    std::memcpy(&out.level_pct,p,sizeof(out.level_pct));return true;",
@@ -315,6 +321,40 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
         ]
         _write(output / "generated/native_report_runtime.hpp",
                "\n".join(header) + "\n")
+        # Protocol registration is SDK-owned. Only user business logic is
+        # created once and intentionally preserved on subsequent generations.
+        user_file = output / "src/native_report_logic.hpp"
+        if user_file.is_symlink() or any(p.is_symlink() for p in user_file.parents):
+            raise ContractIRError("unsafe user business Handler path")
+        if not user_file.exists():
+            user_file.parent.mkdir(parents=True, exist_ok=True)
+            user_file.write_text(
+                '#pragma once\n#include "umaa/component.hpp"\n'
+                '#include "generated/native_report_runtime.hpp"\n'
+                'namespace user {\n'
+                'class NativeReportLogic final : public '
+                'umaa::ReportSource<umaa_native_runtime::ReportService> {\n'
+                'public:\n'
+                '  umaa_native_runtime::ReportService::Report read() override {\n'
+                '    return {80}; // DEMO ONLY: replace with actual sensor/business data\n'
+                '  }\n'
+                '};\n'
+                '} // namespace user\n', encoding="utf-8")
+        component_code = [
+            '#include "umaa/component.hpp"',
+            '#include "generated/native_report_runtime.hpp"',
+            '#include "src/native_report_logic.hpp"',
+            'namespace {',
+            'void register_services(umaa::Component& component) {',
+            '  static user::NativeReportLogic handler;',
+            '  component.provide<umaa_native_runtime::ReportService>(handler);',
+            '}',
+            '} // anonymous namespace',
+            'UMAA_EXPORT_COMPONENT_V2("native-generated-report", register_services)',
+        ]
+        _write(output / "generated/native_report_component.cpp",
+               "\n".join(component_code) + "\n")
+
     descriptors = ["#pragma once", "#include <cstddef>", "namespace umaa_native_contract {",
                    "struct Topic {const char* alias;const char* name;const char* idlType;"
                    "const char* keyFields;const char* qos;};"]

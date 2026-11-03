@@ -50,7 +50,7 @@ jobs:
             plugin="$PWD/build/four-$vendor/libumaa_dds_${vendor}_collection_demo.so"
             for shape in set list; do
               echo "4-topic vendor=$vendor Collection=$shape"
-              python3 sdk/tests/run_real_dds_collection.py "$exe" "$plugin" "$shape"
+              python3 sdk/tests/run_real_dds_specialization.py "$exe" "$plugin" "$shape"
             done
           done
           sha256sum "$exe"

@@ -20,6 +20,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_set>
+#include <type_traits>
 
 namespace umaa::sdk_v1 {
 namespace native_wire {

@@ -252,6 +252,56 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
             probe_includes = ["generated/native/" + idlh + "/" + backend + "/" + folder
                               for folder in result["nativeBuildSpecifications"][backend]["includeDirs"]]
             probe_jobs.append((stem, filename, probe["language"], probe_includes))
+    runtime_plugins = []
+    if runtime_binding is not None:
+        from tools.native_dds_backends._runtime_report import validate as validate_runtime
+        validate_runtime(runtime_binding)
+        rel = runtime_binding["idlSource"]
+        source_hash = _hash(rel.encode())[:16]
+        result = by_source[rel]
+        for backend in result["backends"]:
+            plugin = load_compiler_plugin(backend)
+            if not callable(getattr(plugin, "runtime_adapter", None)):
+                raise ContractIRError("DDS backend lacks native Runtime Adapter hook: " + backend)
+            output_info = plugin.runtime_adapter(runtime_binding)
+            if (not isinstance(output_info, dict) or
+                set(output_info) != {"source", "extension", "language"} or
+                output_info["extension"] != ".cpp" or
+                output_info["language"] != "CXX" or
+                not isinstance(output_info["source"], str) or not output_info["source"]):
+                raise ContractIRError("invalid native Runtime Adapter contract")
+            filename = "generated/native_runtime_" + backend + ".cpp"
+            _write(output / filename, output_info["source"])
+            spec = result["nativeBuildSpecifications"][backend]
+            runtime_plugins.append({
+                "backend": backend,
+                "source": filename,
+                "target": "umaa_native_report_" + backend,
+                "nativeTarget": "umaa_native_" + source_hash + "_" + backend + "_types",
+                "includeDirs": [
+                    "generated/native/" + source_hash + "/" + backend + "/" + directory
+                    for directory in spec["includeDirs"]
+                ],
+                "libraries": spec["cmakeLibraries"],
+            })
+        header = [
+            "#pragma once", "#include <cstdint>", "#include <cstring>",
+            "#include <cstddef>", "namespace umaa_native_runtime {",
+            "struct Report {",
+            "  static constexpr bool is_command = false;",
+            "  static constexpr const char* id = " + _cxx(runtime_binding["serviceId"]) + ";",
+            "  static constexpr const char* schema_id = " + _cxx(runtime_binding["schemaId"]) + ";",
+            "  static constexpr const char* topic_name = " + _cxx(runtime_binding["topicName"]) + ";",
+            "  static constexpr const char* qos_profile = " + _cxx(runtime_binding["qosProfile"]) + ";",
+            "  struct Report { std::int32_t level_pct{}; };",
+            "  static bool decode_report(const std::uint8_t* p,std::size_t n,Report& out) {",
+            "    if(!p || n!=sizeof(out.level_pct))return false;",
+            "    std::memcpy(&out.level_pct,p,sizeof(out.level_pct));return true;",
+            "  }",
+            "};", "} // namespace umaa_native_runtime",
+        ]
+        _write(output / "generated/native_report_runtime.hpp",
+               "\n".join(header) + "\n")
     descriptors = ["#pragma once", "#include <cstddef>", "namespace umaa_native_contract {",
                    "struct Topic {const char* alias;const char* name;const char* idlType;"
                    "const char* keyFields;const char* qos;};"]

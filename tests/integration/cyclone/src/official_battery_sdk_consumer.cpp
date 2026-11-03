@@ -38,7 +38,8 @@ int main() {
     umaa::BoundReportConsumer<double> consumer(transport);
     auto epoch = consumer.start();
     int phase = 0;
-    const int attempts = std::getenv("UMAA_NETEM_RECOVERY") ? 1600 : 250;
+    const int attempts = std::getenv("UMAA_NETEM_RECOVERY") ? 1600 :
+                         std::getenv("UMAA_NETEM_RETAIN_FINAL") ? 600 : 250;
     for (int attempt = 0; attempt < attempts && phase < 3; ++attempt) {
       const bool received = transport.poll(epoch,
           [&](const UMAA_EO_BatteryStatus_BatteryReportType& data,
@@ -64,7 +65,8 @@ int main() {
       });
       if (!received) dds_sleepfor(DDS_MSECS(25));
     }
-    if (phase != 3) throw std::runtime_error("Battery Report subscriber incomplete");
+    if (phase != 3) throw std::runtime_error(
+        "Battery Report subscriber incomplete phase=" + std::to_string(phase));
     consumer.shutdown();
     if (consumer.cache().size() != 0)
       throw std::runtime_error("unsubscribe cache not cleared");

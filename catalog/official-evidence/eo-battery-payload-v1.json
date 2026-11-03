@@ -188,8 +188,8 @@
     "DateTimeSeconds": {
       "source": "UMAA/Common/Measurement/Measurements.idl",
       "base": "long long",
-      "min": -9223372036854776000,
-      "max": 9223372036854776000
+      "min": "-9223372036854775807",
+      "max": "9223372036854775807"
     },
     "DateTimeNanoseconds": {
       "source": "UMAA/Common/Measurement/Measurements.idl",

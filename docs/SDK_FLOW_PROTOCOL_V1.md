@@ -24,6 +24,19 @@ has a backward-compatible, state-only overload and a **new reason-aware**
 reason/state combinations. Official bindings **must** supply the reason-bearing
 form; the older state-only form is strictly for synthetic/legacy callers.
 
+### Optional CommandAck subscription
+
+EO ICD 6.0 §5.1 explicitly allows a Consumer to subscribe to CommandAck
+**optionally**. `RemoteCommandMonitor` now supports
+`CommandAckPolicy::StatusOnly` (terminal CommandStatus can complete without
+an Ack sample/Dispose), as well as the original
+`CommandAckPolicy::Required` (legacy default). Typed
+`sdk_v1::CommandConsumer` exposes the same explicit policy. The Provider
+still publishes the Ack Topic as required; selecting StatusOnly changes
+**only the Consumer's observation contract**, not Provider behavior.
+A Status-only Consumer must never report terminal before receiving a
+valid terminal CommandStatus and must still fence stale/reordered timestamps.
+
 ### DDS peer liveliness
 
 For a trusted DDS Consumer-loss notification:

@@ -29,8 +29,8 @@ jobs:
       - name: Install compatible modern Fast DDS 3 + Fast DDS-Gen 4 and build tools
         run: |
           apt-get update -qq
-          apt-get install -y --no-install-recommends \\
-            git curl ca-certificates cmake g++ make python3 \\
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates cmake g++ make python3 \
             libfastdds-dev libfastcdr-dev fastddsgen
           fastddsgen -version || true
       - uses: actions/checkout@v4

@@ -176,6 +176,7 @@ def native_generate(root: Path, source: str, output: Path, *,
             for backend, spec in specifications.items()
         },
         "nativeTargets": ["umaa_native_" + backend + "_types" for backend in plugins],
+        "nativeBuildSpecifications": specifications,
         "nativeTypeSupportGenerated": True,
         "nativeDdsBinding": False,
         "serviceQosVerified": False,

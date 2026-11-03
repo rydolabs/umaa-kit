@@ -20,7 +20,7 @@ from tools.native_dds_backends import discover, load
 from tools.official_idl_compile import collect
 
 _SAFE_ID = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
-_SAFE_CMAKE = re.compile(r"^[A-Za-z0-9_:.-+=/ ]+$")
+_SAFE_CMAKE = re.compile(r"^[A-Za-z0-9_:.+=/ -]+$")
 
 
 def sha256(path: Path) -> str:

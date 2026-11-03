@@ -138,6 +138,25 @@ int main(){
   assert(wired.sessions()==0);
   device.allow_cancel=true;
 
+  // Restoration authenticates *new* commands only. Previously orphaned
+  // device work cannot be updated into a duplicate hardware side effect.
+  Device orphan_device;Sink orphan_sink;
+  BoundCommandProvider<P> orphan("target",orphan_device,orphan_sink);
+  orphan.receive({"reconnect","target","old-session",10},{10});
+  orphan_device.allow_cancel=false;
+  auto orphaned=orphan.consumer_liveliness_lost("reconnect");
+  assert(orphaned.size()==1&&orphan.sessions()==1);
+  orphan.consumer_liveliness_restored("reconnect");
+  auto stale_update=orphan.receive({"reconnect","target","old-session",11},{11});
+  assert(stale_update.size()==1&&stale_update[0].detail=="ORPHANED_COMMAND");
+  assert(orphan_device.executions==1);
+  auto fresh=orphan.receive({"reconnect","target","new-session",12},{12});
+  assert(has_status(fresh,"EXECUTING")&&orphan_device.executions==2);
+  orphan_device.allow_cancel=true;
+  auto resolved_orphans=orphan.consumer_liveliness_lost("reconnect");
+  assert(count_kind(resolved_orphans,Event::Kind::DisposeAck)==2);
+  assert(orphan.sessions()==0);
+
   // Unknown DDS status delivery permanently faults a transport. Never retry
   // a potentially side-effecting Status/Ack/Dispose sequence automatically.
   Sink bad_sink;BoundCommandProvider<P> bad("target",device,bad_sink);

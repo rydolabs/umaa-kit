@@ -17,17 +17,23 @@ permissions:
 jobs:
   official-battery-fastdds-wire:
     runs-on: ubuntu-24.04
+    # The GitHub host's Ubuntu 24.04 Fast DDS-Gen 2.3 silently drops @optional.
+    # A matching modern Fast DDS 3 + Fast DDS-Gen 4 toolchain is required.
+    container: ubuntu:26.04
     timeout-minutes: 35
     env:
       UMAA_ORIGINAL_ZIP_SHA256: 15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08
       UMAA_ORIGINAL_ZIP_URL: https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl-with-exp-services.zip
       UMAA_ORIGINAL_BATTERY_IDL_SHA256: 39a2c920cfaba9afc3c15c4c12f5d4470911ab8b7c197c9e27b08284e54b713c
     steps:
-      - uses: actions/checkout@v4
-      - name: Install authentic Fast DDS / Fast DDS-Gen native toolchain
+      - name: Install compatible modern Fast DDS 3 + Fast DDS-Gen 4 and build tools
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y libfastrtps-dev libfastcdr-dev fastddsgen
+          apt-get update -qq
+          apt-get install -y --no-install-recommends \\
+            git curl ca-certificates cmake g++ make python3 \\
+            libfastdds-dev libfastcdr-dev fastddsgen
+          fastddsgen -version || true
+      - uses: actions/checkout@v4
 
       - name: Download and authenticate AUVSI 594-IDL ZIP outside repository
         shell: bash

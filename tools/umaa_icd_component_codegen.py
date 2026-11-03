@@ -138,6 +138,60 @@ def render_trait(ir: dict) -> str:
     return "\n".join(lines)
 
 
+def render_sdk_v1_traits(irs: list[dict]) -> str:
+    """C++17 ServiceTraits metadata for explicitly resolved Command/Report IR.
+
+    The generated WireService is the *host-only* Component codec, not a
+    native DDS TypeSupport. Collection/specialization IR is rejected upstream.
+    """
+    lines = [
+        '#pragma once',
+        '#include "generated/service_contracts.hpp"',
+        '#include "umaa/sdk_v1_core.hpp"',
+        'namespace umaa { namespace sdk_v1 {',
+    ]
+    for ir in irs:
+        name = identifier(ir["serviceId"])
+        kind, _, _, _ = service_type(ir)
+        flow = ("CommandResponse" if kind == "Command" else
+                "QuerylessRequestReply")
+        service_kind = "Control" if kind == "Command" else "Status"
+        lines.extend([
+            f"template<> struct ServiceTraits<::generated::{name}> {{",
+            f"  using WireService = ::generated::{name};",
+            f"  using {kind} = typename WireService::{kind};",
+            "  inline static constexpr ServiceDescriptor descriptor{",
+            f'    {cpp_literal(ir["serviceId"])},',
+            "    WireService::schema_id,",
+            f"    FlowKind::{flow},ServiceKind::{service_kind},",
+            "    CollectionShape::None,false};",
+            "};",
+        ])
+    lines += ["}} // namespace umaa::sdk_v1", ""]
+    return "\n".join(lines)
+
+
+def render_sdk_v1_smoke(irs: list[dict]) -> str:
+    lines = [
+        '#include "generated/sdk_v1_traits.hpp"',
+        '#include "umaa/sdk_v1.hpp"',
+        '#include <string_view>',
+        'int main(){',
+    ]
+    for i, ir in enumerate(irs):
+        name = identifier(ir["serviceId"])
+        kind, _, _, _ = service_type(ir)
+        expected = "CommandResponse" if kind == "Command" else "QuerylessRequestReply"
+        lines += [
+            f"  const auto& d{i}=umaa::sdk_v1::descriptor<::generated::{name}>();",
+            f"  if(d{i}.id!=std::string_view({cpp_literal(ir['serviceId'])}))return {10+i};",
+            f"  if(d{i}.flow!=umaa::sdk_v1::FlowKind::{expected})return {30+i};",
+            f"  if(d{i}.schema_id!=::generated::{name}::schema_id)return {50+i};",
+        ]
+    lines += ["  return 0;", "}", ""]
+    return "\n".join(lines)
+
+
 def render_handler(ir: dict) -> str:
     name = identifier(ir["serviceId"])
     kind = service_type(ir)[0]
@@ -234,6 +288,8 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
     traits.extend(render_trait(ir) for ir in irs)
     traits += ["} // namespace generated", ""]
     write_generated(output / "generated/service_contracts.hpp", "\n".join(traits))
+    write_generated(output / "generated/sdk_v1_traits.hpp",
+                    render_sdk_v1_traits(irs))
     registration = [MARK.rstrip(), '#include "umaa/component.hpp"']
     for ir in providers:
         name = identifier(ir["serviceId"])
@@ -253,6 +309,8 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
                      f'UMAA_EXPORT_COMPONENT_V2("{doc["component"]["id"]}", register_services)', ""]
     write_generated(output / "generated/component_entry.cpp", "\n".join(registration))
     write_generated(output / "tests/codec_smoke.cpp", render_codec_smoke(irs))
+    write_generated(output / "tests/sdk_v1_traits_smoke.cpp",
+                    render_sdk_v1_smoke(irs))
     expected = [f'  if (services[{i}].service != "{ir["serviceId"]}") return {10+i};'
                 for i, ir in enumerate(providers)]
     smoke = ['#include "umaa/component_module.hpp"', "#include <string>",
@@ -277,6 +335,11 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
              "target_compile_features(contract_codec_smoke PRIVATE cxx_std_17)",
              f"target_include_directories(contract_codec_smoke PRIVATE {d}{{CMAKE_CURRENT_SOURCE_DIR}})",
              "add_test(NAME contract_codec_smoke COMMAND contract_codec_smoke)",
+             "add_executable(sdk_v1_traits_smoke tests/sdk_v1_traits_smoke.cpp)",
+             "target_compile_features(sdk_v1_traits_smoke PRIVATE cxx_std_17)",
+             f"target_include_directories(sdk_v1_traits_smoke PRIVATE {d}{{CMAKE_CURRENT_SOURCE_DIR}})",
+             "target_link_libraries(sdk_v1_traits_smoke PRIVATE UMAA::Core)",
+             "add_test(NAME sdk_v1_traits_smoke COMMAND sdk_v1_traits_smoke)",
              "add_executable(component_abi_smoke tests/module_smoke.cpp)",
              "target_compile_features(component_abi_smoke PRIVATE cxx_std_17)",
              "target_link_libraries(component_abi_smoke PRIVATE UMAA::Core)",

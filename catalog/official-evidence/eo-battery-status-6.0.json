@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "kind": "SOURCE_PINNED_UNAPPROVED_BATTERY_STATUS_REFERENCE",
+  "serviceId": "UMAA::EO::BatteryStatus",
+  "release": "UMAA 6.0 public Distribution A 2024-06-06",
+  "sourcePins": {
+    "originalEoIcdSha256": "47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453",
+    "officialIdlArchiveSha256": "15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08",
+    "rtiExampleQosXmlSha256": "84d0b7d84dda6ffd8c4a9ece18d11df8ff865a67b6471a98391ec032485f628b"
+  },
+  "icdEvidence": [
+    {
+      "clause": "6.1.5",
+      "printedPage": 54,
+      "subject": "BatteryStatus request/reply operations"
+    },
+    {
+      "clause": "6.1.5.1",
+      "printedPage": 55,
+      "subject": "reportBattery and BatteryReportType Table 19"
+    },
+    {
+      "clause": "3.8.1",
+      "printedPage": 14,
+      "subject": "Large Collection element topic ordering minimum"
+    }
+  ],
+  "topics": {
+    "report": {
+      "idlType": "UMAA::EO::BatteryStatus::BatteryReportType",
+      "idlPath": "UMAA/EO/BatteryStatus/BatteryReportType.idl",
+      "idlSha256": "39a2c920cfaba9afc3c15c4c12f5d4470911ab8b7c197c9e27b08284e54b713c",
+      "ddsTopicName": "UMAA::EO::BatteryStatus::BatteryReportType",
+      "keyFields": [
+        "source"
+      ],
+      "keyFieldTypes": [
+        "UMAA::Common::IdentifierType"
+      ]
+    },
+    "collectionElement": {
+      "idlType": "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement",
+      "idlPath": "UMAA/EO/BatteryStatus/BatteryReportType.idl",
+      "idlSha256": "39a2c920cfaba9afc3c15c4c12f5d4470911ab8b7c197c9e27b08284e54b713c",
+      "ddsTopicName": "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement",
+      "keyFields": [
+        "listID",
+        "elementID"
+      ],
+      "keyFieldTypes": [
+        "UMAA::Common::Measurement::NumericGUID",
+        "UMAA::Common::Measurement::NumericGUID"
+      ]
+    }
+  },
+  "collectionElementQosMinimum": {
+    "icdClause": "3.8.1",
+    "printedPage": 14,
+    "appliesTo": "collectionElement",
+    "publisherAndSubscriber": true,
+    "presentationAccessScope": "TOPIC_PRESENTATION_QOS",
+    "orderedAccess": true,
+    "crossTopicOrderingGuaranteed": false
+  },
+  "qualification": {
+    "sourceHashAndIdlTopicKeyDeclarationReviewOnly": true,
+    "pdfClauseSemanticsMachineValidated": false,
+    "requiredFullQosVerified": false,
+    "officialComponentRoleReviewed": false,
+    "codecMappingReviewed": false,
+    "nativeRuntimeApproved": false,
+    "officialConformanceClaim": false,
+    "rtiXmlIsNormative": false
+  },
+  "referenceNote": "Only publicly derived hashes/identifiers and reviewed clause locations; no original IDL, ICD PDF or RTI XML contents are redistributed. RTI example XML has RTI Connext-only license terms; do not transplant it into Cyclone/Fast DDS."
+}

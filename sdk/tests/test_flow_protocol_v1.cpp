@@ -104,6 +104,12 @@ int main(){
   wired.command_disposed("beta","session-c");
   assert(wired.sessions()==0);
 
+  // A source loss remains fenced: a stale/new DDS Command from the
+  // same Consumer is not proof that its liveliness has recovered.
+  auto blocked=wired.receive({"alpha","target","blocked",9},{9});
+  assert(blocked.size()==1&&blocked[0].detail=="CONSUMER_NOT_ALIVE");
+  assert(wired.sessions()==0);
+  wired.consumer_liveliness_restored("alpha");
   // Hardware cancellation refusal must neither emit CANCELED nor erase
   // the session. A later confirmed cancel can complete it safely.
   wired.receive({"alpha","target","retry",10},{10});
@@ -111,6 +117,10 @@ int main(){
   lost=wired.consumer_liveliness_lost("alpha");
   assert(lost.size()==1&&lost[0].detail=="LIVELINESS_CANCEL_NOT_SAFE");
   assert(!has_status(lost,"CANCELED")&&wired.sessions()==1);
+  device.allow_cancel=true;
+  // An untrusted incoming sample cannot restart a stranded device session.
+  const auto late_new=wired.receive({"alpha","target","blocked2",11},{11});
+  assert(late_new.size()==1&&late_new[0].detail=="CONSUMER_NOT_ALIVE");
   device.allow_cancel=true;
   lost=wired.consumer_liveliness_lost("alpha");
   assert(has_status(lost,"CANCELED")&&wired.sessions()==0);

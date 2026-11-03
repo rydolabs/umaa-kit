@@ -349,7 +349,7 @@ def main(argv=None):
     t.add_argument("--project", type=Path, default=Path("."))
     args = parser.parse_args(argv)
     try:
-        if any((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)) and not all((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)):
+        if args.cmd == "generate" and any((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)) and not all((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)):
             raise ProjectError("all native Runtime Report fields required")
         if args.cmd == "new":
             new(args.name, args.output or Path(args.name))

@@ -20,7 +20,7 @@
 #include <string>
 #include <thread>
 
-namespace fd = eprosima::fastfd::dds;
+namespace fd = eprosima::fastdds::dds;
 namespace host = umaa::official_battery;
 namespace codec = umaa::fastfd::official_battery;
 

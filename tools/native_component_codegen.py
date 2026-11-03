@@ -19,7 +19,7 @@ from zipfile import BadZipFile, ZipFile
 from tools.native_dds_codegen import native_generate
 from tools.official_idl_compile import collect
 from tools.native_dds_backends import load as load_compiler_plugin
-from tools.umaa_contract_ir import load_service, ContractIRError
+from tools.umaa_contract_ir import load_service, resolve_native, ContractIRError
 from tools.umaa_component_cli import validate as validate_component
 from tools.validate_icd_yaml import ICDYamlError
 
@@ -302,6 +302,12 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
         "nativeIdlSources": sorted(set(expected.values())),
         "nativeTypeSupportGenerated": True,
         "nativeTypeProbesGenerated": len(probe_jobs),
+        "contractIR": {
+            load_service(path)[0]["metadata"]["id"]:
+                resolve_native(path, type_sources=expected,
+                               generated_sources=by_source, fixture=fixture)
+            for path in yaml_paths
+        },
         "nativeDdsBinding": False,
         "componentRuntimeBound": False,
         "officialConformanceClaim": False,

@@ -33,7 +33,9 @@ struct Writer {Domain* d;Topic* t;Publisher* pub;DataWriter* writer;};
 struct Reader {Domain* d;Topic* t;Subscriber* sub;DataReader* reader;UmaaDdsOnSampleV1 callback;void* user;std::unordered_map<std::string,std::string> instance_keys;};
 bool approved(const UmaaDdsTopicV1* topic){
  return topic && topic->topic_name && topic->schema_id && topic->qos_profile &&
- !std::strcmp(topic->topic_name,"demo/CollectionBatch") &&
+ (!std::strcmp(topic->topic_name,"demo/CollectionBatch") ||
+  !std::strcmp(topic->topic_name,"demo/CollectionElements") ||
+  !std::strcmp(topic->topic_name,"demo/CollectionMetadata")) &&
  !std::strcmp(topic->schema_id,"demo:collection-batch-v1") &&
  !std::strcmp(topic->qos_profile,"demo-reliable") &&
  !(topic->required_features & ~supported);
@@ -61,12 +63,16 @@ void close_domain(void* handle){
  (void)d->p->delete_contained_entities();
  (void)DomainParticipantFactory::get_instance()->delete_participant(d->p);delete d;
 }
-Topic* make_topic(Domain* d){
- return d->p->create_topic("Demo_EO_CollectionBatch",d->type.get_type_name(),TOPIC_QOS_DEFAULT);
+Topic* make_topic(Domain* d,const UmaaDdsTopicV1* binding){
+ const char* name=!std::strcmp(binding->topic_name,"demo/CollectionElements")?
+   "Demo_EO_CollectionElements":
+   (!std::strcmp(binding->topic_name,"demo/CollectionMetadata")?
+    "Demo_EO_CollectionMetadata":"Demo_EO_CollectionBatch");
+ return d->p->create_topic(name,d->type.get_type_name(),TOPIC_QOS_DEFAULT);
 }
 void* open_writer(void* handle,const UmaaDdsTopicV1* topic){
  if(!handle||!approved(topic))return nullptr;
- auto* d=static_cast<Domain*>(handle);auto* t=make_topic(d);if(!t)return nullptr;
+ auto* d=static_cast<Domain*>(handle);auto* t=make_topic(d,topic);if(!t)return nullptr;
  auto* pub=d->p->create_publisher(PUBLISHER_QOS_DEFAULT);
  if(!pub){(void)d->p->delete_topic(t);return nullptr;}
  DataWriterQos qos=DATAWRITER_QOS_DEFAULT;
@@ -97,7 +103,7 @@ void* open_writer(void* handle,const UmaaDdsTopicV1* topic){
 }
 void* open_reader(void* handle,const UmaaDdsTopicV1* topic,UmaaDdsOnSampleV1 cb,void* user){
  if(!handle||!approved(topic)||!cb)return nullptr;
- auto* d=static_cast<Domain*>(handle);auto* t=make_topic(d);if(!t)return nullptr;
+ auto* d=static_cast<Domain*>(handle);auto* t=make_topic(d,topic);if(!t)return nullptr;
  auto* sub=d->p->create_subscriber(SUBSCRIBER_QOS_DEFAULT);
  if(!sub){(void)d->p->delete_topic(t);return nullptr;}
  DataReaderQos qos=DATAREADER_QOS_DEFAULT;

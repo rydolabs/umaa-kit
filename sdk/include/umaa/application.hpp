@@ -5,6 +5,7 @@
 #include "umaa/remote_command_client.hpp"
 #include "umaa/dds_command_request_server.hpp"
 #include "umaa/dds_collection_endpoint.hpp"
+#include "umaa/dds_split_collection_endpoint.hpp"
 #include "umaa/internal/component_runtime.hpp"
 #include "umaa/internal/dds_backend.h"
 #include "umaa/internal/runtime_config.hpp" // vendor-neutral event kinds only
@@ -301,6 +302,23 @@ public:
     if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return std::make_unique<DdsCollectionConsumer<Service>>(
        backend_path_,domain_id_,instance_key,maximum);
+  }
+  // Two actual DDS topics, with SDK-owned application commit fence.
+  // This is NOT native DDS GROUP presentation; only explicit reviewed
+  // synthetic split bindings are supported by current vendor plugins.
+  template<class Service>
+  std::unique_ptr<DdsSplitCollectionPublisher<Service>> publish_split_collection(
+      const std::string& key,std::size_t maximum=1024) const {
+    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
+    return std::make_unique<DdsSplitCollectionPublisher<Service>>(
+      backend_path_,domain_id_,key,maximum);
+  }
+  template<class Service>
+  std::unique_ptr<DdsSplitCollectionConsumer<Service>> consume_split_collection(
+      const std::string& key,std::size_t maximum=1024) const {
+    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
+    return std::make_unique<DdsSplitCollectionConsumer<Service>>(
+      backend_path_,domain_id_,key,maximum);
   }
   // Typed remote Command provider: SDK owns DDS Request reader and
   // status/ack FSM. Device-specific business code is only provide<Service>().

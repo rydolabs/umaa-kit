@@ -211,3 +211,20 @@ foreach(shape IN ITEMS set list)
   set_tests_properties("umaa_cyclone_sdk_v1_collection_${shape}_real_wire"
     PROPERTIES TIMEOUT 45)
 endforeach()
+
+# Two independently matched real DDS Topics with application-level commit
+# fence (synthetic TypeSupport, NOT official UMAA GROUP coherent presentation).
+add_executable(umaa_cyclone_sdk_v1_split_collection_cli
+  "${SDK_ROOT}/tests/real_dds_sdk_v1_split_collection_cli.cpp")
+target_compile_features(umaa_cyclone_sdk_v1_split_collection_cli PRIVATE cxx_std_17)
+target_include_directories(umaa_cyclone_sdk_v1_split_collection_cli PRIVATE
+  "${SDK_ROOT}/include" "${SDK_ROOT}/tests")
+target_link_libraries(umaa_cyclone_sdk_v1_split_collection_cli PRIVATE UMAA::Runtime)
+foreach(shape IN ITEMS set list)
+  add_test(NAME "umaa_cyclone_sdk_v1_split_${shape}_real_wire"
+    COMMAND "${Python3_EXECUTABLE}" "${SDK_ROOT}/tests/run_real_dds_collection.py"
+      "$<TARGET_FILE:umaa_cyclone_sdk_v1_split_collection_cli>"
+      "$<TARGET_FILE:umaa_dds_cyclone_collection_demo>" "${shape}")
+  set_tests_properties("umaa_cyclone_sdk_v1_split_${shape}_real_wire"
+    PROPERTIES TIMEOUT 55)
+endforeach()

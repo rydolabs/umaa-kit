@@ -16,7 +16,9 @@ struct Reader {dds_entity_t reader,topic;UmaaDdsOnSampleV1 callback;void* user;}
 constexpr uint64_t caps=UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE;
 bool supported(const UmaaDdsTopicV1* t) {
  return t&&t->topic_name&&t->schema_id&&t->qos_profile&&
- std::strcmp(t->topic_name,"demo/CollectionBatch")==0&&
+ (std::strcmp(t->topic_name,"demo/CollectionBatch")==0 ||
+  std::strcmp(t->topic_name,"demo/CollectionElements")==0 ||
+  std::strcmp(t->topic_name,"demo/CollectionMetadata")==0)&&
  std::strcmp(t->schema_id,"demo:collection-batch-v1")==0&&
  std::strcmp(t->qos_profile,"demo-reliable")==0&&
  !(t->required_features&~caps);
@@ -45,13 +47,17 @@ void close_domain(void* ptr) {
  if(!ptr)return;auto* d=static_cast<Domain*>(ptr);
  (void)dds_delete(d->participant);delete d;
 }
-dds_entity_t topic(Domain* d) {
+dds_entity_t topic(Domain* d,const UmaaDdsTopicV1* binding) {
+ const char* name=std::strcmp(binding->topic_name,"demo/CollectionElements")==0?
+   "Demo_EO_CollectionElements":
+   (std::strcmp(binding->topic_name,"demo/CollectionMetadata")==0?
+    "Demo_EO_CollectionMetadata":"Demo_EO_CollectionBatch");
  return dds_create_topic(d->participant,&Demo_EO_CollectionBatch_desc,
-                         "Demo_EO_CollectionBatch",nullptr,nullptr);
+                         name,nullptr,nullptr);
 }
 void* open_writer(void* ptr,const UmaaDdsTopicV1* t) {
  if(!ptr||!supported(t))return nullptr;
- auto* d=static_cast<Domain*>(ptr);auto id=topic(d);
+ auto* d=static_cast<Domain*>(ptr);auto id=topic(d,t);
  if(id<0)return nullptr;
  auto* q=qos();if(!q){(void)dds_delete(id);return nullptr;}
  auto w=dds_create_writer(d->participant,id,q,nullptr);dds_delete_qos(q);
@@ -70,7 +76,7 @@ void* open_writer(void* ptr,const UmaaDdsTopicV1* t) {
 }
 void* open_reader(void* ptr,const UmaaDdsTopicV1* t,UmaaDdsOnSampleV1 cb,void* user) {
  if(!ptr||!supported(t)||!cb)return nullptr;
- auto* d=static_cast<Domain*>(ptr);auto id=topic(d);
+ auto* d=static_cast<Domain*>(ptr);auto id=topic(d,t);
  if(id<0)return nullptr;
  auto* q=qos();if(!q){(void)dds_delete(id);return nullptr;}
  auto r=dds_create_reader(d->participant,id,q,nullptr);dds_delete_qos(q);

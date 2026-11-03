@@ -15,9 +15,14 @@
 #include <utility>
 namespace umaa {
 enum class RemoteCommandResult { Pending, Completed, Failed, Canceled };
+// EO ICD 6.0 Section 5.1: CommandAckReport subscription is OPTIONAL for a
+// Consumer. Preserve the original strict behavior for existing callers.
+enum class CommandAckPolicy { Required, StatusOnly };
 class RemoteCommandMonitor final {
 public:
-  explicit RemoteCommandMonitor(std::size_t limit=1024):limit_(limit) {
+  explicit RemoteCommandMonitor(std::size_t limit=1024,
+      CommandAckPolicy ack_policy=CommandAckPolicy::Required)
+      :limit_(limit),ack_policy_(ack_policy) {
     if(!limit)throw std::invalid_argument("zero command session limit");
   }
   void issue(const Identity& id) {
@@ -55,8 +60,10 @@ public:
     const auto it=sessions_.find(session);
     if(it==sessions_.end())throw std::out_of_range("unknown Command session");
     const auto& e=it->second;
-    return !e.faulted && !e.awaiting_update && e.acked && e.status &&
-           *e.status==State::EXECUTING && !e.status_disposed && !e.ack_disposed;
+    return !e.faulted && !e.awaiting_update &&
+           (ack_policy_==CommandAckPolicy::StatusOnly || e.acked) && e.status &&
+           *e.status==State::EXECUTING && !e.status_disposed &&
+           (ack_policy_==CommandAckPolicy::StatusOnly || !e.ack_disposed);
   }
   void begin_update(const std::string& session) {
     if(!ready_for_update(session))
@@ -73,7 +80,8 @@ public:
     const auto it=sessions_.find(session);
     if(it==sessions_.end())throw std::out_of_range("unknown command session");
     const Entry& e=it->second;
-    if(e.faulted || !e.acked || !e.status)return RemoteCommandResult::Pending;
+    if(e.faulted || (ack_policy_==CommandAckPolicy::Required && !e.acked) ||
+       !e.status)return RemoteCommandResult::Pending;
     switch(*e.status) {
       case State::COMPLETED:return RemoteCommandResult::Completed;
       case State::FAILED:return RemoteCommandResult::Failed;
@@ -98,13 +106,15 @@ public:
   bool release(const std::string& session) {
     auto it=sessions_.find(session);
     if(it==sessions_.end() || !it->second.status_disposed ||
-       !it->second.ack_disposed)return false;
+       (ack_policy_==CommandAckPolicy::Required &&
+        !it->second.ack_disposed))return false;
     // Never discard an otherwise healthy Pending session just because both
     // DDS instances disappeared: that would silently lose a device command.
     // Faulted sessions can be explicitly quarantined and released.
     const Entry& e=it->second;
-    if(!e.faulted && (!e.acked || !e.status || !terminal(*e.status)))
-      return false;
+    if(!e.faulted &&
+       ((ack_policy_==CommandAckPolicy::Required && !e.acked) ||
+        !e.status || !terminal(*e.status)))return false;
     sessions_.erase(it);return true;
   }
   // EO ICD 6.0 Section 5.1.4.5. The caller MUST Dispose each returned
@@ -176,6 +186,7 @@ private:
     return true;
   }
   std::size_t limit_;
+  CommandAckPolicy ack_policy_;
   std::unordered_map<std::string,Entry> sessions_;
 };
 } // namespace umaa

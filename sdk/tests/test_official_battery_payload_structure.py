@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
 from tools.official_icd_evidence import SourceError, sha
 from tools.official_battery_payload_structure import (
     DEFAULT_MANIFEST, DEFAULT_SOURCE_PINS, HostProjection, inspect, main,
+    validate_completed_list_snapshot,
 )
 
 
@@ -191,6 +192,62 @@ class BatteryPayloadStructureTest(unittest.TestCase):
                 model.validate(type_name, sample)
         with self.assertRaises(SourceError):
             model.validate("Demo::EO::BatteryReportType", self.report())
+
+    def test_completed_large_list_host_snapshot_is_not_dds_coherence_proof(self):
+        model = HostProjection(inspect(self.archive, self.spec_file, self.pins_file))
+        report, item = self.report(), self.element()
+        report["cellsListMetadata"]["updateElementTimestamp"] = item["elementTimestamp"]
+        done = validate_completed_list_snapshot(model, report, [item])
+        self.assertEqual([self.guid(9)], done["elementIDs"])
+        self.assertEqual([item["element"]], done["orderedElements"])
+        self.assertTrue(done["checkpointSeen"])
+        self.assertFalse(done["nativeDdsCoherenceProved"])
+
+        second = deepcopy(item)
+        second["elementID"] = self.guid(10)
+        second["element"]["voltage"] = 26.0
+        second["elementTimestamp"] = {"seconds": 1700000001, "nanoseconds": 10}
+        item["nextElementID"] = second["elementID"]
+        report["cellsListMetadata"]["size"] = 2
+        report["cellsListMetadata"]["updateElementID"] = second["elementID"]
+        report["cellsListMetadata"]["updateElementTimestamp"] = second["elementTimestamp"]
+        valid = validate_completed_list_snapshot(model, report, [second, item])
+        self.assertEqual([self.guid(9), self.guid(10)], valid["elementIDs"])
+
+        negative = ("metadata-size", "foreign-list", "duplicate", "dangling",
+                    "cycle", "missing-checkpoint", "timestamp-mismatch",
+                    "disposed-no-tombstone", "disconnected")
+        for case in negative:
+            rr, aa, bb = deepcopy(report), deepcopy(item), deepcopy(second)
+            if case == "metadata-size":
+                rr["cellsListMetadata"]["size"] = 3
+            elif case == "foreign-list":
+                bb["listID"] = self.guid(100)
+            elif case == "duplicate":
+                bb["elementID"] = aa["elementID"]
+            elif case == "dangling":
+                aa["nextElementID"] = self.guid(12)
+            elif case == "cycle":
+                bb["nextElementID"] = aa["elementID"]
+            elif case == "missing-checkpoint":
+                rr["cellsListMetadata"]["updateElementID"] = self.guid(77)
+            elif case == "timestamp-mismatch":
+                rr["cellsListMetadata"]["updateElementTimestamp"]["nanoseconds"] += 1
+            elif case == "disposed-no-tombstone":
+                del rr["cellsListMetadata"]["updateElementTimestamp"]
+            elif case == "disconnected":
+                del aa["nextElementID"]
+            with self.subTest(case=case), self.assertRaises(SourceError):
+                validate_completed_list_snapshot(model, rr, [aa, bb])
+
+        empty = self.report()
+        empty["cellsListMetadata"]["size"] = 0
+        empty["cellsListMetadata"]["updateElementID"] = self.guid(0)
+        state = validate_completed_list_snapshot(model, empty, [])
+        self.assertEqual([], state["elementIDs"])
+        empty["cellsListMetadata"]["updateElementID"] = self.guid(9)
+        with self.assertRaisesRegex(SourceError, "NIL initial checkpoint"):
+            validate_completed_list_snapshot(model, empty, [])
 
     def test_tampered_source_and_manifest_are_rejected(self):
         original = deepcopy(self.spec)

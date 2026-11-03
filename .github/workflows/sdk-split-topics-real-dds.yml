@@ -1,0 +1,60 @@
+name: SDK split Elements-Metadata real DDS
+on:
+  push:
+    branches: [sdk/split-topics-collection-v1-20261103]
+  pull_request:
+    paths:
+      - sdk/include/umaa/split_collection_joiner.hpp
+      - sdk/include/umaa/dds_split_collection_endpoint.hpp
+      - sdk/include/umaa/application.hpp
+      - sdk/include/umaa/sdk_v1_application.hpp
+      - sdk/tests/real_dds_sdk_v1_split_collection_cli.cpp
+      - sdk/tests/test_split_collection_joiner.cpp
+      - dds-backends/cyclone/**
+      - dds-backends/fastdds/**
+      - sdk/CMakeLists.txt
+      - .github/workflows/sdk-split-topics-real-dds.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded-joiner:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S sdk -B build/joiner -DUMAA_BUILD_TESTS=ON
+      - run: cmake --build build/joiner --config Release --target umaa_split_collection_joiner_test umaa_sdk_v1_specialized_collection_test
+      - run: ctest --test-dir build/joiner -C Release --output-on-failure -R 'umaa_(split_collection_joiner|sdk_v1_specialized_collection)_test'
+  same-binary-real-dds:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install vendor middleware and IDL tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
+      - name: Build vendor adapters and typed SDK
+        run: |
+          cmake -S dds-backends/cyclone -B build/split-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/split-cyclone --parallel 2
+          cmake -S dds-backends/fastdds -B build/split-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/split-fastdds --parallel 2
+      - name: Same executable, real separate Elements and Metadata DDS Topics
+        run: |
+          set -euo pipefail
+          exe="$PWD/build/split-cyclone/umaa_cyclone_sdk_v1_split_collection_cli"
+          test -f "$exe"
+          for vendor in cyclone fastdds; do
+            adapter="$PWD/build/split-$vendor/libumaa_dds_${vendor}_collection_demo.so"
+            for shape in set list; do
+              echo "Two-topic real DDS backend=$vendor shape=$shape"
+              python3 sdk/tests/run_real_dds_collection.py "$exe" "$adapter" "$shape"
+            done
+          done
+          sha256sum "$exe"

@@ -66,7 +66,7 @@ template<class Service> int execute(const std::string& mode,const std::string& b
                                  std::nullopt,list?"102":""});
    collection->flush(5000);
    specialization->flush(5000);
-   std::this_thread::sleep_for(750ms);
+   std::this_thread::sleep_for(2500ms);
    std::cout<<"NATIVE_PRODUCER shape="<<(list?"list":"set")
             <<" metadata_element_separate=1 general_special_separate=1\n";
    return 0;
@@ -76,7 +76,14 @@ template<class Service> int execute(const std::string& mode,const std::string& b
  std::uint64_t last_commit=0;
  const auto end=std::chrono::steady_clock::now()+18s;
  while(std::chrono::steady_clock::now()<end&&!(final&&saw_dispose)){
-   collection->poll(32);
+   try{collection->poll(32);}
+   catch(const std::exception& e) {
+     std::cerr<<"NATIVE_DEBUG last_commit="<<last_commit
+              <<" initial="<<initial<<" pending="<<pending
+              <<" revised="<<revised<<" final="<<final
+              <<" dispose="<<saw_dispose<<" reason="<<e.what()<<"\n";
+     throw;
+   }
    const auto current=collection->snapshot();
    const auto commit=collection->commits();
    if(commit>=2 && !current)pending=true;
@@ -91,7 +98,12 @@ template<class Service> int execute(const std::string& mode,const std::string& b
       current->at(0).general.value==3 &&
       current->at(0).specialization.code==33)final=true;
    saw_dispose=saw_dispose||collection->saw_element_dispose();
-   if(commit>last_commit)last_commit=commit;
+   if(commit>last_commit) {
+     last_commit=commit;
+     std::cerr<<"NATIVE_COMMIT="<<commit
+              <<" joined="<<(current?current->size():999)
+              <<" dispose="<<saw_dispose<<"\n";
+   }
    std::this_thread::sleep_for(15ms);
  }
  saw_dispose=saw_dispose||collection->saw_element_dispose();

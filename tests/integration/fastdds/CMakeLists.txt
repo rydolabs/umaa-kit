@@ -18,8 +18,19 @@ if(NOT ORIGINAL_SOURCES)
 endif()
 add_library(umaa_battery_fastdds_official_type_support STATIC ${ORIGINAL_SOURCES})
 target_compile_features(umaa_battery_fastdds_official_type_support PUBLIC cxx_std_17)
+# Fast DDS-Gen preserves some source-relative includes (for example,
+# IdentifierType.h -> Measurement/Measurements.h). Its backend plugin mirrors
+# generated headers below the source paths; add those generated directories
+# without ever adding or redistributing original IDL source directories.
+file(GLOB_RECURSE ORIGINAL_GENERATED_HEADERS CONFIGURE_DEPENDS "${GENERATED}/*.h")
+set(TYPE_SUPPORT_INCLUDE_DIRS "${GENERATED}")
+foreach(header IN LISTS ORIGINAL_GENERATED_HEADERS)
+  get_filename_component(header_dir "${header}" DIRECTORY)
+  list(APPEND TYPE_SUPPORT_INCLUDE_DIRS "${header_dir}")
+endforeach()
+list(REMOVE_DUPLICATES TYPE_SUPPORT_INCLUDE_DIRS)
 target_include_directories(umaa_battery_fastdds_official_type_support PUBLIC
-  "${GENERATED}")
+  ${TYPE_SUPPORT_INCLUDE_DIRS})
 target_link_libraries(umaa_battery_fastdds_official_type_support PUBLIC fastrtps fastcdr)
 
 add_executable(umaa_fastdds_official_battery_publisher

@@ -569,3 +569,12 @@ the complete PR verified.
 - **PR #49 new head native CI PENDING** at the time of this checkpoint; exact CI run/job, errors and outcomes must be checked and repaired. A green original-scope test does NOT constitute a full official UMAA service, Fast DDS official Runtime, reviewed per-Component QoS or conformance.
 - Still OPEN: Fast DDS native nested Battery mapping and independent E2E; complete cross-topic collection lifecycle including deletion/tombstones/recovery; report Provider business module binding, source GUID and actual Component Definition/Specification; full QoS & deployment; independent negative protocol cases and certification.
 
+
+
+### 2026-11-04 — isolated DDS netem regression investigation
+
+- On PR #49 snapshot `db21cb0931dd091a19ac4da3035031227f93edfa`, the dedicated **official nested Battery TypeSupport / independent C oracle job PASSED**, including positive data/Dispose and deliberate bad checkpoint rejection (run 41729227092). Most legacy jobs passed.
+- One existing `isolated-dds-wire` run (41729227031, job 126241899689) failed only on the **third** 1% packet-loss iteration of the older SDK scalar Battery Report reader: `Battery Report subscriber incomplete`. The preceding two impaired repetitions, independent real DDS tests and blackout recovery steps passed. It is NOT a failure of the new Battery codec job.
+- The original failing job was rerun individually to assess reproducibility; results require exact run-attempt checking.
+- Increased the old scalar official Report **test-only** impaired Writer final-Dispose retention from 1s to 3s and reader impairment poll budget from ~6.25s to ~15s, while still requiring two ordered data events, a keyed Dispose, cache removal and epoch safety. Clean/unimpaired settings unchanged; the receiver now reports the incomplete phase. This is a bounded test robustness adjustment, NOT an invented DDS or UMAA QoS requirement and NOT evidence that application-level Dispose ACK exists.
+- **Current HEAD regressions must be rerun at the new SHA before declaring this fix verified.** If errors persist, capture the exact phase, source and DDS reader info and quarantine the flaky netem case rather than weakening the oracle.

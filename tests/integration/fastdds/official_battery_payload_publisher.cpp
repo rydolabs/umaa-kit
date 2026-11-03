@@ -22,14 +22,14 @@
 
 namespace fd = eprosima::fastdds::dds;
 namespace host = umaa::official_battery;
-namespace codec = umaa::fastfd::official_battery;
+namespace codec = umaa::fastdds::official_battery;
 
 static host::Guid guid(uint8_t first) {
   host::Guid g{}; g[0] = first; return g;
 }
 
 static void ok(fd::ReturnCode_t result, const char* action) {
-  if (result != fd::ReturnCode_t::RETCODE_OK)
+  if (result != fd::RETCODE_OK)
     throw std::runtime_error(std::string(action) + " failed");
 }
 
@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
     ok(report_writer->dispose(&report, fd::HANDLE_NIL), "dispose Report");
     ok(element_writer->wait_for_acknowledgments(fd::Duration_t(5, 0)),
        "wait Cell ACK");
-    ok(report_writer->wait_for_acknowledgments(eprosima::fastrtps::Duration_t(5, 0)),
+    ok(report_writer->wait_for_acknowledgments(fd::Duration_t(5, 0)),
        "wait Report ACK");
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
     ok(participant->delete_contained_entities(), "delete DDS entities");

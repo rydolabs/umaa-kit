@@ -71,7 +71,8 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
              idl_bindings: dict[str, str], output: Path, *,
              backends: list[str] | None = None, fixture: bool = False,
              original_icd: Path | None = None,
-             idl_archive: Path | None = None) -> dict:
+             idl_archive: Path | None = None,
+             runtime_report: dict | None = None) -> dict:
     if not yaml_paths or output.is_symlink():
         raise ContractIRError("missing Service YAML or symlinked output")
     doc = validate_component(json.loads(manifest.read_text(encoding="utf-8")),
@@ -121,6 +122,38 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
                 raise ContractIRError(service_id + ": unresolved Operation " + operation)
     if set(idl_bindings) != set(expected):
         raise ContractIRError("unreferenced TypeSupport bindings prohibited")
+    # A native Runtime Adapter needs explicit service, Key, field, schema,
+    # Topic and QoS mapping. Never infer these from compiled TypeSupport.
+    # This first slice permits ONLY the synthetic BatteryStatus fixture.
+    runtime_binding = None
+    if runtime_report is not None:
+        if not fixture or len(items) != 1 or set(runtime_report) != {
+            "typeName", "keyField", "valueField", "schemaId"
+        }:
+            raise ContractIRError("runtime Report requires one synthetic fixture and complete codec")
+        service_id, (service, _) = next(iter(items.items()))
+        reports = [topic for topic in service["spec"]["topics"].values()
+                   if topic["role"] == "report"]
+        if (service_id != "Demo::EO::BatteryStatus" or
+            len(service["spec"]["topics"]) != 1 or len(reports) != 1):
+            raise ContractIRError("only reviewed synthetic BatteryStatus Report may bind")
+        topic = reports[0]
+        if (runtime_report["typeName"] != topic["idlType"] or
+            topic["keyFields"] != [runtime_report["keyField"]] or
+            topic["direction"] != "provider-to-consumer" or
+            not runtime_report["schemaId"]):
+            raise ContractIRError("runtime codec or Key differs from explicit ICD Topic")
+        runtime_binding = {
+            "typeName": runtime_report["typeName"],
+            "idlSource": expected[topic["idlType"]],
+            "keyField": runtime_report["keyField"],
+            "valueField": runtime_report["valueField"],
+            "schemaId": runtime_report["schemaId"],
+            "topicName": topic["ddsTopicName"],
+            "qosProfile": topic["qosProfileRef"],
+            "serviceId": service_id,
+        }
+
     if fixture:
         # Legacy synthetic fixture pins a single IDL file, not an archive.
         pins = {s["sources"]["idl"]["bundleSha256"] for s, _ in services}

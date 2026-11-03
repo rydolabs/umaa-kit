@@ -8,7 +8,7 @@ It must never modify user Component modules, `CommandEngine`,
 
 ## Steps
 
-1. Add `dds/vendors/<new-vendor>/` and keep SDK libraries, generated
+1. Add `dds-backends/<new-vendor>/` and keep SDK libraries, generated
    middleware headers, vendor QoS objects, DDS entities, and official
    TypeSupport in this adapter only. Keep `UMAA::Core` and business modules
    vendor-header-free.
@@ -42,7 +42,7 @@ It must never modify user Component modules, `CommandEngine`,
 
 ## Development targets and evidence
 
-- `dds/vendors/cyclone/CMakeLists.txt` and `fastdds/CMakeLists.txt`
+- `dds-backends/cyclone/CMakeLists.txt` and `dds-backends/fastdds/CMakeLists.txt`
   implement synthetic Report, Command and Set/List single-sample
   Collection plugins with real vendor TypeSupport.
 - `sdk/tests/real_dds_typed_command_server_cli.cpp`,

@@ -2,10 +2,10 @@
 
 ## Implemented (SDK subset)
 
-- `dds/cyclone/include/umaa/cyclone_sample_reader.hpp` owns a Cyclone C DDS
+- `dds-backends/cyclone/include/umaa/cyclone_sample_reader.hpp` owns a Cyclone C DDS
   Reader with explicit externally reviewed Topic, TypeSupport descriptor and
   QoS; it enforces subscription generations and fail-closed behavior.
-- `dds/cyclone/include/umaa/cyclone_command_reader.hpp` exposes the same
+- `dds-backends/cyclone/include/umaa/cyclone_command_reader.hpp` exposes the same
   reader for Command topics. Service hosts remain responsible for the actual
   on-wire keys, source/destination checks, QoS, and Command/Dispose mapping.
 - `cyclone_report_reader.hpp` delegates to the common sample Reader without

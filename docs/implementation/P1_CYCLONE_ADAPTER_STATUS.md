@@ -5,7 +5,7 @@
 Based on the local checkpoint `3d4b351` (which itself incorporates the handoff
 at upstream `89155aa4163f04d69585c4e1054dbbbd8c944c2d`):
 
-- `dds/cyclone/include/umaa/cyclone_command_transport.hpp` supplies a reusable,
+- `dds-backends/cyclone/include/umaa/cyclone_command_transport.hpp` supplies a reusable,
   fail-closed `CommandWriter<Payload,StatusSample,AckSample,Mapper>` implemented
   with actual `dds_write` and `dds_dispose` C API calls. The per-service mapper
   is required to supply exact reviewed instance keys, payload serialization
@@ -65,7 +65,7 @@ reaches a runner with pinned official input and vendor libraries.
 - **P1-5** Loss/recovery: existing handoff tests are preserved, but not rerun
   against modified Engine host with real DDS.
 - **P1-6** CI: SDK CTest includes the adapter stub regression across runners;
-  real-DDS netns/Windows workflows already match `dds/cyclone/**` edits but
+  real-DDS netns/Windows workflows already match `tests/integration/cyclone/**` edits but
   new real-wire runs have **not** completed for this checkpoint.
 
 Thus **P1 remains PARTIAL**, not accepted, and UMAA/RTI/K-MOSA conformance is

@@ -20,11 +20,11 @@ if(UMAA_ENABLE_CYCLONE_ADAPTER)
   set_target_properties(umaa_sdk_cyclone PROPERTIES EXPORT_NAME Cyclone)
   target_compile_features(umaa_sdk_cyclone INTERFACE cxx_std_17)
   target_include_directories(umaa_sdk_cyclone INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
   target_link_libraries(umaa_sdk_cyclone INTERFACE UMAA::Core CycloneDDS::ddsc)
   install(TARGETS umaa_sdk_cyclone EXPORT UMAASDKTargets)
-  install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include/"
+  install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include/"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   set(UMAA_CYCLONE_FIND_DEPENDENCY
     "include(CMakeFindDependencyMacro)\nfind_dependency(CycloneDDS CONFIG REQUIRED)")
@@ -39,7 +39,7 @@ if(UMAA_BUILD_TESTS)
   target_link_libraries(umaa_cyclone_service_context_test PRIVATE UMAA::Core)
   target_include_directories(umaa_cyclone_service_context_test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include")
   add_test(NAME umaa_cyclone_service_context_test COMMAND umaa_cyclone_service_context_test)
   add_executable(umaa_command_identity_routing_test tests/test_command_identity_routing.cpp)
   target_link_libraries(umaa_command_identity_routing_test PRIVATE UMAA::Core)
@@ -53,19 +53,19 @@ if(UMAA_BUILD_TESTS)
   target_link_libraries(umaa_cyclone_command_adapter_test PRIVATE UMAA::Core)
   target_include_directories(umaa_cyclone_command_adapter_test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include")
   add_test(NAME umaa_cyclone_command_adapter_test COMMAND umaa_cyclone_command_adapter_test)
   add_executable(umaa_cyclone_report_writer_test tests/test_cyclone_report_writer.cpp)
   target_link_libraries(umaa_cyclone_report_writer_test PRIVATE UMAA::Core)
   target_include_directories(umaa_cyclone_report_writer_test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include")
   add_test(NAME umaa_cyclone_report_writer_test COMMAND umaa_cyclone_report_writer_test)
   add_executable(umaa_cyclone_report_reader_test tests/test_cyclone_report_reader.cpp)
   target_link_libraries(umaa_cyclone_report_reader_test PRIVATE UMAA::Core)
   target_include_directories(umaa_cyclone_report_reader_test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include")
   add_test(NAME umaa_cyclone_report_reader_test COMMAND umaa_cyclone_report_reader_test)
   # Independent Command-topic reader fake-ABI tests. The official EngineControl
   # host separately exercises this adapter with real CycloneDDS/UMAA TypeSupport.
@@ -73,7 +73,7 @@ if(UMAA_BUILD_TESTS)
   target_link_libraries(umaa_cyclone_command_reader_test PRIVATE UMAA::Core)
   target_include_directories(umaa_cyclone_command_reader_test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include")
   add_test(NAME umaa_cyclone_command_reader_test COMMAND umaa_cyclone_command_reader_test)
   add_executable(umaa_command_deadline_test tests/test_command_deadline.cpp)
   target_link_libraries(umaa_command_deadline_test PRIVATE UMAA::Core)

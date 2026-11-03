@@ -17,7 +17,7 @@ No official UMAA conformance claim.
 
 ## Cyclone plugin vertical slice (after hosted Runner verification)
 
-`dds/vendors/cyclone/adapter.cpp` implements only `demo:battery-v1`.
+`dds-backends/cyclone/src/adapter.cpp` implements only `demo:battery-v1`.
 The separate-process smoke test sends a device module's synthetic Report
 through the Cyclone plugin. The **subscriber application** uses typed
 `Application::consume<BatteryStatus>().poll()/latest()`, observes a keyed

@@ -1,7 +1,10 @@
 // Prototype protocol engine extracted as a clean-room minimal implementation from
 // UMAA EO ICD v6.0 5.1 (NOT the official AUVSI SDK and NOT conformance certified).
 #pragma once
+#include <algorithm>
 #include <cstdint>
+#include <optional>
+#include <string_view>
 #include <functional>
 #include <stdexcept>
 #include <string>
@@ -18,6 +21,31 @@ struct Identity {
 };
 enum class State { ISSUED, COMMANDED, EXECUTING, COMPLETED, FAILED, CANCELED };
 enum class Outcome { Pending, Completed, Failed };
+
+// UMAA EO ICD 6.0 Figure 23: the transition reason is part of the
+// application protocol, not an optional DDS transport decoration.
+inline bool command_transition_allowed(std::optional<State> prior,State next,
+                                       std::string_view reason) {
+  if(!prior)return next==State::ISSUED && reason=="SUCCEEDED";
+  const State before=*prior;
+  if(before==State::COMPLETED||before==State::FAILED||before==State::CANCELED)return false;
+  if(next==State::ISSUED)return reason=="UPDATED";
+  if(next==State::CANCELED)return reason=="CANCELED";
+  if(next==State::FAILED) {
+    if(before==State::ISSUED)
+      return reason=="VALIDATION_FAILED"||reason=="RESOURCE_FAILED"||
+        reason=="INTERRUPTED"||reason=="TIMEOUT"||reason=="SERVICE_FAILED";
+    if(before==State::COMMANDED)
+      return reason=="RESOURCE_REJECTED"||reason=="INTERRUPTED"||
+        reason=="TIMEOUT"||reason=="SERVICE_FAILED";
+    return before==State::EXECUTING &&
+      (reason=="OBJECTIVE_FAILED"||reason=="RESOURCE_FAILED"||
+       reason=="INTERRUPTED"||reason=="TIMEOUT"||reason=="SERVICE_FAILED");
+  }
+  if(before==State::ISSUED)return next==State::COMMANDED&&reason=="SUCCEEDED";
+  if(before==State::COMMANDED)return next==State::EXECUTING&&reason=="SUCCEEDED";
+  return before==State::EXECUTING&&next==State::COMPLETED&&reason=="SUCCEEDED";
+}
 inline const char* to_string(State s) {
   switch (s) {
     case State::ISSUED: return "ISSUED";
@@ -154,6 +182,32 @@ public:
     return events;
   }
 
+  // EO ICD 6.0 Section 5.1.4.5: loss of consumer liveliness requires
+  // cancellation of all active commands from that source, followed by
+  // Status/Ack retirement. A device that cannot confirm safe cancellation
+  // remains tracked; never fabricate a terminal hardware outcome.
+  // Called only by a trusted DDS liveliness observer, not by a timer guess.
+  std::vector<Event> consumer_liveliness_lost(const std::string& source) {
+    std::vector<std::string> candidates;
+    for(const auto& pair:sessions_)
+      if(pair.second.identity.source==source && !terminal(pair.second.state))
+        candidates.push_back(pair.first);
+    std::sort(candidates.begin(),candidates.end());
+    std::vector<Event> events;
+    for(const auto& session:candidates) {
+      auto it=sessions_.find(session);
+      if(it==sessions_.end())continue;
+      if(!safe_cancel(it->second.identity,it->second.payload)) {
+        events.push_back({Event::Kind::Ignored,session,"LIVELINESS_CANCEL_NOT_SAFE",""});
+        continue;
+      }
+      transition(it->second,State::CANCELED,"CANCELED",events);
+      cleanup(session,events);
+      sessions_.erase(it);
+    }
+    return events;
+  }
+
   // Policy for persisted commands on provider startup: fail if cannot resume.
   // The bus adapter must enumerate persisted DDS samples and invoke this path.
   std::vector<Event> fail_unrecoverable() {
@@ -177,24 +231,8 @@ private:
   static bool terminal(State state) {
     return state == State::COMPLETED || state == State::FAILED || state == State::CANCELED;
   }
-  static bool valid(State before, State after, const std::string& reason) {
-    if (terminal(before)) return false;
-    if (after == State::ISSUED) return reason == "UPDATED";
-    if (after == State::CANCELED) return reason == "CANCELED";
-    if (after == State::FAILED) {
-      if (before == State::ISSUED)
-        return reason == "VALIDATION_FAILED" || reason == "RESOURCE_FAILED" ||
-          reason == "INTERRUPTED" || reason == "TIMEOUT" || reason == "SERVICE_FAILED";
-      if (before == State::COMMANDED)
-        return reason == "RESOURCE_REJECTED" || reason == "INTERRUPTED" ||
-          reason == "TIMEOUT" || reason == "SERVICE_FAILED";
-      return before == State::EXECUTING &&
-        (reason == "OBJECTIVE_FAILED" || reason == "RESOURCE_FAILED" ||
-         reason == "INTERRUPTED" || reason == "TIMEOUT" || reason == "SERVICE_FAILED");
-    }
-    if (before == State::ISSUED) return after == State::COMMANDED && reason == "SUCCEEDED";
-    if (before == State::COMMANDED) return after == State::EXECUTING && reason == "SUCCEEDED";
-    return before == State::EXECUTING && after == State::COMPLETED && reason == "SUCCEEDED";
+  static bool valid(State before,State after,const std::string& reason) {
+    return command_transition_allowed(before,after,reason);
   }
   static void transition(Session& s, State state, const std::string& reason,
                          std::vector<Event>& events) {

@@ -4,6 +4,10 @@ import shutil
 import subprocess
 
 
+def available(*, executable: str | None = None) -> bool:
+    return shutil.which(executable or "fastddsgen") is not None
+
+
 def generate(root: Path, target: Path, closure: list[Path], output: Path,
              *, executable: str | None = None) -> dict:
     program = executable or "fastddsgen"

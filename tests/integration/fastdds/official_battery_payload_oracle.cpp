@@ -17,7 +17,7 @@
 #include <string>
 #include <thread>
 
-namespace fd = eprosima::fastfd::dds;
+namespace fd = eprosima::fastdds::dds;
 using Report = UMAA::EO::BatteryStatus::BatteryReportType;
 using Element = UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement;
 

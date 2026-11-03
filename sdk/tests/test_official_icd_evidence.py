@@ -281,6 +281,32 @@ class SourceAuditTest(unittest.TestCase):
         self.assertEqual(report, json.loads(output.read_text()))
         self.assertEqual(2, main(args))
 
+    def test_report_candidate_integrates_pinned_battery_collection_evidence(self):
+        from tools.official_report_source_handoff import inspect as inspect_report
+        source, original, doc = self._candidate_inputs()
+        pins_file, pinned_original, example, _ = self._synthetic_battery_evidence()
+        original.write_bytes(pinned_original.read_bytes())
+        doc["sources"]["icd"]["originalSha256"] = sha(original.read_bytes())
+        source.write_text(yaml_text(doc), encoding="utf-8")
+        report = inspect_report(
+            self.zip_path, source, original, sha(self.zip_path.read_bytes()),
+            battery_pins=pins_file, rti_reference_xml=example,
+        )
+        attached = report["batterySourceEvidence"]
+        self.assertEqual(["source"], report["report"]["declaredKeyFields"])
+        self.assertEqual(["listID", "elementID"],
+                         attached["topicDeclarations"]["collectionElement"]["keyFields"])
+        self.assertTrue(attached["existingReviewedQosMinimum"]["reviewedScopedQosFileMatches"])
+        self.assertTrue(attached["rtiExampleQosReference"]["referenceOnly"])
+        self.assertFalse(report["readyForOfficialNativeRuntime"])
+        self.assertFalse(report["nativeDdsBinding"])
+        self.assertFalse(attached["readiness"]["officialConformanceClaim"])
+        with self.assertRaisesRegex(SourceError, "requires explicit Battery evidence"):
+            inspect_report(
+                self.zip_path, source, original, sha(self.zip_path.read_bytes()),
+                rti_reference_xml=example,
+            )
+
     def test_battery_real_source_evidence_fails_on_tampering_and_qos_scope(self):
         import copy
         import json

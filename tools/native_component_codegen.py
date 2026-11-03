@@ -198,10 +198,15 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
                      name + "::topicCount)return 4;" for name in names) +
            "\n  return 0;\n}\n")
     _write(output / "tests/native_loader_smoke.cpp",
-           '#include <iostream>\n#include <dlfcn.h>\n'
+           '#include <iostream>\n#if defined(_WIN32)\n#include <windows.h>\n'
+           'int main(int n,char** a){if(n<2)return 2;'
+           'for(int i=1;i<n;++i){auto p=LoadLibraryA(a[i]);'
+           'if(!p)return 3;FreeLibrary(p);}return 0;}\n'
+           '#else\n#include <dlfcn.h>\n'
            'int main(int n,char** a){if(n<2)return 2;'
            'for(int i=1;i<n;++i){void* p=dlopen(a[i],RTLD_NOW|RTLD_LOCAL);'
-           'if(!p){std::cerr<<dlerror();return 3;}dlclose(p);}return 0;}\n')
+           'if(!p){std::cerr<<dlerror();return 3;}dlclose(p);}return 0;}\n'
+           '#endif\n')
     d = "$"
     cmake = ["cmake_minimum_required(VERSION 3.20)",
              "project(UMAAICDNativeTypeSupport LANGUAGES C CXX)",
@@ -242,8 +247,15 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
             "Component runtime Provider/Consumer registration cannot be emitted safely without reviewed wire codecs",
         ],
     }
-    _write(output / "generated/native-generation.json",
-           json.dumps(summary, indent=2, sort_keys=True) + "\n", "# ")
+    metadata = output / "generated/native-generation.json"
+    if metadata.is_symlink() or any(p.is_symlink() for p in metadata.parents):
+        raise ContractIRError("unsafe native metadata destination")
+    if metadata.exists():
+        previous = json.loads(metadata.read_text(encoding="utf-8"))
+        if previous.get("generatedBy") != "native_component_codegen.py":
+            raise ContractIRError("refusing to replace user-owned native metadata")
+    metadata.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n",
+                        encoding="utf-8")
     return summary
 
 

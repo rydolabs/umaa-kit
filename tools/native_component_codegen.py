@@ -16,6 +16,7 @@ import re
 import sys
 
 from tools.native_dds_codegen import native_generate
+from tools.native_dds_backends import load as load_compiler_plugin
 from tools.umaa_contract_ir import load_service, ContractIRError
 from tools.umaa_component_cli import validate as validate_component
 from tools.validate_icd_yaml import ICDYamlError
@@ -167,6 +168,37 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
             renamed.append(new)
         _write(output / "generated" / ("native_" + rel + ".cmake"), script, CMAKE_MARK)
         includes.append(("generated/native_" + rel + ".cmake", renamed))
+    # Verify exact native C/C++ type names and key MEMBER presence by
+    # compiling provider-owned probes. This intentionally does not claim
+    # that a field was annotated @key in the original source, nor that QoS
+    # or host-native payload conversion has been reviewed.
+    probe_jobs = []
+    by_source = {result["source"]: result for result in source_results}
+    for typename, rel_source in sorted(expected.items()):
+        result = by_source[rel_source]
+        idlh = _hash(rel_source.encode())[:16]
+        typeh = _hash(typename.encode())[:12]
+        for backend in result["backends"]:
+            plugin = load_compiler_plugin(backend)
+            if not callable(getattr(plugin, "type_probe", None)):
+                raise ContractIRError("compiler backend lacks type_probe: " + backend)
+            keys = sorted({field for service, _ in services
+                           for topic in service["spec"]["topics"].values()
+                           if topic["idlType"] == typename
+                           for field in topic["keyFields"]})
+            probe = plugin.type_probe(typename, rel_source, keys)
+            if (not isinstance(probe, dict) or
+                set(probe) != {"language", "extension", "code"} or
+                probe["language"] not in ("C", "CXX") or
+                probe["extension"] not in (".c", ".cpp") or
+                not isinstance(probe["code"], str) or not probe["code"]):
+                raise ContractIRError("invalid provider native type probe")
+            stem = "native_probe_" + idlh + "_" + typeh + "_" + backend
+            filename = "tests/" + stem + probe["extension"]
+            _write(output / filename, probe["code"])
+            includes = ["generated/native/" + idlh + "/" + backend + "/" + folder
+                        for folder in result["nativeBuildSpecifications"][backend]["includeDirs"]]
+            probe_jobs.append((stem, filename, probe["language"], includes))
     descriptors = ["#pragma once", "#include <cstddef>", "namespace umaa_native_contract {",
                    "struct Topic {const char* alias;const char* name;const char* idlType;"
                    "const char* keyFields;const char* qos;};"]
@@ -215,6 +247,17 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
     for cmake_path, _ in includes:
         cmake += ["include(\"" + d + "{CMAKE_CURRENT_SOURCE_DIR}/" + cmake_path + "\")",
                   "list(APPEND UMAA_NATIVE_COMPONENT_TARGETS " + d + "{UMAA_NATIVE_TARGETS})"]
+    for stem, filename, language, dirs in probe_jobs:
+        cmake.append("add_library(" + stem + " OBJECT " + filename + ")")
+        cmake.append("target_include_directories(" + stem + " PRIVATE " +
+                     " ".join('"' + d + "{CMAKE_CURRENT_SOURCE_DIR}/" + v + '"'
+                              for v in dirs) + ")")
+        if language == "CXX":
+            cmake.append("target_compile_features(" + stem +
+                         " PRIVATE cxx_std_17)")
+        else:
+            cmake.append("set_target_properties(" + stem +
+                         " PROPERTIES C_STANDARD 11)")
     cmake += [
         "add_executable(umaa_native_contract_smoke tests/native_contract_smoke.cpp)",
         "target_compile_features(umaa_native_contract_smoke PRIVATE cxx_std_17)",
@@ -238,6 +281,7 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
         "nativeCompilerBackends": source_results[0]["backends"] if source_results else [],
         "nativeIdlSources": sorted(set(expected.values())),
         "nativeTypeSupportGenerated": True,
+        "nativeTypeProbesGenerated": len(probe_jobs),
         "nativeDdsBinding": False,
         "componentRuntimeBound": False,
         "officialConformanceClaim": False,

@@ -100,7 +100,10 @@ private:
 
 template<class Service> class CommandConsumer final {
 public:
-  explicit CommandConsumer(std::size_t max_sessions=1024):monitor_(max_sessions){
+  explicit CommandConsumer(
+      std::size_t max_sessions=1024,
+      umaa::CommandAckPolicy ack_policy=umaa::CommandAckPolicy::Required)
+      :monitor_(max_sessions,ack_policy){
     require_flow(descriptor<Service>(),FlowKind::CommandResponse);
   }
   void issue(const CommandIdentity& id){monitor_.issue(legacy_command_identity(id));}

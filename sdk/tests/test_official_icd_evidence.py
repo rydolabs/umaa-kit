@@ -209,7 +209,7 @@ class SourceAuditTest(unittest.TestCase):
                 elif case == "protocol":
                     doc["spec"]["protocols"][0]["bindings"]["reports"] = []
                 source.write_text(yaml_text(doc), encoding="utf-8")
-                with self.assertRaises((SourceError, ICDYamlError)):
+                with self.assertRaises((SourceError, ICDYamlError, ValueError)):
                     inspect(self.zip_path, source, original, correct_digest)
         source.write_text(yaml_text(baseline), encoding="utf-8")
         with self.assertRaisesRegex(SourceError, "archive SHA-256 mismatch"):

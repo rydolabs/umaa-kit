@@ -65,7 +65,7 @@ template<class S> int subscriber(const char* backend){
 template<class S> int publisher(const char* backend){
  try{
    auto sender=[&] {
-     umaa::Application app;
+     umaa::sdk_v1::RuntimeApplication app;
      app.use_backend(backend,46);
      return app.publish_collection<TypedService<S>>("17",8);
    }();

@@ -114,6 +114,12 @@ class NativeICDGenerationTests(unittest.TestCase):
         self.assertTrue(meta["nativeTypeSupportGenerated"])
         self.assertFalse(meta["nativeDdsBinding"])
         self.assertFalse(meta["componentRuntimeBound"])
+        contract=meta["contractIR"]["Demo::EO::BatteryStatus"]
+        self.assertEqual(2, contract["irVersion"])
+        self.assertTrue(contract["readiness"]["nativeTypeSupportGenerated"])
+        self.assertFalse(contract["readiness"]["nativeDdsBinding"])
+        self.assertFalse(contract["topics"]["report01"]["keyAnnotationVerified"])
+        self.assertEqual(2, meta["nativeTypeProbesGenerated"])
         self.assertEqual(["cyclone", "fastdds"], sorted(meta["nativeCompilerBackends"]))
         self.assertIn("runtime_binding_verified = false",
                       (self.project / "generated/native_service_contracts.hpp").read_text())

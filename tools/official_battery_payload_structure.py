@@ -297,6 +297,82 @@ class HostProjection:
         raise SourceError("unsupported scalar host base type")
 
 
+
+def validate_completed_list_snapshot(model: HostProjection, report: object,
+                                     elements: object) -> dict:
+    """Validate an EXTERNALLY ASSEMBLED stable Battery Cell list snapshot.
+
+    The caller must already have collected the samples and confirmed that
+    the correct update cycle's writer/reader events are available. This does
+    NOT implement DDS buffering, cross-topic ordering, Dispose/tombstones or
+    recovery. A deletion/Dispose update without a timestamp fails closed.
+    """
+    report_name = "UMAA::EO::BatteryStatus::BatteryReportType"
+    element_name = "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement"
+    top = model.validate(report_name, report)
+    if not isinstance(elements, list) or len(elements) > 100_000:
+        raise SourceError("expected bounded completed cell-element snapshot")
+    meta = top["cellsListMetadata"]
+    size = meta["size"]
+    if size != len(elements):
+        raise SourceError("Large List snapshot size does not match metadata")
+    indexed = {}
+    for original in elements:
+        item = model.validate(element_name, original)
+        if item["listID"] != meta["listID"]:
+            raise SourceError("Large List element belongs to a different listID")
+        key = item["elementID"]
+        if key in indexed:
+            raise SourceError("duplicate Large List elementID")
+        indexed[key] = item
+    nil_guid = "0" * 32
+    if size == 0:
+        # EO ICD 6.0 §3.8.5: empty initial collection uses updateElementID NIL.
+        if meta["updateElementID"] != nil_guid or "updateElementTimestamp" in meta:
+            raise SourceError("empty Large List requires NIL initial checkpoint")
+        return {
+            "listID": meta["listID"], "elementIDs": [], "orderedElements": [],
+            "checkpointSeen": True, "nativeDdsCoherenceProved": False,
+        }
+
+    # §3.8.2–3.8.4: the synchronization updateElementID AND timestamp
+    # must be observed; an absent timestamp may mean a DDS dispose, whose
+    # independent tombstone event is not represented in this host snapshot.
+    if "updateElementTimestamp" not in meta:
+        raise SourceError("Dispose/checkpoint without timestamp requires DDS tombstone evidence")
+    checkpoint = indexed.get(meta["updateElementID"])
+    if checkpoint is None or checkpoint["elementTimestamp"] != meta["updateElementTimestamp"]:
+        raise SourceError("Large List atomic update checkpoint ID/timestamp mismatch")
+
+    visited = set()
+    ordered = []
+    current = meta["startingElementID"]
+    for pos in range(size):
+        item = indexed.get(current)
+        if item is None:
+            raise SourceError("Large List broken nextElementID reference")
+        if current in visited:
+            raise SourceError("Large List linked-list cycle")
+        visited.add(current)
+        ordered.append(item)
+        nxt = item.get("nextElementID")
+        if pos == size - 1:
+            if nxt is not None:
+                raise SourceError("Large List chain continues beyond metadata size")
+        elif nxt is None:
+            raise SourceError("Large List ends before metadata size")
+        current = nxt
+    if len(visited) != len(indexed):
+        raise SourceError("Large List contains disconnected/stale elements")
+    return {
+        "listID": meta["listID"],
+        "elementIDs": [x["elementID"] for x in ordered],
+        "orderedElements": [x["element"] for x in ordered],
+        "checkpointSeen": True,
+        "nativeDdsCoherenceProved": False,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Source-checked Battery host structure; NEVER official DDS wire codec")
     parser.add_argument("--idl-zip", type=Path, required=True)

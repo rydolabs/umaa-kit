@@ -446,12 +446,14 @@ def generate_native(manifest: Path, yaml_paths: list[Path], idl_root: Path,
                     backends: list[str] | None = None,
                     fixture: bool = False,
                     original_icd: Path | None = None,
-                    idl_archive: Path | None = None) -> dict:
+                    idl_archive: Path | None = None,
+                    runtime_report: dict | None = None) -> dict:
     """Unified ICD codegen API: native compiler plugins, never regex IDL parsing."""
     from tools.native_component_codegen import generate as native_project
     return native_project(manifest, yaml_paths, idl_root, idl_bindings, output,
                           backends=backends, fixture=fixture,
-                          original_icd=original_icd, idl_archive=idl_archive)
+                          original_icd=original_icd, idl_archive=idl_archive,
+                          runtime_report=runtime_report)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -467,13 +469,19 @@ def main(argv: list[str] | None = None) -> int:
                    help="registered compiler backend plugin; repeat as needed")
     p.add_argument("--idl-archive", type=Path,
                    help="SHA-pinned original official IDL ZIP")
+    p.add_argument("--runtime-report")
+    p.add_argument("--runtime-key")
+    p.add_argument("--runtime-value")
+    p.add_argument("--runtime-schema")
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--original-icd", type=Path)
     p.add_argument("--fixture", action="store_true",
                    help="explicit Demo:: synthetic fixture; never certifies official UMAA")
     args = p.parse_args(argv)
     try:
-        if args.idl_root or args.idl_binding or args.backend or args.idl_archive:
+        if any((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)) and not all((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)):
+            raise ContractIRError("all native runtime codec fields required")
+        if args.idl_root or args.idl_binding or args.backend or args.idl_archive or args.runtime_report or args.runtime_key or args.runtime_value or args.runtime_schema:
             if not args.idl_root or not args.idl_binding or args.idl:
                 raise ContractIRError("native ICD codegen requires --idl-root and --idl-binding, no --idl")
             from tools.native_component_codegen import _binding_map
@@ -481,7 +489,13 @@ def main(argv: list[str] | None = None) -> int:
                                      _binding_map(args.idl_binding), args.out,
                                      backends=args.backend, fixture=args.fixture,
                                      original_icd=args.original_icd,
-                                     idl_archive=args.idl_archive)
+                                     idl_archive=args.idl_archive,
+                                     runtime_report=({
+                                        "typeName": args.runtime_report,
+                                        "keyField": args.runtime_key,
+                                        "valueField": args.runtime_value,
+                                        "schemaId": args.runtime_schema,
+                                     } if args.runtime_report else None))
         else:
             if not args.fixture or not args.idl:
                 raise ContractIRError("legacy scalar parser requires explicit Demo:: --fixture and --idl")

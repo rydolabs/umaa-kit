@@ -136,6 +136,88 @@ class SourceAuditTest(unittest.TestCase):
             with self.assertRaisesRegex(SourceError, "namespace"):
                 source_type(z, "UMAA::EO::BatteryStatus::BatteryReportType")
 
+    def _candidate_inputs(self):
+        from tools.umaa_contract_ir import load_service
+        source = self.yaml("BatteryStatus")
+        doc, _ = load_service(source)
+        original = self.root / "synthetic-original-icd.pdf"
+        original.write_bytes(b"synthetic exact-byte original, NOT a normative document")
+        doc["sources"]["icd"]["reference"]["kind"] = "official"
+        doc["sources"]["icd"]["originalSha256"] = sha(original.read_bytes())
+        doc["sources"]["idl"]["bundleSha256"] = sha(self.zip_path.read_bytes())
+        topic = doc["spec"]["topics"]["report01"]
+        topic["ddsTopicName"] = "UMAA::EO::BatteryStatus::BatteryReportType"
+        topic["keyFields"] = ["source"]
+        source.write_text(yaml_text(doc), encoding="utf-8")
+        return source, original, doc
+
+    def test_official_report_source_handoff_is_candidate_only(self):
+        from tools.official_report_source_handoff import inspect, main
+        source, original, doc = self._candidate_inputs()
+        digest = sha(self.zip_path.read_bytes())
+        result = inspect(self.zip_path, source, original, digest)
+        self.assertEqual("UNAPPROVED_OFFICIAL_REPORT_SOURCE_CANDIDATE", result["kind"])
+        self.assertEqual(["source"], result["report"]["declaredKeyFields"])
+        self.assertEqual("UMAA/EO/BatteryStatus/BatteryReportType.idl",
+                         result["source"]["idlMemberPath"])
+        self.assertEqual(sha(original.read_bytes()), result["source"]["originalIcdSha256"])
+        self.assertTrue(result["sourceAudit"]["allIdlImportsPresent"])
+        self.assertFalse(result["sourceAudit"]["normativeIcdSemanticsReviewed"])
+        self.assertFalse(result["readyForOfficialNativeRuntime"])
+        self.assertFalse(result["nativeDdsBinding"])
+        self.assertFalse(result["componentRuntimeBound"])
+        self.assertFalse(result["officialConformanceClaim"])
+        self.assertIn("queryBattery", result["unresolvedOperations"])
+        self.assertTrue(any("QoS" in s for s in result["blockers"]))
+        self.assertNotIn("synthetic exact-byte original", str(result))
+        output = self.root / "candidate.json"
+        self.assertEqual(0, main(["--zip", str(self.zip_path),
+                                  "--yaml", str(source),
+                                  "--original-icd", str(original),
+                                  "--expect-sha256", digest,
+                                  "--out", str(output)]))
+        self.assertEqual(result, __import__("json").loads(output.read_text()))
+        self.assertEqual(2, main(["--zip", str(self.zip_path),
+                                  "--yaml", str(source),
+                                  "--original-icd", str(original),
+                                  "--expect-sha256", digest,
+                                  "--out", str(output)]))
+
+    def test_official_report_candidate_fails_closed_on_forged_sources_and_keys(self):
+        from tools.official_report_source_handoff import inspect
+        source, original, baseline = self._candidate_inputs()
+        correct_digest = sha(self.zip_path.read_bytes())
+        for case in ("secondary", "icd-hash", "archive-hash", "topic", "key",
+                     "missing-key", "role", "protocol"):
+            with self.subTest(case=case):
+                from copy import deepcopy
+                doc = deepcopy(baseline)
+                if case == "secondary":
+                    doc["sources"]["icd"]["reference"]["kind"] = "secondary-transcription"
+                elif case == "icd-hash":
+                    doc["sources"]["icd"]["originalSha256"] = "0" * 64
+                elif case == "archive-hash":
+                    doc["sources"]["idl"]["bundleSha256"] = "0" * 64
+                elif case == "topic":
+                    doc["spec"]["topics"]["report01"]["ddsTopicName"] = "forged"
+                elif case == "key":
+                    doc["spec"]["topics"]["report01"]["keyFields"] = ["wrong"]
+                elif case == "missing-key":
+                    doc["spec"]["topics"]["report01"]["keyFields"] = None
+                elif case == "role":
+                    doc["spec"]["topics"]["report01"]["direction"] = "consumer-to-provider"
+                elif case == "protocol":
+                    doc["spec"]["protocols"][0]["bindings"]["reports"] = []
+                source.write_text(yaml_text(doc), encoding="utf-8")
+                with self.assertRaises((SourceError, ICDYamlError, ValueError)):
+                    inspect(self.zip_path, source, original, correct_digest)
+        source.write_text(yaml_text(baseline), encoding="utf-8")
+        with self.assertRaisesRegex(SourceError, "archive SHA-256 mismatch"):
+            inspect(self.zip_path, source, original, "f" * 64)
+        original.write_bytes(b"mutated original")
+        with self.assertRaisesRegex(SourceError, "original ICD SHA-256"):
+            inspect(self.zip_path, source, original, correct_digest)
+
     def test_source_checked_overlay_preserves_unreviewed_contract_and_blocks_overwrite(self):
         from tools.official_icd_overlay import produce
         from tools.umaa_contract_ir import load_service

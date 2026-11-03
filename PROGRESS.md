@@ -526,3 +526,13 @@ results and the final documentation SHA independently before declaring
 the complete PR verified.
 
 **Integration resolution (2026-10-30):** PR #18 Supervisor owner-release and post-close worker tests were reconciled with the SDK, catalog, CLI and Studio changes on main. This does not establish physical hardware reconciliation, production IPC security or formal UMAA conformance.
+
+
+## 2026-11-03 — official Report source-candidate handoff (Draft PR #46)
+
+- **Ancestry:** Draft PR #46 `feat/official-report-source-handoff-20261103` stacks on Draft PR #45 `safety/official-runtime-evidence-gate-20261103`, then #44. Do not merge, deploy or reinterpret source verification as release approval.
+- Added `tools/official_report_source_handoff.py`: require an external exact original ICD byte digest, pinned external official IDL ZIP, authored official-reference Service YAML, and independent ZIP/YAML pins. Reuse existing audited IDL declarations to verify a single queryless provider Report Topic and Key fields without copying source files or inferring normative QoS.
+- Output is deliberately `UNAPPROVED_OFFICIAL_REPORT_SOURCE_CANDIDATE` with source member digest, provenance and unresolved requirements; `readyForOfficialNativeRuntime=false` and `officialConformanceClaim=false` unconditionally. No official native DDS/SDK runtime adapter was generated.
+- Added synthetic-only negative regression against incorrect original/IDL SHA, forgery, missing Key, wrong direction/protocol, unauthorized secondary transcription, overwrite attempts. Existing synthetic Report E2E path remains untouched.
+- **Observed CI for code+documentation snapshot `1d28ce2b5e79bfa8c79bfbaadbde6d5a3a0cfd0d`: Ubuntu and Windows `source-audit` jobs both SUCCESS in [run 41656536440](https://github.com/rydolabs/umaa-kit/actions/runs/41656536440). Other applicable jobs were still running when this note was written; their final results and this note's later HEAD need independent verification.
+- **Blocking evidence:** original authoritative ICD clause interpretation, Component Definition roles/applicability, mandatory DDS QoS, complete keyed semantics, reviewed nested payload codec, full lifecycle/Collection semantics, independent official vendor E2E/negative oracles, source reviewer acceptance and conformance gates remain OPEN.

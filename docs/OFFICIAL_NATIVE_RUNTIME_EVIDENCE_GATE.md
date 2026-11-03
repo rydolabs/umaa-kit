@@ -31,3 +31,28 @@ For an explicitly selected Component and exact service, review and record all of
 - The next implementation should start from a fully reviewed, source-anchored *single* official Report contract and extend the existing backend interface, not remove the guard based on guessed metadata.
 
 No PR merge, release, or official conformance claim is authorized by this checkpoint.
+
+## Next increment — source-checked Report candidate handoff (2026-11-03)
+
+`tools/official_report_source_handoff.py` adds a **read-only source-evidence handoff** for one official queryless Report service. This does not replace `tools/official_icd_evidence.py` or permit the official native Runtime path. It reuses that source auditor rather than introducing a parallel IDL parser.
+
+- Requires a separately authored Service YAML in official-reference mode, an external original ICD file, an external official IDL ZIP, and an independently supplied expected archive SHA-256.
+- Checks the original ICD **byte hash** against the YAML source pin, and the ZIP bytes against both the YAML and CLI expected pin. It does not parse or semantically approve the original ICD.
+- Validates one provider-to-consumer Report Topic, the queryless subscription protocol, explicitly populated DDS Topic and Key fields, and their exact match to the archive's source declarations (including ZIP integrity/import checks).
+- Emits a source/provenance-only JSON candidate with the selected IDL member and digest, Key declarations, exact unresolved Operation list and remaining blockers. Original official files and generated TypeSupport are never included in the output.
+- Explicitly keeps `readyForOfficialNativeRuntime=false`, `nativeDdsBinding=false`, `componentRuntimeBound=false`, and `officialConformanceClaim=false` even if source declaration checks succeed. The IDL declaration scanner is **not** a full OMG IDL semantic/Key annotation compiler check. QoS or payload codecs cannot be approved by an archive hash alone.
+
+Example with **external, lawfully obtained** input files (do not add originals to git):
+
+```sh
+python3 -m tools.official_report_source_handoff \
+  --zip /private/official-idl.zip \
+  --yaml /private/authored/UMAA-Report.yaml \
+  --original-icd /private/original-ICD.pdf \
+  --expect-sha256 "$OFFICIAL_IDL_SHA256" \
+  --out /tmp/umaa-report-source-candidate.json
+```
+
+The candidate is an *inspection artifact*, not a Runtime binding approval. Source mismatches and malformed inputs are fatal before output. Existing generated baseline Service YAML files are intentionally not rewritten and remain unverified.
+
+Regression suite: `python3 -m unittest discover -s sdk/tests -p test_official_icd_evidence.py -v` runs on Ubuntu and Windows under the source-audit workflow. After its new exact-head checks complete, update `PROGRESS.md` with the observed SHA and job links; do not infer this branch's CI from PR #45.

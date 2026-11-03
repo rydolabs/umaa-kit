@@ -1,0 +1,101 @@
+name: Official UMAA Battery native host codec / Cyclone DDS wire (original source)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/official-battery-native-wire.yml'
+      - 'sdk/include/umaa/official_battery_host.hpp'
+      - 'dds-backends/cyclone/include/umaa/cyclone_official_battery_codec.hpp'
+      - 'tests/integration/cyclone/CMakeLists.txt'
+      - 'tests/integration/cyclone/src/official_battery_payload_publisher.cpp'
+      - 'simulator/dds/official_battery_payload_oracle.c'
+      - 'simulator/dds/run_battery_payload.py'
+      - 'tools/official_battery_payload_structure.py'
+      - 'catalog/official-evidence/eo-battery-payload-v1.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-battery-native-wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      UMAA_IDL_SHA256: 15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08
+      UMAA_IDL_URL: https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl-with-exp-services.zip
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install native Cyclone DDS compiler and runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev
+
+      - name: Authenticate exact original 594-IDL ZIP, never store it in Git
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 3 \
+            --connect-timeout 20 --max-time 120 "$UMAA_IDL_URL" \
+            --output "$RUNNER_TEMP/umaa-official-idl.zip"
+          printf '%s  %s\n' "$UMAA_IDL_SHA256" "$RUNNER_TEMP/umaa-official-idl.zip" \
+            | sha256sum --check
+
+      - name: Source-check all reviewed Battery nested payload shapes and IDL key declarations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m tools.official_battery_payload_structure \
+            --idl-zip "$RUNNER_TEMP/umaa-official-idl.zip" \
+            --out "$RUNNER_TEMP/verified-battery-shapes.json"
+          python3 - <<'PY'
+          import os, json
+          from pathlib import Path
+          j = json.loads((Path(os.environ['RUNNER_TEMP']) / 'verified-battery-shapes.json').read_text())
+          assert j['kind'] == 'SOURCE_CHECKED_UNAPPROVED_BATTERY_PAYLOAD_STRUCTURE'
+          assert len(j['verifiedStructs']) == 6 and len(j['verifiedScalarTypedefs']) == 9
+          assert not j['nativeDdsCodec'] and not j['officialRuntimeBinding']
+          print('OFFICIAL_BATTERY_SOURCE_CLOSURE_PASS')
+          PY
+
+      - name: Generate original Cyclone TypeSupport in ephemeral workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from tools.official_icd_evidence import inspected_zip
+          root = Path(os.environ['RUNNER_TEMP']) / 'official-battery-idl'
+          root.mkdir()
+          with inspected_zip(Path(os.environ['RUNNER_TEMP']) / 'umaa-official-idl.zip') as z:
+              assert z.testzip() is None
+              z.extractall(root)
+          PY
+          python3 tools/official_idl_compile.py \
+            --root "$RUNNER_TEMP/official-battery-idl" \
+            --out "$RUNNER_TEMP/official-battery-typesupport" \
+            --source UMAA/EO/BatteryStatus/BatteryReportType.idl
+
+      - name: Compile only official Battery host codec and independent C oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/native-battery-build" \
+            -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/official-battery-typesupport" \
+            -DCMAKE_BUILD_TYPE=Debug
+          cmake --build "$RUNNER_TEMP/native-battery-build" --parallel 2 \
+            --target umaa_official_battery_payload_publisher umaa_official_battery_payload_oracle
+
+      - name: Prove actual official nested Report/Cell DDS data and keyed Dispose, including negative oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          ctest --test-dir "$RUNNER_TEMP/native-battery-build" \
+            -R '^official_umaa_battery_payload_(wire|bad_checkpoint_rejected)$' \
+            --output-on-failure -V
+
+      - name: Scope and original-source handling
+        if: success()
+        run: |
+          echo "OFFICIAL_BATTERY_CYCLONE_TYPESUPPORT_AND_INDEPENDENT_WIRE_PASS"
+          echo "No official original source, generated TypeSupport, or RTI example is uploaded."
+          echo "This is not full QoS, cross-vendor parity, List transaction completeness, or UMAA conformance."

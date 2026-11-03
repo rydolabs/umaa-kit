@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -87,6 +88,10 @@ public:
     std::vector<Event> events;
     if (id.destination != provider_ || id.source.empty() || id.session.empty()) {
       events.push_back({Event::Kind::Ignored, id.session, "INVALID_ROUTING", ""});
+      return events;
+    }
+    if(lost_sources_.count(id.source)) {
+      events.push_back({Event::Kind::Ignored,id.session,"CONSUMER_NOT_ALIVE",""});
       return events;
     }
     auto it = sessions_.find(id.session);
@@ -188,6 +193,10 @@ public:
   // remains tracked; never fabricate a terminal hardware outcome.
   // Called only by a trusted DDS liveliness observer, not by a timer guess.
   std::vector<Event> consumer_liveliness_lost(const std::string& source) {
+    if(source.empty())throw std::invalid_argument("missing liveliness source");
+    // Fence even *new* incoming sessions until discovery confirms restoration.
+    // A stale/replayed DDS sample must not restart hardware after the loss.
+    lost_sources_.insert(source);
     std::vector<std::string> candidates;
     for(const auto& pair:sessions_)
       if(pair.second.identity.source==source && !terminal(pair.second.state))
@@ -206,6 +215,13 @@ public:
       sessions_.erase(it);
     }
     return events;
+  }
+
+  // Only a trusted DDS participant discovery/liveliness event may release
+  // this fence; an arriving Command sample is not restoration evidence.
+  void consumer_liveliness_restored(const std::string& source) {
+    if(source.empty())throw std::invalid_argument("missing liveliness source");
+    lost_sources_.erase(source);
   }
 
   // Policy for persisted commands on provider startup: fail if cannot resume.
@@ -267,5 +283,6 @@ private:
   std::string provider_;
   Handler<Payload>& handler_;
   std::unordered_map<std::string, Session> sessions_;
+  std::unordered_set<std::string> lost_sources_;
 };
 }  // namespace umaa

@@ -28,7 +28,11 @@ def sha256(path: Path) -> str:
 
 
 def _quote(value: str) -> str:
-    if not isinstance(value, str) or not _SAFE_CMAKE.fullmatch(value):
+    if not isinstance(value, str):
+        raise ValueError("unsafe CMake build token from DDS backend")
+    # CMake uses forward-slash paths on Windows as well as POSIX.
+    value = value.replace("\\", "/")
+    if not _SAFE_CMAKE.fullmatch(value):
         raise ValueError("unsafe CMake build token from DDS backend")
     return '"' + value + '"'
 

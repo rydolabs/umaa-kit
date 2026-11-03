@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import sys
 import tempfile
 import unittest
@@ -267,6 +268,8 @@ class SourceAuditTest(unittest.TestCase):
         self.assertTrue(report["rtiExampleQosReference"]["referenceOnly"])
         self.assertFalse(report["rtiExampleQosReference"]["officialQosApproval"])
         self.assertEqual("collectionElement", report["collectionElementQosMinimum"]["appliesTo"])
+        self.assertTrue(report["existingReviewedQosMinimum"]["reviewedScopedQosFileMatches"])
+        self.assertFalse(report["existingReviewedQosMinimum"]["fullServiceQosApproved"])
         self.assertFalse(any(report["readiness"].values()))
         self.assertNotIn("fake synthetic test bytes", str(report))
         self.assertIsNone(inspect(self.zip_path, original, manifest=path)["rtiExampleQosReference"])
@@ -315,6 +318,12 @@ class SourceAuditTest(unittest.TestCase):
         path.write_text(json.dumps(good), encoding="utf-8")
         with self.assertRaisesRegex(SourceError, "RTI example XML source digest"):
             inspect(self.zip_path, original, manifest=path, rti_reference_xml=example)
+        reviewed_qos = self.root / "altered-qos.yaml"
+        original_qos = (ROOT / "contracts/qos/umaa6/eo-large-collections.yaml").read_text()
+        reviewed_qos.write_text(original_qos.replace('presentationScope: "topic"',
+                                                       'presentationScope: "group"'))
+        with self.assertRaisesRegex(SourceError, "scoped collection-element QoS minimum drift"):
+            inspect(self.zip_path, original, manifest=path, scoped_qos=reviewed_qos)
         original.write_bytes(b"%PDF-1.4\naltered")
         with self.assertRaisesRegex(SourceError, "EO ICD PDF source digest"):
             inspect(self.zip_path, original, manifest=path)

@@ -21,8 +21,23 @@ target_link_libraries(umaa_native_idlc_types PRIVATE CycloneDDS::ddsc)
 set_target_properties(umaa_native_idlc_types PROPERTIES C_STANDARD 11)
 add_library(umaa_native_fastddsgen_types SHARED ${FAST_NATIVE})
 target_compile_features(umaa_native_fastddsgen_types PRIVATE cxx_std_17)
+# Fast DDS-Gen retains relative IDL include paths (sometimes relative to
+# the current include file's parent). Provide every generated header folder
+# and ancestor as a compiler search root; do NOT rewrite native C++ sources.
+set(FAST_NATIVE_ROOT "${UMAA_NATIVE_GENERATED_ROOT}/fastdds")
+set(FAST_NATIVE_INCLUDE_DIRS "${FAST_NATIVE_ROOT}")
+file(GLOB_RECURSE FAST_NATIVE_HEADERS CONFIGURE_DEPENDS
+  "${FAST_NATIVE_ROOT}/*.h" "${FAST_NATIVE_ROOT}/*.hpp")
+foreach(header IN LISTS FAST_NATIVE_HEADERS)
+  get_filename_component(dir "${header}" DIRECTORY)
+  while(NOT dir STREQUAL FAST_NATIVE_ROOT)
+    list(APPEND FAST_NATIVE_INCLUDE_DIRS "${dir}")
+    get_filename_component(dir "${dir}" DIRECTORY)
+  endwhile()
+endforeach()
+list(REMOVE_DUPLICATES FAST_NATIVE_INCLUDE_DIRS)
 target_include_directories(umaa_native_fastddsgen_types PRIVATE
-  "${UMAA_NATIVE_GENERATED_ROOT}/fastdds")
+  ${FAST_NATIVE_INCLUDE_DIRS})
 target_link_libraries(umaa_native_fastddsgen_types PRIVATE fastrtps fastcdr)
 if(UNIX AND NOT APPLE)
   target_link_options(umaa_native_idlc_types PRIVATE "LINKER:--no-undefined")

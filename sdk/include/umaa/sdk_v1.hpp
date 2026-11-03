@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -103,6 +104,11 @@ public:
   bool observe_status(Guid128 session,Identifier provider,umaa::State state,std::int64_t timestamp){
     return monitor_.status(session.str(),canonical_id(provider),state,timestamp);
   }
+  // Normative TypeBindings must include CommandStatusReason, not only State.
+  bool observe_status(Guid128 session,Identifier provider,umaa::State state,
+                      std::string_view reason,std::int64_t timestamp) {
+    return monitor_.status(session.str(),canonical_id(provider),state,reason,timestamp);
+  }
   bool observe_ack(Guid128 session,Identifier provider,std::int64_t timestamp){
     return monitor_.ack(session.str(),canonical_id(provider),timestamp);
   }
@@ -116,6 +122,15 @@ public:
     return monitor_.disposed_ack(session.str(),canonical_id(provider));
   }
   bool release(Guid128 session){return monitor_.release(session.str());}
+  // The host must Dispose each returned initiating DDS Command instance.
+  // These are cancellation actions, not a terminal hardware result.
+  std::vector<Guid128> provider_liveliness_lost(Identifier provider) {
+    auto sessions=monitor_.provider_liveliness_lost(canonical_id(provider));
+    std::vector<Guid128> ids;
+    ids.reserve(sessions.size());
+    for(const auto& session:sessions)ids.push_back(Guid128::parse(session));
+    return ids;
+  }
   void ambiguous_delivery(Guid128 session){monitor_.ambiguous_delivery(session.str());}
   bool needs_recovery(Guid128 session) const{return monitor_.needs_recovery(session.str());}
 private:

@@ -1,6 +1,7 @@
 // No DDS or original copyrighted IDL in this test: exact host event-sequence
 // oracles for EO ICD 6.0 3.8.1--3.8.5.
 #include "umaa/official_battery_collection.hpp"
+#include "umaa/official_battery_collection_router.hpp"
 #include <cassert>
 #include <cstdio>
 #include <functional>
@@ -124,6 +125,123 @@ int main() {
     assert(!mismatch.latest_stable() && mismatch.pending_reports() == 1);
     mismatch.on_element(element(0x21, 0, 101));
     confirmed(mismatch, 1, 1);
+
+    // A rejected oversized/illegal NIL Report MUST NOT poison the pending
+    // queue or advance last_report_time_. A valid next Report can still commit.
+    auto bounded = ready(1);
+    bounded.on_element(element(0x21, 0, 100));
+    rejected("oversize Report without state mutation", [&] {
+      bounded.on_report(report(2, 0x22, 200));
+    });
+    if (bounded.pending_reports() != 0 || bounded.buffered_elements() != 1)
+      throw std::runtime_error("rejected oversize Report mutated buffered state");
+    bounded.on_report(report(1, 0x21, 100));
+    confirmed(bounded, 1, 1);
+    rejected("NIL Report cannot erase live collection", [&] {
+      bounded.on_report(report(0, 0, 0, 2, false));
+    });
+    if (bounded.pending_reports() != 0)
+      throw std::runtime_error("rejected NIL Report poisoned pending queue");
+    bounded.on_report(report(1, 0x21, 100, 2));
+    confirmed(bounded, 1, 2);
+
+    // Two distinct original listIDs interleave Report/Element publications.
+    // The host router isolates their committed snapshots without inventing
+    // a Source identity for the separately keyed Collection Elements.
+    b::LargeListRouter router(Joiner::ElementOrdering::CallerVerifiedTopicOrdered,
+                               2, 4, 4);
+    auto a_element = element(0x21, 0, 100);
+    auto b_element = element(0x31, 0, 200);
+    b_element.listID = guid(0x12);
+    auto b_report = report(1, 0x31, 200);
+    b_report.source.id = guid(0x44);
+    b_report.cellsListMetadata.listID = guid(0x12);
+    b_report.cellsListMetadata.startingElementID = guid(0x31);
+
+    router.on_element(a_element); // element arrives before Report for list A
+    router.on_report(b_report);   // metadata arrives before element for list B
+    if (router.latest_stable(guid(0x11)) || router.latest_stable(guid(0x12)))
+      throw std::runtime_error("early multi-list commitment");
+    router.on_element(b_element);
+    router.on_report(report(1, 0x21, 100));
+    if (router.active_lists() != 2 ||
+        !router.latest_stable(guid(0x11)) ||
+        !router.latest_stable(guid(0x12)) ||
+        router.latest_stable(guid(0x11))->generation != 1 ||
+        router.latest_stable(guid(0x12))->generation != 1 ||
+        router.latest_stable(guid(0x11))->ordered[0].elementID != guid(0x21) ||
+        router.latest_stable(guid(0x12))->ordered[0].elementID != guid(0x31) ||
+        router.latest_stable(guid(0x11))->nativeDdsCoherenceProved ||
+        router.latest_stable(guid(0x12))->nativeDdsCoherenceProved)
+      throw std::runtime_error("interleaved Battery lists not independently stable");
+
+    // An update of list B leaves list A's verified generation unchanged.
+    auto b_updated = b_element;
+    b_updated.elementTimestamp.nanoseconds = 201;
+    b_updated.element.temperature = 30;
+    router.on_element(b_updated);
+    auto b_next_report = b_report;
+    ++b_next_report.timeStamp.seconds;
+    b_next_report.cellsListMetadata.updateElementTimestamp =
+        b_updated.elementTimestamp;
+    router.on_report(b_next_report);
+    if (router.latest_stable(guid(0x11))->generation != 1 ||
+        router.latest_stable(guid(0x12))->generation != 2 ||
+        router.latest_stable(guid(0x12))->ordered[0].element.temperature != 30)
+      throw std::runtime_error("multi-list cross-contamination");
+
+    // The SAME list ID from a different Source is ambiguous and fail-closed.
+    rejected("duplicate ListID from another Source", [&] {
+      auto forged_source = report(1, 0x21, 100, 2);
+      forged_source.source.id = guid(0x55);
+      router.on_report(forged_source);
+    });
+    if (router.latest_stable(guid(0x11))->generation != 1)
+      throw std::runtime_error("wrong-Source Report invalidated stable list");
+
+    // Bound active lists; do not auto-evict or allocate on rejected data.
+    auto c_element = element(0x41, 0, 100);
+    c_element.listID = guid(0x13);
+    rejected("multi-list capacity", [&] { router.on_element(c_element); });
+    if (router.active_lists() != 2 || router.latest_stable(guid(0x13)))
+      throw std::runtime_error("capacity rejection evicted or allocated a list");
+    if (!router.retire_list(guid(0x11)) ||
+        router.retire_list(guid(0x11)) ||
+        router.latest_stable(guid(0x11)))
+      throw std::runtime_error("explicit Battery list retirement invalid");
+    router.on_element(c_element);
+    auto c_report = report(1, 0x41, 100);
+    c_report.cellsListMetadata.listID = guid(0x13);
+    c_report.cellsListMetadata.startingElementID = guid(0x41);
+    router.on_report(c_report);
+    if (router.active_lists() != 2 || !router.latest_stable(guid(0x13)) ||
+        router.latest_stable(guid(0x13))->generation != 1 ||
+        router.latest_stable(guid(0x12))->generation != 2)
+      throw std::runtime_error("explicit list retirement failed to free capacity");
+
+    // Invalid initial events must not consume a slot; unverified native QoS
+    // cannot become verified merely because the router exists.
+    b::LargeListRouter not_verified(Joiner::ElementOrdering::NotVerified, 1, 4, 1);
+    rejected("router unverified DDS QoS", [&] {
+      not_verified.on_element(a_element);
+    });
+    if (not_verified.active_lists() != 0)
+      throw std::runtime_error("unverified event allocated a list");
+    rejected("router memory budget", [&] {
+      b::LargeListRouter invalid(Joiner::ElementOrdering::CallerVerifiedTopicOrdered,
+                                 128, 4096, 4);
+      (void)invalid;
+    });
+
+    router.reset_after_disconnect();
+    if (router.active_lists() != 0 || router.latest_stable(guid(0x12)) ||
+        router.latest_stable(guid(0x13)))
+      throw std::runtime_error("disconnect retained multi-list snapshot");
+    router.on_element(b_element);
+    router.on_report(b_report);
+    if (!router.latest_stable(guid(0x12)) ||
+        router.latest_stable(guid(0x12))->generation != 1)
+      throw std::runtime_error("multi-list reconstruction after disconnect failed");
 
     // Wrong QoS, foreign list, replayed element/Report and bad type values.
     Joiner unverified(Joiner::ElementOrdering::NotVerified);

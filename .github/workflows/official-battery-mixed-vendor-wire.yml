@@ -29,8 +29,10 @@ jobs:
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             git curl ca-certificates cmake g++ make python3 \
-            cyclonedds-dev libfastdds-dev libfastcdr-dev fastddsgen
-          idlc -v || true
+            cyclonedds-dev cyclonedds-tools libfastdds-dev libfastcdr-dev fastddsgen
+          command -v idlc
+          command -v fastddsgen
+          idlc -v
           fastddsgen -version || true
       - uses: actions/checkout@v4
 

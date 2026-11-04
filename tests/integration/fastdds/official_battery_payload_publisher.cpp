@@ -100,6 +100,7 @@ int main(int argc, char** argv) {
     writerq.reliability().kind = fd::RELIABLE_RELIABILITY_QOS;
     writerq.history().kind = fd::KEEP_LAST_HISTORY_QOS;
     writerq.history().depth = 16;
+    writerq.representation().m_value = {fd::XCDR2_DATA_REPRESENTATION};
     writerq.writer_data_lifecycle().autodispose_unregistered_instances = false;
     auto* report_writer = publisher->create_datawriter(report_topic, writerq);
     auto* element_writer = publisher->create_datawriter(element_topic, writerq);

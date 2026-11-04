@@ -63,6 +63,8 @@ int main(void) {
   dds_qset_presentation(ordered_qos, DDS_PRESENTATION_TOPIC, false, true);
   dds_qset_reliability(endpoint_qos, DDS_RELIABILITY_RELIABLE, DDS_SECS(1));
   dds_qset_history(endpoint_qos, DDS_HISTORY_KEEP_LAST, 16);
+  const dds_data_representation_id_t representation = DDS_DATA_REPRESENTATION_XCDR2;
+  dds_qset_data_representation(endpoint_qos, 1, &representation);
   dds_entity_t subscriber = dds_create_subscriber(participant, ordered_qos, NULL);
   if (subscriber < 0) goto done;
   dds_entity_t report_topic = dds_create_topic(

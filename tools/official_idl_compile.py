@@ -51,6 +51,9 @@ def main():
     ap.add_argument('--cc', default='cc')
     ap.add_argument('--idlc', default='idlc')
     ap.add_argument('--generate-only', action='store_true', help='Let CMake/MSVC compile the generated source')
+    ap.add_argument('--default-extensibility', choices=('appendable', 'final'),
+                    help='Explicit compiler-only XTypes default for unannotated original IDL; '
+                         'never changes the source IDL or official conformance')
     args = ap.parse_args()
     root = args.root.resolve()
     out = args.out.resolve()
@@ -59,7 +62,11 @@ def main():
     for item in closure:
         parent = out / item.relative_to(root).parent
         parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run([args.idlc, '-I', str(root), '-o', str(parent), str(item)], check=True)
+        command = [args.idlc]
+        if args.default_extensibility:
+            command.extend(['-x', args.default_extensibility])
+        command.extend(['-I', str(root), '-o', str(parent), str(item)])
+        subprocess.run(command, check=True)
     generated_c = out / source.with_suffix('.c')
     generated_h = out / source.with_suffix('.h')
     if not generated_c.is_file() or not generated_h.is_file():

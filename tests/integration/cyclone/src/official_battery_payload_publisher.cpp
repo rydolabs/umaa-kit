@@ -34,12 +34,25 @@ static dds_entity_t make_topic(dds_entity_t participant,
 }
 
 static void wait_for_reader(dds_entity_t writer) {
-  for (int i = 0; i < 200; ++i) {
-    dds_publication_matched_status_t status{};
-    require(dds_get_publication_matched_status(writer, &status), "get matches");
-    if (status.current_count >= 1) return;
+  // Cyclone exposes PublicationMatched as an enabled entity STATUS.
+  // Explicitly enable it rather than infer compatibility from the reader's
+  // independent history counters or bypass discovery.
+  require(dds_set_status_mask(writer,
+          DDS_PUBLICATION_MATCHED_STATUS | DDS_OFFERED_INCOMPATIBLE_QOS_STATUS),
+          "enable original Battery writer match and incompatible QoS status");
+  dds_publication_matched_status_t last{};
+  for (int i = 0; i < 480; ++i) {
+    require(dds_get_publication_matched_status(writer, &last), "get matches");
+    if (last.current_count >= 1) return;
     dds_sleepfor(DDS_MSECS(25));
   }
+  dds_offered_incompatible_qos_status_t incompat{};
+  require(dds_get_offered_incompatible_qos_status(writer, &incompat), "get incompatible QoS");
+  std::fprintf(stderr,
+      "CYCLONE_ENDPOINT_DIAG total_matches=%d current_matches=%d "
+      "offered_incompatible=%d last_qos_policy=%d\n",
+      last.total_count, last.current_count,
+      incompat.total_count, static_cast<int>(incompat.last_policy_id));
   throw std::runtime_error("independent Battery reader discovery timeout");
 }
 
@@ -95,6 +108,10 @@ int main(int argc, char** argv) {
       throw std::runtime_error("native-to-host Battery complex payload mismatch");
     }
 
+    // Diagnostic only: log the original compiler-assigned DDS type name.
+    std::fprintf(stderr, "CYCLONE_ORIGINAL_TYPES report=%s element=%s\n",
+      UMAA_EO_BatteryStatus_BatteryReportType_desc.m_typename,
+      UMAA_EO_BatteryStatus_BatteryReportTypeCellsListElement_desc.m_typename);
     participant = dds_create_participant(DDS_DOMAIN_DEFAULT, nullptr, nullptr);
     require(participant, "create participant");
     const auto report_topic = make_topic(
@@ -114,6 +131,10 @@ int main(int argc, char** argv) {
     dds_qset_presentation(presentation.get(), DDS_PRESENTATION_TOPIC, false, true);
     dds_qset_reliability(endpoint.get(), DDS_RELIABILITY_RELIABLE, DDS_SECS(1));
     dds_qset_history(endpoint.get(), DDS_HISTORY_KEEP_LAST, 16);
+    // Verified cross-vendor source contract needs an XCDR2 offer:
+    // default XCDR1 cannot satisfy Fast DDS 3's original @optional reader.
+    const dds_data_representation_id_t representation = DDS_DATA_REPRESENTATION_XCDR2;
+    dds_qset_data_representation(endpoint.get(), 1, &representation);
     // This prototype uses one publisher grouping both topics. It does not
     // claim cross-topic atomicity or apply an unreviewed GROUP policy.
     const auto publisher = dds_create_publisher(participant, presentation.get(), nullptr);

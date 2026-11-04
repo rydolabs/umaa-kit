@@ -86,6 +86,9 @@ int main() {
     fd::TypeSupport t2(new UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElementPubSubType());
     ok(t1.register_type(p), "report registration");
     ok(t2.register_type(p), "cell registration");
+    std::fprintf(stderr, "FASTDDS_ORIGINAL_TYPES report=%s element=%s\n",
+        t1.get_type_name().c_str(), t2.get_type_name().c_str());
+    std::fflush(stderr);
     auto* topic1 = p->create_topic("BatteryReportType", t1.get_type_name(), fd::TOPIC_QOS_DEFAULT);
     auto* topic2 = p->create_topic("BatteryReportTypeCellsListElement", t2.get_type_name(),
                                    fd::TOPIC_QOS_DEFAULT);
@@ -99,6 +102,7 @@ int main() {
     q.reliability().kind = fd::RELIABLE_RELIABILITY_QOS;
     q.history().kind = fd::KEEP_LAST_HISTORY_QOS;
     q.history().depth = 16;
+    q.representation().m_value = {fd::XCDR2_DATA_REPRESENTATION};
     auto* report_reader = sub->create_datareader(topic1, q);
     auto* element_reader = sub->create_datareader(topic2, q);
     if (!report_reader || !element_reader) throw std::runtime_error("readers failed");
@@ -107,7 +111,7 @@ int main() {
     std::int64_t rsec = 0, esec = 0;
     std::int32_t rns = 0, ens = 0;
     int code = 9;
-    for (int i = 0; i < 450 && !(got_report && got_element &&
+    for (int i = 0; i < 1000 && !(got_report && got_element &&
                                    disposed_report && disposed_element); ++i) {
       for (int topic_id = 0; topic_id < 2; ++topic_id) {
         fd::SampleInfo info{};
@@ -142,6 +146,24 @@ int main() {
       std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 
+    // Diagnostic only; not a compatibility override or a PASS condition.
+    fd::SubscriptionMatchedStatus report_matches{};
+    fd::SubscriptionMatchedStatus element_matches{};
+    fd::RequestedIncompatibleQosStatus report_incompatible{};
+    fd::RequestedIncompatibleQosStatus element_incompatible{};
+    (void)report_reader->get_subscription_matched_status(report_matches);
+    (void)element_reader->get_subscription_matched_status(element_matches);
+    (void)report_reader->get_requested_incompatible_qos_status(report_incompatible);
+    (void)element_reader->get_requested_incompatible_qos_status(element_incompatible);
+    std::fprintf(stderr,
+      "FASTDDS_ENDPOINT_DIAG report_total=%d report_current=%d "
+      "element_total=%d element_current=%d "
+      "report_qos_incompatible=%u report_qos_policy=%d "
+      "element_qos_incompatible=%u element_qos_policy=%d\n",
+      report_matches.total_count, report_matches.current_count,
+      element_matches.total_count, element_matches.current_count,
+      report_incompatible.total_count, static_cast<int>(report_incompatible.last_policy_id),
+      element_incompatible.total_count, static_cast<int>(element_incompatible.last_policy_id));
     if (!got_report || !got_element || !disposed_report || !disposed_element) {
       std::fprintf(stderr, "FAST_BATTERY_INCOMPLETE report=%d element=%d disposeReport=%d disposeCell=%d\n",
                    got_report, got_element, disposed_report, disposed_element);

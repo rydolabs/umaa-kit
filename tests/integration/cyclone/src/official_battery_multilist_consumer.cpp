@@ -26,6 +26,19 @@ static void require(dds_return_t rc, const char* action) {
 static host::Guid guid(unsigned char prefix) {
   host::Guid out{}; out[0] = prefix; return out;
 }
+// Verify the *effective DDS entity QoS*, not merely the requested qos_t.
+// EO ICD 6.0 §3.8.1 reviews this minimum for Element Topic subscribers.
+// Do not infer durability, GROUP coherence or an entire service QoS profile.
+static bool has_ordered_topic_presentation(dds_entity_t entity) {
+  std::unique_ptr<dds_qos_t, decltype(&dds_delete_qos)> effective(
+      dds_create_qos(), &dds_delete_qos);
+  if (!effective) throw std::runtime_error("cannot query actual DDS QoS");
+  require(dds_get_qos(entity, effective.get()), "get effective subscriber QoS");
+  dds_presentation_access_scope_kind_t scope = DDS_PRESENTATION_INSTANCE;
+  bool coherent = false, ordered = false;
+  return dds_qget_presentation(effective.get(), &scope, &coherent, &ordered) &&
+         scope == DDS_PRESENTATION_TOPIC && ordered;
+}
 using CellKey = std::pair<host::Guid, host::Guid>;
 
 static bool known_cell(const CellKey& key) {
@@ -67,11 +80,24 @@ static void verify_b(const host::StableList& state) {
 int main(int argc, char** argv) {
   const bool negative =
       argc == 2 && std::string(argv[1]) == "--bad-checkpoint";
-  if (argc != 1 && !negative) return 2;
+  const bool default_qos_negative =
+      argc == 2 && std::string(argv[1]) == "--reject-default-qos";
+  if (argc != 1 && !negative && !default_qos_negative) return 2;
   dds_entity_t p = 0;
   try {
     p = dds_create_participant(DDS_DOMAIN_DEFAULT, nullptr, nullptr);
     require(p, "create two-list DDS participant");
+    if (default_qos_negative) {
+      const dds_entity_t unmanaged = dds_create_subscriber(p, nullptr, nullptr);
+      require(unmanaged, "create default QoS Subscriber for negative test");
+      const bool approved = has_ordered_topic_presentation(unmanaged);
+      require(dds_delete(p), "delete default QoS negative participant");
+      p = 0;
+      if (approved)
+        throw std::runtime_error("default DDS Subscriber incorrectly met official Topic ordering");
+      std::puts("BATTERY_OFFICIAL_ELEMENT_DEFAULT_QOS_REJECTED");
+      return 0;
+    }
     const dds_entity_t report_t = dds_create_topic(
         p, &UMAA_EO_BatteryStatus_BatteryReportType_desc,
         "BatteryReportType", nullptr, nullptr);
@@ -96,6 +122,8 @@ int main(int argc, char** argv) {
     const dds_entity_t sub = dds_create_subscriber(
         p, presentation.get(), nullptr);
     require(sub, "create ordered subscriber");
+    if (!has_ordered_topic_presentation(sub))
+      throw std::runtime_error("actual DDS Subscriber lacks mandatory EO §3.8.1 Topic ordered Presentation");
     const dds_entity_t report_reader =
         dds_create_reader(sub, report_t, endpoint.get(), nullptr);
     const dds_entity_t element_reader =

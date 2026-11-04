@@ -132,8 +132,13 @@ jobs:
             --bad-checkpoint
           echo "MIXED_VENDOR_CASE_FAILURES=$failures"
           if [ "$failures" -gt 0 ]; then
+            echo "CYCLONE_DISCOVERY_TYPE_MATCH_DIAGNOSTICS:"
+            # The last lines are cleanup, not the reason a match was rejected.
+            # Only print SEDP, type assignability, and endpoint comparison.
+            grep -Eai 'assignab|extensib|unresolved|incompatib|typelookup|type lookup|tl-reply|tl-req|match.*(writer|reader|proxy)|proxy.*(reader|writer)|topic_name=|type_information' \
+              "$RUNNER_TEMP/cyclone-interop.log" | tail -n 140 || true
             echo "CYCLONE_DISCOVERY_TRACE_TAIL:"
-            tail -n 130 "$RUNNER_TEMP/cyclone-interop.log" || true
+            tail -n 35 "$RUNNER_TEMP/cyclone-interop.log" || true
             exit 1
           fi
       - name: Scope and original source handling

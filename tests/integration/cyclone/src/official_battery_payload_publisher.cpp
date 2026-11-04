@@ -95,6 +95,10 @@ int main(int argc, char** argv) {
       throw std::runtime_error("native-to-host Battery complex payload mismatch");
     }
 
+    // Diagnostic only: log the original compiler-assigned DDS type name.
+    std::fprintf(stderr, "CYCLONE_ORIGINAL_TYPES report=%s element=%s\n",
+      UMAA_EO_BatteryStatus_BatteryReportType_desc.m_typename,
+      UMAA_EO_BatteryStatus_BatteryReportTypeCellsListElement_desc.m_typename);
     participant = dds_create_participant(DDS_DOMAIN_DEFAULT, nullptr, nullptr);
     require(participant, "create participant");
     const auto report_topic = make_topic(

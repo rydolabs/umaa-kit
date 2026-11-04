@@ -118,6 +118,10 @@ int main(int argc, char** argv) {
     dds_qset_presentation(presentation.get(), DDS_PRESENTATION_TOPIC, false, true);
     dds_qset_reliability(endpoint.get(), DDS_RELIABILITY_RELIABLE, DDS_SECS(1));
     dds_qset_history(endpoint.get(), DDS_HISTORY_KEEP_LAST, 16);
+    // Verified cross-vendor source contract needs an XCDR2 offer:
+    // default XCDR1 cannot satisfy Fast DDS 3's original @optional reader.
+    const dds_data_representation_id_t representation = DDS_DATA_REPRESENTATION_XCDR2;
+    dds_qset_data_representation(endpoint.get(), 1, &representation);
     // This prototype uses one publisher grouping both topics. It does not
     // claim cross-topic atomicity or apply an unreviewed GROUP policy.
     const auto publisher = dds_create_publisher(participant, presentation.get(), nullptr);

@@ -5,6 +5,8 @@ on:
       - '.github/workflows/official-battery-multicell-native-wire.yml'
       - 'sdk/include/umaa/official_battery_collection.hpp'
       - 'sdk/include/umaa/official_battery_collection_router.hpp'
+      - 'sdk/include/umaa/official_battery_subscription.hpp'
+      - 'sdk/tests/official_battery_subscription_test.cpp'
       - 'sdk/tests/official_battery_collection_joiner_test.cpp'
       - 'tests/integration/cyclone/src/official_battery_multicell_consumer.cpp'
       - 'tests/integration/cyclone/src/official_battery_multilist_consumer.cpp'

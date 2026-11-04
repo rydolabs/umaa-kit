@@ -578,3 +578,12 @@ the complete PR verified.
 - The original failing job was rerun individually to assess reproducibility; results require exact run-attempt checking.
 - Increased the old scalar official Report **test-only** impaired Writer final-Dispose retention from 1s to 3s and reader impairment poll budget from ~6.25s to ~15s, while still requiring two ordered data events, a keyed Dispose, cache removal and epoch safety. Clean/unimpaired settings unchanged; the receiver now reports the incomplete phase. This is a bounded test robustness adjustment, NOT an invented DDS or UMAA QoS requirement and NOT evidence that application-level Dispose ACK exists.
 - **Current HEAD regressions must be rerun at the new SHA before declaring this fix verified.** If errors persist, capture the exact phase, source and DDS reader info and quarantine the flaky netem case rather than weakening the oracle.
+
+
+## 2026-11-04 — bounded EO Battery multi-list host routing (Draft PR #58)
+
+- Stack: Draft PR #58 is based on verified Draft #57, then #56, then #55. `main` remains unchanged; no Runtime unlock or cross-vendor claim.
+- Added `sdk/include/umaa/official_battery_collection_router.hpp`: bounded per-listID routing over existing LargeListJoiner, interleaved independent reports/elements/Dispose, explicit retirement and disconnect invalidation; aggregate record cap prevents silent unlimited buffering.
+- Hardened `LargeListJoiner::on_report`: reject over-limit and invalid initial NIL metadata before advancing source/timestamp/pending state; later valid Reports can proceed without a forced reset from the rejected input.
+- Expanded the original host C++ regression for two interleaved list IDs and distinct sources, independent generations, reused-listID source collision, capacity, retirement, unverified QoS, and reset/replay. Linux/Windows Battery host test workflow tracks the added header.
+- **Verification pending for the exact new PR head:** do not infer passes from earlier PR #55–#57 CI. Native DDS callback source/list ownership, official multi-list E2E, cross-topic atomicity, reconnect replay, full Component QoS, vendor interoperability and conformance remain OPEN.

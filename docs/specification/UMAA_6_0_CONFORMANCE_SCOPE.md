@@ -15,7 +15,7 @@
 | Authority | Source link | Status in this repository |
 |---|---|---|
 | AUVSI Compliance Specification T0300-BE-IDS-010 Rev 1 | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/T0300-BE-IDS-010-Rev.-1.pdf) | **IN PROGRESS**: original 24-page PDF fetched and SHA-pinned on CI, line candidates found, but exact requirement clauses and applicability not reviewed |
-| AUVSI Component Definitions v1.0 | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf) | **PARTIAL**: original 12-page PDF fetched and SHA-pinned on CI; component names identified, provided/consumed service rows still require verified extraction |
+| AUVSI Component Definitions v1.0 | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf) | **PARTIAL**: original 12-page PDF source-pinned; Section 3 explicit `~` Consumer / no-`~` Provider legend reviewed for 91 published service mention rows (51 Provider, 40 Consumer). Acquisition-specific membership, QoS and applicability still unapproved |
 | UMAA 6.0 ICDs EO / MO / MM / SA / SEM / SO | [official publication table](https://www.auvsi.org/advocacy/advocacy-initiatives/unmanned-maritime-autonomy-architecture/) | **PARTIAL**: 53 literal service headings from secondary public Markdown, 114 candidate Topic rows in current JSON; original normative clauses and DDS roles/QoS not fully reconciled |
 | UMAA 6.0 CO ICD | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-CO-EXP-ICD.pdf) | **PARTIAL**: original 76-page PDF fetched and SHA-pinned on CI; service clauses not yet ingested into the six-ICD Catalog |
 | UMAA 6.0 EXP ICD | [official PDF](https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-EXP-ICD.pdf) | Experimental; exclude from baseline compliance, keep conditional contract overrides separate |
@@ -35,7 +35,7 @@ Sources are linked, not copied into the repository. The public official source P
 8. Water Environment
 9. Weather
 
-This is the nine-entry **public v1.0 table of contents**, not a claim that only nine Component types exist in the government model. The original PDF's section 3.x.3 text yielded **91 service mention rows**. They are recorded under `service_assignment_candidates` with source-section and extracted-text line references. A tilde annotation is preserved verbatim as a boolean and **not interpreted as provider/consumer, optional or required** until the PDF legend is reviewed. Some service names occur twice within one Component; both rows are preserved. **No normative membership or direction is accepted yet.**
+This is the nine-entry **public v1.0 table of contents**, not a claim that only nine Component types exist in the government model. The original PDF's section 3.x.3 text yielded **91 service mention rows**. They are recorded under `service_assignment_candidates` with source-section and extracted-text line references. The original AUVSI Component Definitions v1.0 **Section 3** explicitly defines `~` as **Consumer** and no prefix as **Provider**. All 91 original service mention rows now have this narrow, source-backed role projection (51 Provider / 40 Consumer), including duplicate service names with opposite roles; `~` does **not** mean optional or required. Some service names occur twice within one Component; both rows are preserved. **Direction is verified for these public Component Definition rows only.** Full Component membership acceptance, selected Component/Platform Specification, per-service QoS and normative applicability remain unapproved.
 
 ## Existing Catalog audit discrepancy
 
@@ -81,7 +81,7 @@ The `normative_requirements` array is **empty on purpose** until clauses can be 
 Evidence: [source provenance workflow](https://github.com/rydolabs/umaa-kit/actions/runs/40473732828).
 For Compliance Rev 1, the PDF text pass located **31 lines containing "shall"**, including administrative front matter. **26 post-front-matter line candidates** are stored in `normative_clause_candidates` with stable extracted-text line locators. These are not parsed or reviewed requirements; one requirement can span several lines and some lines are only context. Do not use them as a requirement count.
 
-The machine-readable `normative_requirements` remains empty until a reviewer reads each complete clause, checks conditions/exceptions and attaches authoritative page and selected Component applicability. CO and Component service assignments remain unverified. Correct interpretation is **source acquisition PASS, clause-level G6/G11 BLOCKED**.
+The machine-readable `normative_requirements` remains empty until a reviewer reads each complete compliance clause, checks conditions/exceptions and attaches authoritative page and selected Component applicability. CO and Component service assignments remain unverified. Correct interpretation is **source acquisition PASS, clause-level G6/G11 BLOCKED**.
 
 
 ### Component service table extraction checkpoint (unreviewed)
@@ -98,4 +98,33 @@ The machine-readable `normative_requirements` remains empty until a reviewer rea
 | Water Environment | 3.8.3 | 3 | 0 |
 | Weather | 3.9.3 | 3 | 0 |
 
-Original PDF SHA-256 `872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75` and [candidate extraction runner](https://github.com/rydolabs/umaa-kit/actions/runs/40474336528). A service mentioned twice is **not** two distinct services; these 91 mention rows cannot be added to the 53-service six-ICD inventory to obtain any normative total. Assigning precise provider/consumer role and optionality requires inspecting the visual/semantic original Component Definitions and selected Component specification.
+Original PDF SHA-256 `872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75` and [candidate extraction runner](https://github.com/rydolabs/umaa-kit/actions/runs/40474336528). A service mentioned twice is **not** two distinct services; these 91 mention rows cannot be added to the 53-service six-ICD inventory to obtain any normative total. Provider/Consumer role is resolved from the official §3 symbol legend, without inferring optionality. Acquisition Component membership, QoS and applicability still require a selected Component Specification and review.
+
+
+## 2026-11-04 — public Component Definition role-rule correction (scoped)
+
+The prior note that the `~` symbol was "undetermined" was **incorrect**.
+AUVSI's original [Component Definitions v1.0 PDF](https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf)
+**§3** says a prefixed service is consumed and an unprefixed service is
+provided. This fixes the role of every **91 source-table mention rows**
+(51 Provider, 40 Consumer) in the pinned 12-page public document,
+SHA-256 `872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75`.
+Repeated service names are preserved, including different roles within
+one Component. The official PDF content is cross-checked on CI using
+`tools/verify_official_component_roles.py` and ephemeral `pdftotext`;
+the original PDF is never checked into Git.
+
+The SDK assembly CLI now supports optional
+`validate --reference-component 'Autopilot'` to reject a selected
+service/role inconsistent with that public definition. This is **not**
+a claim that every published service is implemented or that one
+Component/Platform Specification has been selected, and it cannot
+enable official native Runtime generation.
+
+**Still unresolved:** full Compliance Rev 1 normative clause reading,
+source reviewed ICD operation/QoS for all 53 candidate services,
+CO scope, original DDS per-vendor binding/QoS and complete protocol,
+a selected acquisition Component/Platform Specification with exact
+requirements and exceptions, approved interface membership, native
+GROUP coherence, full independent conformity corpus and external
+acceptance. The strict gate must remain exit 3.

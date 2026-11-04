@@ -152,3 +152,30 @@ This source and candidate inventory is NOT a UMAA 6.0 certification.
   G2 prototype paths improved; G6/G7/G8/G11 OPEN/PARTIAL,
   G9/G10 BLOCKED, G12 PARTIAL. No certification or hardware claim.
   [Detailed evidence](implementation/M2_COMMAND_DEADLINES.md).
+
+
+## 2026-11-04 — original public Component §3 role legend (Draft integration)
+
+- Previously unreviewed `~` symbol meaning has a **clear original AUVSI source rule**:
+  Component Definitions v1.0 §3 = Consumer when prefixed by `~`,
+  Provider otherwise. This resolves **91 public Component service mention
+  role labels**: 51 Provider, 40 Consumer across nine Components. The original
+  12-page PDF remains pinned at SHA-256
+  `872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75`.
+- A source-authenticated CI check compares the original PDF's §3 service
+  rows against the committed role projection. The SDK assembly CLI optionally
+  checks role choices for a named public Component, rejecting mismatches,
+  ambiguities, invented services and synthetic names.
+- Existing source-reviewed EO Battery Element QoS **TOPIC ordered**
+  minimum now has effective native Cyclone Publisher/Subscriber entity
+  introspection plus a missing-QoS negative CTest. This is not complete
+  official Service/Component QoS; Fast DDS required TOPIC ordered support
+  remains explicitly unsupported.
+- **G6/G7/G11 remain OPEN:** no selected acquisition Component Specification,
+  complete service membership approval, exact profile-specific QoS, full
+  normative clause applicability, 53-service native Runtime, full Collection
+  coherent/recovery semantics, or official conformance. The strict acceptance
+  check must continue to return code 3. This is a scoped improvement only.
+
+**Exact-head CI status:** pending until checks for this integration commit
+are inspected; never transfer PASS from previous green PR #59.

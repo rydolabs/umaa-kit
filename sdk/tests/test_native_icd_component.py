@@ -75,6 +75,23 @@ class NativeICDGenerationTests(unittest.TestCase):
             "services": [{"id": "Demo::EO::BatteryStatus", "role": "provider"}],
         }), encoding="utf-8")
 
+    def test_native_output_symlinked_ancestor_fails_before_compiler(self):
+        # The destination itself is not a symlink; an ancestor is.
+        # resolve() must not erase this evidence before source validation.
+        private = self.root / "private"
+        private.mkdir()
+        alias = self.root / "output-alias"
+        try:
+            alias.symlink_to(private, target_is_directory=True)
+        except (OSError, NotImplementedError) as exc:
+            self.skipTest("directory symlinks unavailable: " + str(exc))
+        output = alias / "generated-project"
+        self.assertFalse(output.is_symlink())
+        with self.assertRaisesRegex(ContractIRError, "symlinked native Component output"):
+            generate(self.manifest, [self.yaml], self.idl_root,
+                     _binding_map([BINDING]), output, fixture=True)
+        self.assertFalse((private / "generated-project").exists())
+
     def test_missing_explicit_type_binding_fails_before_output(self):
         out = self.root / "unwritten"
         with self.assertRaisesRegex(ContractIRError, "explicit native IDL"):

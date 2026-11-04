@@ -15,6 +15,7 @@ import sys
 import tempfile
 
 from tools import umaa_service_contracts as contracts
+from tools import verify_compliance_scope as scope_contract
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "catalog/umaa6-six-icd-reviewed.json"
@@ -101,7 +102,54 @@ def new(name, target):
         "id": name, "artifact": "shared-library"}, "services": []})
 
 
-def check_assembly(doc):
+def check_reference_component_roles(component_name: str, services: list[dict]) -> dict:
+    """Verify selected service roles against AUVSI Component Definitions §3.
+
+    Does not approve membership completeness, specific acquisition QoS,
+    official native Runtime, or compliance.
+    """
+    source = scope_contract.load_json(scope_contract.SCOPE)
+    catalog = scope_contract.load_json(scope_contract.CATALOG)
+    report = scope_contract.validate(catalog, source)
+    if report["errors"] or not report["component_role_symbol_legend_reviewed"]:
+        raise ProjectError("official Component source/role evidence invalid")
+    entry = next((x for x in source["component_candidates"]
+                  if x["name"] == component_name), None)
+    if entry is None:
+        raise ProjectError("unknown official public Component Definition")
+    reviewed = entry["service_assignment_candidates"]
+    permitted = {(row["service_name"], row["provider_consumer_role"])
+                 for row in reviewed if row["authoritative_role_reviewed"]}
+    known = catalog["services"]
+    for item in services:
+        name, role = item["id"], item["role"]
+        if name.startswith("Demo::"):
+            raise ProjectError("synthetic service cannot claim official Component role")
+        short = name.split("::")[-1]
+        # Source list names are unqualified. A collision between multiple
+        # official Service namespaces must not be guessed by suffix matching.
+        matches = [service["name"] for service in known
+                   if service["name"].split("::")[-1] == short]
+        if len(matches) != 1 or matches[0] != name:
+            raise ProjectError("ambiguous official Component Service identity: " + name)
+        if (short, role) not in permitted:
+            raise ProjectError("official Component Definition role mismatch: " +
+                               component_name + " / " + name + " / " + role)
+    return {
+        "componentDefinition": component_name,
+        "sourceSha256": scope_contract.COMPONENT_DEFINITION_SHA256,
+        "checkedRoleBindings": len(services),
+        "publishedRoleRows": len(reviewed),
+        "roleLegendVerified": True,
+        "completeMembershipApproved": False,
+        "componentSpecificationApproved": False,
+        "normativeQosClaim": False,
+        "officialRuntimeClaim": False,
+        "officialConformanceClaim": False,
+    }
+
+
+def check_assembly(doc, reference_component=None):
     """Pure shared CLI/Studio assembly gate; never creates files or executes code."""
     doc = validate(doc)
     official = [s["id"] for s in doc["services"] if s["id"] not in DEMO]
@@ -123,7 +171,7 @@ def check_assembly(doc):
         _, current_pin = contracts.catalog_names()
         if doc["catalogPin"]["sha256"] != current_pin:
             raise ProjectError("reviewed catalog changed: explicit contract revision is required")
-    return {
+    result = {
         "status": "VALID_ASSEMBLY_NOT_NORMATIVE_RUNTIME",
         "componentId": doc["component"]["id"],
         "services": len(doc["services"]),
@@ -132,11 +180,14 @@ def check_assembly(doc):
         "officialRuntimeClaim": False,
         "normativeQosClaim": False,
     }
+    if reference_component is not None:
+        result["referenceComponentEvidence"] = check_reference_component_roles(
+            reference_component, doc["services"])
+    return result
 
 
-
-def check_project(project):
-    return check_assembly(read(project))
+def check_project(project, reference_component=None):
+    return check_assembly(read(project), reference_component)
 
 def add(project, name, role):
     doc = read(project)
@@ -316,6 +367,9 @@ def main(argv=None):
     l.add_argument("--project", type=Path, default=Path("."))
     validate_cmd = commands.add_parser("validate", help="validate a Component assembly")
     validate_cmd.add_argument("--project", type=Path, default=Path("."))
+    validate_cmd.add_argument(
+        "--reference-component",
+        help="validate source-backed public Component roles only; not QoS or conformance")
     ct = commands.add_parser("contract", help="inspect/export reviewed partial Service Contracts")
     ct_actions = ct.add_subparsers(dest="contract_action", required=True)
     export = ct_actions.add_parser("export")
@@ -360,7 +414,8 @@ def main(argv=None):
                 for item in read(args.project)["services"]:
                     print(item["role"], item["id"])
         elif args.cmd == "validate":
-            print(json.dumps(check_project(args.project), sort_keys=True, indent=2))
+            print(json.dumps(check_project(args.project, args.reference_component),
+                             sort_keys=True, indent=2))
         elif args.cmd == "contract":
             if args.contract_action == "export":
                 snapshot = contracts.create_snapshot()

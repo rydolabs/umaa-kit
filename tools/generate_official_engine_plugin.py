@@ -6,8 +6,16 @@ This is a validated EngineControl ignition-state subset, not all UMAA fields.
 The generated module is DDS-free; the Host remains responsible for UMAA behavior.
 """
 import argparse
+import json
 import pathlib
 import re
+import sys
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
+from tools.official_icd_evidence import audit, SourceError
+from tools.umaa_contract_ir import load_service
 
 SERVICE = "UMAA::EO::EngineControl"
 SCHEMA = "umaa-6.0-enginecontrol-ignition-subset-v1"
@@ -43,6 +51,64 @@ def inspect(root: pathlib.Path):
     if ids != [0,1]:
         raise ValueError("unexpected official IgnitionControl enum numeric values")
     return ids
+
+
+
+def verify_engine_source_contract(yaml_path: pathlib.Path,
+                                  archive_path: pathlib.Path,
+                                  digest: str) -> dict:
+    """Verify the narrow original Engine Command/Ack/Status contract only.
+
+    This is source declaration evidence. It is NOT normative Component QoS,
+    full protocol approval, or permission to generate official SDK Runtime.
+    """
+    if not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise SourceError("exact external archive SHA-256 pin required")
+    evidence = audit(archive_path, [yaml_path])
+    if evidence["archiveSha256"] != digest or evidence["issues"]:
+        raise SourceError("EngineControl official IDL source mismatch")
+    doc, yaml_sha = load_service(yaml_path)
+    if (doc["metadata"]["id"] != SERVICE or
+            doc["sources"]["idl"]["bundleSha256"] != digest):
+        raise SourceError("EngineControl YAML has wrong Service or IDL source pin")
+    protocols = doc["spec"]["protocols"]
+    if (len(protocols) != 1 or protocols[0]["kind"] != "command-response" or
+            protocols[0]["bindings"] != {
+                "command": "command01", "ack": "ack01", "status": "status01"
+            }):
+        raise SourceError("EngineControl protocol bindings differ from scoped generator")
+    expected = {
+        "command01": ("EngineCommandType", "command",
+                      "consumer-to-provider", ["source", "sessionID", "destination"]),
+        "ack01": ("EngineCommandAckReportType", "ack",
+                  "provider-to-consumer", ["source", "sessionID"]),
+        "status01": ("EngineCommandStatusType", "status",
+                     "provider-to-consumer", ["source", "sessionID"]),
+    }
+    topics = doc["spec"]["topics"]
+    if set(topics) != set(expected):
+        raise SourceError("EngineControl Topic aliases incomplete")
+    for alias, (name, role, direction, keys) in expected.items():
+        topic = topics[alias]
+        fqn = SERVICE + "::" + name
+        if (topic["idlType"] != fqn or topic["ddsTopicName"] != fqn or
+                topic["role"] != role or topic["direction"] != direction or
+                topic["keyFields"] != keys):
+            raise SourceError("EngineControl source-derived Topic/Key mismatch: " + alias)
+    if (doc["verification"]["ddsQosVerified"] or
+            doc["verification"]["ddsBehaviorVerified"]):
+        raise SourceError("ignition subset cannot certify full QoS/protocol")
+    return {
+        "scope": "ENGINECONTROL_IGNITION_SUBSET_ONLY",
+        "serviceId": SERVICE,
+        "archiveSha256": digest,
+        "candidateYamlSha256": yaml_sha,
+        "verifiedNativeTopicTypes": 3,
+        "completeProtocolGenerated": False,
+        "reviewedPerServiceQos": False,
+        "officialNativeRuntimeAuthorized": False,
+        "formalUmaaConformance": False,
+    }
 
 
 def generate(root: pathlib.Path, out: pathlib.Path):
@@ -113,13 +179,35 @@ extern "C" UMAA_MODULE_EXPORT const UmaaModuleV1* umaa_get_module_v1(uint32_t ve
     print(f"OFFICIAL_ENGINE_HANDLER_GENERATED {header} {glue} verified official ignition enum OFF=0 RUN=1")
 
 
-def main():
+def main(argv=None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--type-root", required=True, type=pathlib.Path)
     p.add_argument("--output", required=True, type=pathlib.Path)
-    a = p.parse_args()
-    generate(a.type_root,a.output)
+    p.add_argument("--yaml", type=pathlib.Path)
+    p.add_argument("--zip", type=pathlib.Path)
+    p.add_argument("--expect-sha256")
+    a = p.parse_args(argv)
+    try:
+        source_args = (a.yaml, a.zip, a.expect_sha256)
+        if any(source_args) and not all(source_args):
+            raise SourceError("--yaml, --zip and --expect-sha256 must be supplied together")
+        source = (verify_engine_source_contract(*source_args)
+                  if all(source_args) else None)
+        generate(a.type_root, a.output)
+        if source is not None:
+            evidence_path = a.output / "engine_control_source_evidence.json"
+            if evidence_path.is_symlink():
+                raise SourceError("symlinked EngineControl evidence output forbidden")
+            evidence_path.write_text(
+                json.dumps(source, sort_keys=True, indent=2) + "\n",
+                encoding="utf-8")
+            print("OFFICIAL_ENGINE_YAML_IDL_GENERATION_PASS",
+                  source["verifiedNativeTopicTypes"])
+        return 0
+    except (SourceError, OSError, ValueError) as exc:
+        print("OFFICIAL_ENGINE_SOURCE_GATE_FAIL: " + str(exc), file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

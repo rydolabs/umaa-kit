@@ -4,10 +4,13 @@ on:
     paths:
       - '.github/workflows/official-battery-multicell-native-wire.yml'
       - 'sdk/include/umaa/official_battery_collection.hpp'
+      - 'sdk/include/umaa/official_battery_collection_router.hpp'
       - 'sdk/tests/official_battery_collection_joiner_test.cpp'
       - 'tests/integration/cyclone/src/official_battery_multicell_consumer.cpp'
+      - 'tests/integration/cyclone/src/official_battery_multilist_consumer.cpp'
       - 'tests/integration/cyclone/src/official_battery_multicell_publisher.cpp'
       - 'simulator/dds/run_battery_multicell.py'
+      - 'simulator/dds/run_battery_multilist.py'
       - 'tests/integration/cyclone/CMakeLists.txt'
       - 'dds-backends/cyclone/include/umaa/cyclone_official_battery_codec.hpp'
   workflow_dispatch:
@@ -54,21 +57,21 @@ jobs:
             --root "$RUNNER_TEMP/original-idl" \
             --source UMAA/EO/BatteryStatus/BatteryReportType.idl \
             --out "$RUNNER_TEMP/native-battery"
-      - name: Compile original three-Cell publisher and independent SDK joiner
+      - name: Compile original three-Cell publisher and independent one-/two-list SDK joiners
         shell: bash
         run: |
           set -euo pipefail
           cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/battery-live-build" \
             -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/native-battery"
           cmake --build "$RUNNER_TEMP/battery-live-build" --parallel 2 \
-            --target umaa_official_battery_multicell_publisher umaa_official_battery_multicell_consumer
-      - name: 'Three real keyed instances: positive List and rejected bad metadata checkpoint'
+            --target umaa_official_battery_multicell_publisher umaa_official_battery_multicell_consumer umaa_official_battery_multilist_consumer
+      - name: 'Original DDS: three-Cell and two-source List positive/negative checkpoint oracles'
         run: |
           ctest --test-dir "$RUNNER_TEMP/battery-live-build" \
-            -R '^official_umaa_battery_multicell_(good|bad_checkpoint)$' \
+            -R '^official_umaa_battery_(multicell|multilist)_(good|bad_checkpoint|default_qos_rejected)$' \
             --output-on-failure -V
       - name: Explicit limitations
         if: success()
         run: |
-          echo "OFFICIAL_BATTERY_THREE_CELL_ORIGINAL_DDS_E2E_PASS"
+          echo "OFFICIAL_BATTERY_THREE_CELL_AND_TWO_SOURCE_LIST_ORIGINAL_DDS_E2E_PASS"
           echo "No full Collection/Component QoS, vendor parity or conformance claim"

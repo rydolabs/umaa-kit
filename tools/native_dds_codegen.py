@@ -116,8 +116,12 @@ def native_generate(root: Path, source: str, output: Path, *,
                     backend_tools: dict[str, str] | None = None,
                     source_sha256: str | None = None) -> dict:
     root = root.resolve(strict=True)
-    if not root.is_dir() or output.is_symlink():
-        raise ValueError("input root must be a directory and output cannot be a symlink")
+    if not root.is_dir():
+        raise ValueError("input root must be a directory")
+    # Reject symlinked ancestors before output.resolve() erases the alias.
+    # The native toolchains must never write outside the requested output tree.
+    if output.is_symlink() or any(parent.is_symlink() for parent in output.parents):
+        raise ValueError("generated output cannot use symlinks")
     name = Path(source)
     if (name.is_absolute() or name.suffix.lower() != ".idl" or not name.parts
             or any(p in ("", ".", "..") for p in name.parts)):

@@ -22,6 +22,8 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual((r['candidate_services'],r['candidate_topic_entries'],r['collection_element_references']), (53,113,1))
         self.assertEqual(r['normative_requirements_traced'],0)
         self.assertTrue(r['claim_blocked'])
+        self.assertTrue(r['component_role_symbol_legend_reviewed'])
+        self.assertEqual((r['component_provider_role_rows'], r['component_consumer_role_rows']), (51, 40))
 
     def test_missing_service(self):
         d=copy.deepcopy(self.scope);d['service_candidates'].pop()
@@ -53,10 +55,62 @@ class ScopeTests(unittest.TestCase):
         d['component_candidates'][0]['service_assignment_candidates'].pop()
         self.rejected(d,'component candidate row coverage drift')
 
-    def test_unreviewed_component_role_cannot_be_invented(self):
+    def test_reviewed_symbol_legend_yields_exact_provider_consumer_roles(self):
+        def by_name(name):
+            return next(c for c in self.scope['component_candidates']
+                        if c['name'] == name)['service_assignment_candidates']
+        self.assertEqual(
+            [(r['service_name'], r['provider_consumer_role'])
+             for r in by_name('Logging')],
+            [('LogReport', 'consumer')])
+        autopilot = by_name('Autopilot')
+        self.assertEqual(
+            next(r for r in autopilot if r['service_name']=='GlobalPoseStatus')['provider_consumer_role'],
+            'consumer')
+        usv = by_name('USV Navigation')
+        self.assertEqual(
+            next(r for r in usv if r['service_name']=='GlobalPoseStatus')['provider_consumer_role'],
+            'provider')
+        # A Component can carry a service in both roles; preserve rows.
+        uuv = [r['provider_consumer_role'] for r in by_name('UUV Navigation')
+               if r['service_name']=='GlobalPoseStatus']
+        self.assertEqual(sorted(uuv), ['consumer', 'provider'])
+        for comp in self.scope['component_candidates']:
+            for row in comp['service_assignment_candidates']:
+                self.assertEqual(row['provider_consumer_role'],
+                                 'consumer' if row['tilde_annotation_present'] else 'provider')
+                self.assertTrue(row['authoritative_role_reviewed'])
+                self.assertEqual(row['applicability'],'undetermined')
+                self.assertFalse(comp['assignment_reviewed'])
+        self.assertFalse(next(s for s in self.scope['sources']
+                              if s['id']=='COMPONENT_DEFINITIONS_1_0')['full_text_reviewed'])
+
+    def test_source_role_forgery_is_rejected(self):
+        mutations = []
+        def mutate_role(d):
+            d['component_candidates'][0]['service_assignment_candidates'][0]['provider_consumer_role']='consumer'
+        def mutate_tilde(d):
+            d['component_candidates'][0]['service_assignment_candidates'][0]['tilde_annotation_present']=True
+        def mutate_source(d):
+            d['component_definition_extraction']['source_sha256']='f'*64
+        def mutate_legend(d):
+            d['component_definition_extraction']['role_and_tilde_semantics_reviewed']=False
+        for mutate, reason in ((mutate_role,'Component role/tilde evidence mismatch'),
+                               (mutate_tilde,'Component role/tilde evidence mismatch'),
+                               (mutate_source,'Component role source provenance altered'),
+                               (mutate_legend,'Component role source provenance altered')):
+            with self.subTest(mutation=mutate.__name__):
+                d=copy.deepcopy(self.scope)
+                mutate(d)
+                self.rejected(d,reason)
+
+    def test_role_resolution_does_not_approve_application_or_qos(self):
         d=copy.deepcopy(self.scope)
-        d['component_candidates'][0]['service_assignment_candidates'][0]['provider_consumer_role']='provider'
-        self.rejected(d,'prematurely assigned Component role')
+        d['component_candidates'][0]['service_assignment_candidates'][0]['applicability']='applicable'
+        self.rejected(d,'prematurely approved Component applicability')
+        d=copy.deepcopy(self.scope)
+        d['component_candidates'][0]['assignment_reviewed']=True
+        self.rejected(d,'prematurely approved Component membership')
 
     def test_unreviewed_pdf_line_cannot_be_marked_pass(self):
         d=copy.deepcopy(self.scope)

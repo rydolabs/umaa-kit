@@ -156,6 +156,34 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
       --bad-checkpoint)
   set_tests_properties(official_umaa_battery_multicell_bad_checkpoint PROPERTIES TIMEOUT 50)
 
+  # Actual official Battery SDK Handler/BoundReportProvider, distinct from
+  # the prior direct native sample publisher. Independent oracle remains the
+  # C-only original-TypeSupport receiver with no SDK linkage.
+  add_executable(umaa_official_battery_sdk_bound_provider
+    src/official_battery_sdk_bound_provider.cpp)
+  target_compile_features(umaa_official_battery_sdk_bound_provider PRIVATE cxx_std_17)
+  target_include_directories(umaa_official_battery_sdk_bound_provider PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../dds-backends/cyclone/include")
+  target_link_libraries(umaa_official_battery_sdk_bound_provider PRIVATE
+    umaa_official_type_support)
+
+  add_test(NAME official_umaa_battery_sdk_bound_provider_wire
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_payload.py"
+      "$<TARGET_FILE:umaa_official_battery_sdk_bound_provider>"
+      "$<TARGET_FILE:umaa_official_battery_payload_oracle>")
+  set_tests_properties(official_umaa_battery_sdk_bound_provider_wire PROPERTIES TIMEOUT 50)
+
+  add_test(NAME official_umaa_battery_sdk_bound_provider_bad_checkpoint_rejected
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_payload.py"
+      "$<TARGET_FILE:umaa_official_battery_sdk_bound_provider>"
+      "$<TARGET_FILE:umaa_official_battery_payload_oracle>"
+      --bad-checkpoint)
+  set_tests_properties(official_umaa_battery_sdk_bound_provider_bad_checkpoint_rejected
+    PROPERTIES TIMEOUT 50)
+
 endif()
 
 

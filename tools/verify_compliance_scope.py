@@ -11,6 +11,20 @@ SCOPE = ROOT / 'catalog/umaa6-conformance-scope.json'
 GROUPS = {'provider_topics': 'provider', 'consumer_topics': 'consumer', 'collection_topics': 'collection'}
 MANDATORY_SOURCES = {'COMPLIANCE_REV1', 'COMPONENT_DEFINITIONS_1_0'} | {'ICD_%s_6_0' % n for n in ('EO', 'MO', 'MM', 'SA', 'SEM', 'SO', 'CO', 'EXP')}
 APPLICABILITY = {'applicable', 'conditional', 'not_applicable', 'undetermined'}
+# The sole reviewed Component Definition fact is the Section 3 symbol legend:
+# a tilde denotes Consumer; without a tilde the service is Provider.
+# Original AUVSI v1.0 PDF is SHA-pinned, but no acquisition-specific
+# Component Specification, normative QoS, or complete applicability is approved.
+COMPONENT_DEFINITION_SHA256 = '872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75'
+ROLE_EVIDENCE = 'COMPONENT_DEFINITIONS_1_0:section-3-legend'
+ROLE_RULE_SECTION = '3 (Component Definitions symbol legend)'
+PUBLIC_COMPONENT_SERVICE_ROWS = {
+    'Autopilot': 14, 'COLREGS And Hazard Avoidance': 17,
+    'Logging': 1, 'Mission Executor': 28, 'USV Navigation': 5,
+    'UUV Hazard Avoidance': 14, 'UUV Navigation': 6,
+    'Water Environment': 3, 'Weather': 3,
+}
+
 
 
 def load_json(path):
@@ -64,14 +78,34 @@ def validate(catalog, scope):
     summary = scope.get('component_definition_extraction', {})
     if summary.get('service_mention_rows') != len(candidate_rows) or len(candidate_rows) != 91:
         errors.append('component candidate row coverage drift')
-    if any(x.get('provider_consumer_role') != 'undetermined' or x.get('authoritative_role_reviewed') is not False
-           or x.get('applicability') != 'undetermined' for x in candidate_rows):
-        errors.append('prematurely assigned Component role or applicability')
-    if any(not x.get('source_section') or not x.get('service_name') or not isinstance(x.get('extracted_pdf_text_line'), int)
+    if {c.get('name'): len(c.get('service_assignment_candidates', []))
+            for c in components} != PUBLIC_COMPONENT_SERVICE_ROWS:
+        errors.append('public Component service row distribution drift')
+    if any(x.get('provider_consumer_role') != (
+                'consumer' if x.get('tilde_annotation_present') is True
+                else 'provider' if x.get('tilde_annotation_present') is False
+                else None)
+           or x.get('authoritative_role_reviewed') is not True
+           or x.get('role_evidence_source') != ROLE_EVIDENCE
+           for x in candidate_rows):
+        errors.append('Component role/tilde evidence mismatch')
+    if any(x.get('applicability') != 'undetermined' for x in candidate_rows):
+        errors.append('prematurely approved Component applicability')
+    if any(not x.get('source_section') or not x.get('service_name')
+           or not isinstance(x.get('extracted_pdf_text_line'), int)
            for x in candidate_rows):
         errors.append('missing original Component table locator')
-    if summary.get('role_and_tilde_semantics_reviewed') is not False or summary.get('source_sha256') != '872fd164b9a07b963d0d02d4ae026b2c4e34621654677aa2dbceec2a6ead0e75':
-        errors.append('unreviewed Component table or source provenance altered')
+    if (summary.get('role_and_tilde_semantics_reviewed') is not True
+        or summary.get('role_rule_source_section') != ROLE_RULE_SECTION
+        or summary.get('source_sha256') != COMPONENT_DEFINITION_SHA256):
+        errors.append('Component role source provenance altered')
+    if source_map.get('COMPONENT_DEFINITIONS_1_0', {}).get('full_text_reviewed') is not False:
+        errors.append('unreviewed Component Specification/full text approval')
+    # Review of Section 3 legend is not review of all Component membership,
+    # the required QoS profiles, or any platform acceptance specification.
+    if any(c.get('assignment_reviewed') is not False or
+           c.get('service_assignments') for c in components):
+        errors.append('prematurely approved Component membership')
     originals = {s['name']: s for s in catalog.get('services', [])}
     candidates = scope.get('service_candidates', [])
     cand_names = [s.get('name') for s in candidates]
@@ -159,6 +193,9 @@ def validate(catalog, scope):
             'count_discrepancy_open': mismatch,
             'published_component_name_candidates': len(components),
             'component_service_mention_candidates': len(candidate_rows),
+            'component_provider_role_rows': sum(x.get('provider_consumer_role') == 'provider' for x in candidate_rows),
+            'component_consumer_role_rows': sum(x.get('provider_consumer_role') == 'consumer' for x in candidate_rows),
+            'component_role_symbol_legend_reviewed': summary.get('role_and_tilde_semantics_reviewed') is True,
             'normative_requirements_traced': len(normative),
             'source_full_compliance_reviewed': source_map.get('COMPLIANCE_REV1', {}).get('full_text_reviewed',False),
             'claim_blocked': blocked, 'errors': errors}

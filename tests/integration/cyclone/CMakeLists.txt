@@ -120,6 +120,42 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
       PROPERTIES TIMEOUT 50)
   endforeach()
 
+  # Three distinct official keyed Battery Cell instances, one complete
+  # linked-list snapshot and four actual DDS Dispose events. The invalid
+  # final checkpoint must be rejected without ever reporting stability.
+  add_executable(umaa_official_battery_multicell_publisher
+    src/official_battery_multicell_publisher.cpp)
+  target_compile_features(umaa_official_battery_multicell_publisher PRIVATE cxx_std_17)
+  target_include_directories(umaa_official_battery_multicell_publisher PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../dds-backends/cyclone/include")
+  target_link_libraries(umaa_official_battery_multicell_publisher PRIVATE
+    umaa_official_type_support)
+
+  add_executable(umaa_official_battery_multicell_consumer
+    src/official_battery_multicell_consumer.cpp)
+  target_compile_features(umaa_official_battery_multicell_consumer PRIVATE cxx_std_17)
+  target_include_directories(umaa_official_battery_multicell_consumer PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../dds-backends/cyclone/include")
+  target_link_libraries(umaa_official_battery_multicell_consumer PRIVATE
+    umaa_official_type_support)
+
+  add_test(NAME official_umaa_battery_multicell_good
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_multicell.py"
+      "$<TARGET_FILE:umaa_official_battery_multicell_publisher>"
+      "$<TARGET_FILE:umaa_official_battery_multicell_consumer>")
+  set_tests_properties(official_umaa_battery_multicell_good PROPERTIES TIMEOUT 50)
+
+  add_test(NAME official_umaa_battery_multicell_bad_checkpoint
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_multicell.py"
+      "$<TARGET_FILE:umaa_official_battery_multicell_publisher>"
+      "$<TARGET_FILE:umaa_official_battery_multicell_consumer>"
+      --bad-checkpoint)
+  set_tests_properties(official_umaa_battery_multicell_bad_checkpoint PROPERTIES TIMEOUT 50)
+
 endif()
 
 

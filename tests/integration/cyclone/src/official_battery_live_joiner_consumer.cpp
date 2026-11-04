@@ -78,6 +78,7 @@ int main(int argc, char** argv) {
     std::map<dds_instance_handle_t, std::pair<host::Guid, host::Guid>> element_keys;
     bool report_data = false, element_data = false;
     bool report_disposed = false, element_disposed = false, saw_stable = false;
+    std::optional<std::pair<host::Guid, host::Guid>> deferred_element_dispose;
 
     for (int i = 0; i < 450 &&
         !(report_data && element_data && report_disposed && element_disposed); ++i) {
@@ -129,7 +130,11 @@ int main(int argc, char** argv) {
                 known->second.first != guid(0x11) ||
                 known->second.second != guid(0x22))
               throw std::runtime_error("unrecognized Battery Cell DDS Dispose");
-            joiner.on_dispose(known->second.first, known->second.second);
+            // Do not let a terminal Dispose erase a valid Cell sample before
+            // Report metadata arrives on the independently ordered Topic.
+            // Keep the authenticated DDS handle keys until the snapshot is
+            // assembled; then relay the real disposal, never a synthetic one.
+            deferred_element_dispose = known->second;
             element_disposed = true;
           }
           dds_sample_free(&sample,
@@ -141,12 +146,22 @@ int main(int argc, char** argv) {
         check_stable(*joiner.latest_stable());
         saw_stable = true;
       }
+      if (saw_stable && deferred_element_dispose) {
+        joiner.on_dispose(deferred_element_dispose->first,
+                          deferred_element_dispose->second);
+        deferred_element_dispose.reset();
+      }
       if (!(report_data && element_data && report_disposed && element_disposed))
         dds_sleepfor(DDS_MSECS(20));
     }
 
     if (!report_data || !element_data || !report_disposed || !element_disposed)
       throw std::runtime_error("incomplete real DDS Report/Cell data or Dispose events");
+    // A negative Report checkpoint is intentionally never stable; still
+    // deliver the observed independent Cell DDS Dispose before reset.
+    if (deferred_element_dispose)
+      joiner.on_dispose(deferred_element_dispose->first,
+                        deferred_element_dispose->second);
     // Actual keyed Report Dispose is the lifetime boundary, but in this
     // two-topic test the four required events must be observed first.
     joiner.reset_after_disconnect();

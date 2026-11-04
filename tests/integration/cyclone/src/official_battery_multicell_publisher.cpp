@@ -1,5 +1,5 @@
 // Real native original-IDL Cyclone DDS publisher for a THREE-cell Battery
-// Large List snapshot, with a deliberately mismatched final checkpoint mode.
+// Large List; optional second independent source/list with a negative checkpoint.
 // No synthetic IDL, JSON bridge or handwritten DDS serialization.
 #include <dds/dds.h>
 #include "umaa/official_battery_host.hpp"
@@ -16,6 +16,20 @@ namespace codec = umaa::cyclone::official_battery;
 
 static void require(dds_return_t rc, const char* action) {
   if (rc < 0) throw std::runtime_error(std::string(action) + ": " + dds_strretcode(-rc));
+}
+// EO ICD 6.0 §3.8.1 requires TOPIC ordered Presentation on the
+// Collection Element Publisher. Inspect actual DDS entity QoS in addition
+// to setting it, rather than trusting a caller-asserted flag.
+static void require_ordered_publisher(dds_entity_t publisher) {
+  std::unique_ptr<dds_qos_t, decltype(&dds_delete_qos)> actual(
+      dds_create_qos(), &dds_delete_qos);
+  if (!actual) throw std::runtime_error("cannot allocate actual Publisher QoS");
+  require(dds_get_qos(publisher, actual.get()), "read effective Publisher QoS");
+  dds_presentation_access_scope_kind_t scope = DDS_PRESENTATION_INSTANCE;
+  bool coherent = false, ordered = false;
+  if (!dds_qget_presentation(actual.get(), &scope, &coherent, &ordered) ||
+      scope != DDS_PRESENTATION_TOPIC || !ordered)
+    throw std::runtime_error("original Battery Publisher lacks reviewed EO Topic ordered Presentation");
 }
 static host::Guid guid(unsigned char v) {
   host::Guid x{}; x[0] = v; return x;
@@ -42,7 +56,11 @@ static void wait_reader(dds_entity_t writer) {
 }
 int main(int argc, char** argv) {
   const bool bad = argc == 2 && std::strcmp(argv[1], "--bad-checkpoint") == 0;
-  if (argc != 1 && !bad) return 2;
+  const bool two_bad = argc == 2 &&
+      std::strcmp(argv[1], "--two-lists-bad-checkpoint") == 0;
+  const bool two_lists = argc == 2 &&
+      (std::strcmp(argv[1], "--two-lists") == 0 || two_bad);
+  if (argc != 1 && !bad && !two_lists) return 2;
   dds_entity_t p = 0;
   try {
     host::Report sample{};
@@ -62,6 +80,28 @@ int main(int argc, char** argv) {
     codec::ElementWire first(cell(0x21, 0x22, 100, 3.75));
     codec::ElementWire second(cell(0x22, 0x23, 200, 4.0));
     codec::ElementWire third(cell(0x23, 0, 300, 4.25));
+    std::unique_ptr<codec::ReportWire> other_report;
+    std::unique_ptr<codec::ElementWire> other_cell;
+    if (two_lists) {
+      host::Report other{};
+      other.source.id = guid(0x44);
+      other.source.parentID = guid(0);
+      other.timeStamp = {1700000001, 250};
+      other.state = host::State::ON;
+      other.current = -2.5;
+      other.cellsListMetadata.listID = guid(0x12);
+      other.cellsListMetadata.updateElementID = guid(0x31);
+      other.cellsListMetadata.startingElementID = guid(0x31);
+      other.cellsListMetadata.size = 1;
+      other.cellsListMetadata.updateElementTimestamp =
+          host::DateTime{1700001000, two_bad ? 351 : 350};
+      auto one_cell = cell(0x31, 0, 350, 5.0);
+      one_cell.listID = guid(0x12);
+      one_cell.element.current = -0.5;
+      one_cell.element.temperature = 27.0;
+      other_report = std::make_unique<codec::ReportWire>(other);
+      other_cell = std::make_unique<codec::ElementWire>(one_cell);
+    }
 
     p = dds_create_participant(DDS_DOMAIN_DEFAULT, nullptr, nullptr);
     require(p, "create participant");
@@ -80,6 +120,7 @@ int main(int argc, char** argv) {
     dds_qset_history(endpoints.get(), DDS_HISTORY_KEEP_LAST, 16);
     const dds_entity_t pub = dds_create_publisher(p, presentation.get(), nullptr);
     require(pub, "publisher");
+    require_ordered_publisher(pub);
     const dds_entity_t report_w = dds_create_writer(pub, report_t, endpoints.get(), nullptr);
     const dds_entity_t cell_w = dds_create_writer(pub, element_t, endpoints.get(), nullptr);
     require(report_w, "report writer"); require(cell_w, "cell writer");
@@ -88,7 +129,11 @@ int main(int argc, char** argv) {
     // Three distinct keyed instances and one Report metadata checkpoint.
     // The consumer must not publish a stable result from an incomplete set.
     require(dds_write(cell_w, &first.get()), "first keyed Cell");
+    if (two_lists)
+      require(dds_write(report_w, &other_report->get()), "second-source Report");
     require(dds_write(cell_w, &second.get()), "second keyed Cell");
+    if (two_lists)
+      require(dds_write(cell_w, &other_cell->get()), "second-list keyed Cell");
     require(dds_write(cell_w, &third.get()), "third keyed Cell");
     require(dds_write(report_w, &report.get()), "three-Cell Report");
     dds_sleepfor(DDS_MSECS(700));
@@ -96,14 +141,21 @@ int main(int argc, char** argv) {
     require(dds_dispose(cell_w, &first.get()), "first Cell Dispose");
     require(dds_dispose(cell_w, &second.get()), "second Cell Dispose");
     require(dds_dispose(cell_w, &third.get()), "third Cell Dispose");
+    if (two_lists)
+      require(dds_dispose(cell_w, &other_cell->get()), "second-list Cell Dispose");
     require(dds_dispose(report_w, &report.get()), "Report Dispose");
+    if (two_lists)
+      require(dds_dispose(report_w, &other_report->get()), "second Report Dispose");
     require(dds_wait_for_acks(cell_w, DDS_SECS(5)), "Cell ACK");
     require(dds_wait_for_acks(report_w, DDS_SECS(5)), "Report ACK");
     dds_sleepfor(DDS_MSECS(350));
     require(dds_delete(p), "delete participant");
     p = 0;
-    std::puts(bad ? "BATTERY_THREE_CELL_BAD_CHECKPOINT_SENT" :
-                    "BATTERY_THREE_CELL_ORIGINAL_WIRE_SENT");
+    std::puts(two_lists
+        ? (two_bad ? "BATTERY_TWO_LIST_BAD_CHECKPOINT_SENT" :
+                     "BATTERY_TWO_LIST_ORIGINAL_WIRE_SENT")
+        : (bad ? "BATTERY_THREE_CELL_BAD_CHECKPOINT_SENT" :
+                 "BATTERY_THREE_CELL_ORIGINAL_WIRE_SENT"));
     return 0;
   } catch(const std::exception& e) {
     std::fprintf(stderr, "official Battery three-cell publisher failed: %s\n", e.what());

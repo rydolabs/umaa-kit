@@ -4,6 +4,8 @@ on:
     paths:
       - '.github/workflows/official-idl-runner-integration.yml'
       - 'tools/official_icd_evidence.py'
+      - 'tools/generate_official_engine_plugin.py'
+      - 'sdk/tests/test_official_engine_source_contract.py'
       - 'tools/official_icd_overlay.py'
       - 'tools/official_idl_coverage.py'
       - 'tools/official_idl_compile.py'
@@ -12,6 +14,8 @@ on:
     paths:
       - '.github/workflows/official-idl-runner-integration.yml'
       - 'tools/official_icd_evidence.py'
+      - 'tools/generate_official_engine_plugin.py'
+      - 'sdk/tests/test_official_engine_source_contract.py'
       - 'tools/official_icd_overlay.py'
       - 'tools/official_idl_coverage.py'
       - 'tools/official_idl_compile.py'
@@ -99,6 +103,26 @@ jobs:
           assert s["approvedDdsQos"] is False and s["approvedOperations"] is False
           assert len(list(root.glob("services/*/*.yaml")))==53
           print("OFFICIAL_UMAA_YAML_CANDIDATES_PASS", s["services"])
+          PY
+
+      - name: Authenticate scoped EngineControl Command/Ack/Status source contract (candidate only)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from tools.generate_official_engine_plugin import verify_engine_source_contract
+          root = Path(os.environ["RUNNER_TEMP"])
+          info = verify_engine_source_contract(
+              root / "source-backed-candidates/services/EO/EngineControl.yaml",
+              root / "umaa-6.0-with-exp.zip",
+              os.environ["UMAA_IDL_SHA256"])
+          assert info["verifiedNativeTopicTypes"] == 3
+          assert info["reviewedPerServiceQos"] is False
+          assert info["completeProtocolGenerated"] is False
+          assert info["officialNativeRuntimeAuthorized"] is False
+          assert info["formalUmaaConformance"] is False
+          print("UMAA_ENGINE_SOURCE_CONTRACT_CANDIDATE_PASS")
           PY
 
       - name: Extract validated source only to ephemeral Runner temp

@@ -31,6 +31,35 @@ links and mismatched sizes. It retains last committed snapshot while the
 next batch is incomplete, and holds a bounded pending-Report queue rather
 than inventing a cross-topic ordering guarantee.
 
+## Bounded multi-list routing (candidate, Draft PR #58)
+
+`sdk/include/umaa/official_battery_collection_router.hpp` implements
+`LargeListRouter`, a vendor-neutral, bounded dispatch layer over independent
+`LargeListJoiner` instances indexed by the **actual Collection listID**:
+
+- Interleaved Report, Element and genuine keyed Dispose callbacks for distinct
+  list IDs cannot mix their host-side buffered records or stable generations.
+  Report-first and Element-first initial sequences are independently supported.
+- `active_lists()` and a configurable maximum (default 16, cap 128) enforce
+  bounded concurrent lists. The aggregate configuration caps
+  `max_lists * max_elements_per_list` at 262144 records; the router never
+  silently evicts an active list.
+- `retire_list(listID)` explicitly discards a known-ended list's buffer.
+  `reset_after_disconnect()` clears **all** buffered/stable lists; none is
+  treated as valid until a complete new event stream is reconstructed.
+- Invalid first events do not allocate a list slot. An oversize or invalid
+  NIL Report is rejected **before** modifying a joiner's Report timestamp
+  or pending queue, so an otherwise valid next Report can still be accepted.
+- A second Report source using an already active listID is rejected by the
+  underlying joiner. The original List Element does not carry a Source
+  Identifier; the router **must not guess source/list ownership**. It does
+  not resolve simultaneous reuse of a listID by multiple real sources.
+
+This is a **host-only convenience** and does NOT establish that the real
+DDS reader verified TOPIC ordered Presentation, has complete callback
+coverage, correctly extracted Dispose keys, or implements reconnect replay.
+No native DDS coherence proof or formal UMAA approval flag is set.
+
 ## Mandatory external precondition
 
 The caller must select
@@ -65,6 +94,6 @@ The host tests run on **Ubuntu and Windows** via
 
 Still required: vendor-specific real DDS callback adapters, native
 Dispose-key extraction, actual network discovery/recovery replay,
-multiple concurrent sources/lists, full QoS/Component settings, and
+source/list ownership and duplicate-ID collisions, full QoS/Component settings, and
 independent official E2E for both Cyclone and Fast DDS. The existing
 one-Cell Cyclone wire evidence from Draft #49 remains distinct.

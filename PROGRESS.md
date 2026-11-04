@@ -624,3 +624,28 @@ the complete PR verified.
   synthetic SDK CLI negative tests, original Cyclone DDS 5 native CTests,
   and triggered cross-platform/vendor regressions. Do not merge on docs
   or previous green CI alone.
+
+
+## 2026-11-05 — typed BatteryStatus Handler subscriber (scoped, CI pending)
+
+- New SDK header `sdk/include/umaa/official_battery_subscription.hpp`
+  owns the **host-side** BatteryStatus List state and dispatches accepted
+  original `Report`+`Element` snapshots to a business-only Handler.
+  Explicit Source/Parent ID → List ID binding, per-reader epoch, true
+  keyed Dispose retirement and stale callback rejection are implemented.
+- Partial Report/Cell updates invalidate the current snapshot until
+  a complete checkpoint is observed. Source collision, wrong Parent,
+  replay of retired IDs and business Handler exceptions fault the
+  subscription and require an explicit reset. No stale automatic replay.
+- The original Cyclone DDS independent two-source/two-list CTest now
+  calls the SDK subscription; business Handler only receives callbacks.
+  The original TypeSupport, native Publisher/Subscriber QoS inspection
+  and genuine DDS instance-handle-derived Dispose oracle remain.
+- Added C++17 Linux/Windows host regressions for two sources, independent
+  update generations, source Dispose, late Cell tombstones, no resurrected
+  data, reader epoch rotation, invalid input and Handler failure/recovery.
+- **Exact-head CI is pending:** do not infer passes from the previously
+  verified `main` SHA `b7eb9ee5741b957ef7b81682e51adaf5e0a7e74b`.
+  This is NOT automatically generated official native DDS Runtime, complete
+  Service QoS/Component requirements or full UMAA conformance. The
+  official native Runtime generation gate remains unchanged.

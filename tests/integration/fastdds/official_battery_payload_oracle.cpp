@@ -87,7 +87,7 @@ int main() {
     ok(t1.register_type(p), "report registration");
     ok(t2.register_type(p), "cell registration");
     std::fprintf(stderr, "FASTDDS_ORIGINAL_TYPES report=%s element=%s\n",
-        t1.get_type_name(), t2.get_type_name());
+        t1.get_type_name().c_str(), t2.get_type_name().c_str());
     std::fflush(stderr);
     auto* topic1 = p->create_topic("BatteryReportType", t1.get_type_name(), fd::TOPIC_QOS_DEFAULT);
     auto* topic2 = p->create_topic("BatteryReportTypeCellsListElement", t2.get_type_name(),

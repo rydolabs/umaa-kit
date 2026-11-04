@@ -145,6 +145,22 @@ int main() {
       std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 
+    // Diagnostic only; not a compatibility override or a PASS condition.
+    fd::SubscriptionMatchedStatus report_matches{};
+    fd::SubscriptionMatchedStatus element_matches{};
+    fd::RequestedIncompatibleQosStatus report_incompatible{};
+    fd::RequestedIncompatibleQosStatus element_incompatible{};
+    (void)report_reader->get_subscription_matched_status(report_matches);
+    (void)element_reader->get_subscription_matched_status(element_matches);
+    (void)report_reader->get_requested_incompatible_qos_status(report_incompatible);
+    (void)element_reader->get_requested_incompatible_qos_status(element_incompatible);
+    std::fprintf(stderr,
+      "FASTDDS_ENDPOINT_DIAG report_matches=%d element_matches=%d "
+      "report_qos_incompatible=%u report_qos_policy=%d "
+      "element_qos_incompatible=%u element_qos_policy=%d\n",
+      report_matches.total_count, element_matches.total_count,
+      report_incompatible.total_count, static_cast<int>(report_incompatible.last_policy_id),
+      element_incompatible.total_count, static_cast<int>(element_incompatible.last_policy_id));
     if (!got_report || !got_element || !disposed_report || !disposed_element) {
       std::fprintf(stderr, "FAST_BATTERY_INCOMPLETE report=%d element=%d disposeReport=%d disposeCell=%d\n",
                    got_report, got_element, disposed_report, disposed_element);

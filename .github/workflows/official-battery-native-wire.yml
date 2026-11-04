@@ -8,6 +8,7 @@ on:
       - 'sdk/include/umaa/official_battery_subscription.hpp'
       - 'sdk/include/umaa/report_transport.hpp'
       - 'dds-backends/cyclone/include/umaa/cyclone_official_battery_codec.hpp'
+      - 'dds-backends/cyclone/include/umaa/cyclone_official_battery_reader.hpp'
       - 'tests/integration/cyclone/CMakeLists.txt'
       - 'tests/integration/cyclone/src/official_battery_*'
       - 'simulator/dds/official_battery_payload_oracle.c'

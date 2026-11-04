@@ -61,7 +61,7 @@ jobs:
             -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/native-battery"
           cmake --build "$RUNNER_TEMP/battery-live-build" --parallel 2 \
             --target umaa_official_battery_payload_publisher umaa_official_battery_live_joiner_consumer
-      - name: Two independent real DDS processes: positive snapshot and rejected bad checkpoint
+      - name: 'Two independent real DDS processes: positive snapshot and rejected bad checkpoint'
         run: |
           ctest --test-dir "$RUNNER_TEMP/battery-live-build" \
             -R '^official_umaa_battery_live_joiner_(good|bad)$' \

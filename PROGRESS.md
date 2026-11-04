@@ -644,8 +644,22 @@ the complete PR verified.
 - Added C++17 Linux/Windows host regressions for two sources, independent
   update generations, source Dispose, late Cell tombstones, no resurrected
   data, reader epoch rotation, invalid input and Handler failure/recovery.
-- **Exact-head CI is pending:** do not infer passes from the previously
-  verified `main` SHA `b7eb9ee5741b957ef7b81682e51adaf5e0a7e74b`.
-  This is NOT automatically generated official native DDS Runtime, complete
+- **Verified exact code snapshot:** commit
+  `683fbbd16ad9bf19a234605ec6d5321db6d9f5f8`, GitHub Actions
+  **12/12 workflows SUCCESS, 0 failures/pending** (11 PR events plus the
+  branch push event). [Linux/Windows Handler host run 41931272014](https://github.com/rydolabs/umaa-kit/actions/runs/41931272014):
+  both platforms compiled -Werror/WX and **2/2 CTests PASS** per platform.
+  [Authentic original Cyclone two-List run 41931271957](https://github.com/rydolabs/umaa-kit/actions/runs/41931271957):
+  **5/5 native CTests PASS**, including two distinct Source business
+  Handler snapshots, scoped bad-checkpoint isolation, genuine 6
+  keyed DDS Disposes and default-QoS negative.
+  [Full native source-pinned integration run 41931271922](https://github.com/rydolabs/umaa-kit/actions/runs/41931271922),
+  [Windows official DDS run 41931271967](https://github.com/rydolabs/umaa-kit/actions/runs/41931271967),
+  [Linux netns fault/recovery run 41931272030](https://github.com/rydolabs/umaa-kit/actions/runs/41931272030),
+  and independent SDK/Fast DDS plugin and same-binary substitution checks
+  also succeeded. This later evidence-only documentation commit requires
+  a separate HEAD-status check; do not misattribute the earlier exact
+  code SHA's CI to a later commit.
+- This is NOT automatically generated official native DDS Runtime, complete
   Service QoS/Component requirements or full UMAA conformance. The
   official native Runtime generation gate remains unchanged.

@@ -1,0 +1,37 @@
+name: Source-reviewed UMAA QoS minimum contract
+on:
+  pull_request:
+    paths:
+      - 'contracts/qos/umaa6/**'
+      - 'sdk/include/umaa/generated/umaa6_qos_requirements.hpp'
+      - 'tools/generate_qos_requirements.py'
+      - 'sdk/tests/test_qos_contract_generation.py'
+      - '.github/workflows/umaa-qos-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/qos/umaa6/**'
+      - 'sdk/include/umaa/generated/umaa6_qos_requirements.hpp'
+      - 'tools/generate_qos_requirements.py'
+      - 'sdk/tests/test_qos_contract_generation.py'
+      - '.github/workflows/umaa-qos-contract.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned YAML support
+        run: python -m pip install 'PyYAML==6.0.2'
+      - name: Check generated requirements against source
+        run: python -m tools.generate_qos_requirements --check
+      - name: Negative schema and source-evidence tests
+        run: python -m unittest discover -s sdk/tests -p test_qos_contract_generation.py -v

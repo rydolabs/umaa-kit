@@ -1,4 +1,26 @@
-# Contract IR and YAML+IDL Component generation (first vertical slice)
+# Contract IR and YAML+IDL Component generation
+
+## Current production-oriented path: real native DDS compilers
+
+For native DDS TypeSupport, the SDK Component CLI now delegates to the
+backend-independent installed compiler plugin registry, not the restricted
+Python IDL parser. See [SDK native backend protocol](SDK_NATIVE_CODEGEN_BACKENDS.md)
+for compiler extension, source pinning, CLI invocation, CMake integration
+and explicit runtime limitations.
+
+Native mode uses --idl-root, repeated --idl-binding Type::Name=relative.idl,
+and optional repeated --backend plugin selectors. The existing restricted
+scalar IDL parser is reachable only through the explicit --fixture --idl
+Demo:: host-only compatibility path. Official ICD generation using the
+old --idl parser is rejected.
+
+The native pipeline emits actual vendor compiler TypeSupport, a generated
+CMake project, typed native identity probes and a source-checked Contract IR.
+It still does NOT infer or register a live official UMAA Component provider:
+actual host payload codec, reviewed native Key semantics and normative QoS
+remain independent prerequisites for a live SDK Runtime binding.
+
+## Legacy synthetic Component scaffold (compatibility only)
 
 **Scope:** compile-tested, vendor-neutral C++17 Component v2 **scaffolds**, not
 native official UMAA DDS endpoints. The generator is intentionally fail-closed.

@@ -1,0 +1,77 @@
+name: Official UMAA Battery three-element native Cyclone DDS List proof
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/official-battery-multicell-native-wire.yml'
+      - 'sdk/include/umaa/official_battery_collection.hpp'
+      - 'sdk/include/umaa/official_battery_collection_router.hpp'
+      - 'sdk/tests/official_battery_collection_joiner_test.cpp'
+      - 'tests/integration/cyclone/src/official_battery_multicell_consumer.cpp'
+      - 'tests/integration/cyclone/src/official_battery_multilist_consumer.cpp'
+      - 'tests/integration/cyclone/src/official_battery_multicell_publisher.cpp'
+      - 'simulator/dds/run_battery_multicell.py'
+      - 'simulator/dds/run_battery_multilist.py'
+      - 'tests/integration/cyclone/CMakeLists.txt'
+      - 'dds-backends/cyclone/include/umaa/cyclone_official_battery_codec.hpp'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  battery-three-cells-original-wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      UMAA_IDL_SHA256: 15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08
+      UMAA_IDL_URL: https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl-with-exp-services.zip
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install CycloneDDS genuine native TypeSupport compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev
+      - name: Fetch and SHA-256 verify authentic AUVSI IDL only in temp directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 \
+            --max-time 120 "$UMAA_IDL_URL" -o "$RUNNER_TEMP/original.zip"
+          printf '%s  %s\n' "$UMAA_IDL_SHA256" "$RUNNER_TEMP/original.zip" | sha256sum --check
+      - name: Validate exactly pinned Battery nested source closure
+        run: python3 -m tools.official_battery_payload_structure --idl-zip "$RUNNER_TEMP/original.zip"
+      - name: Generate only genuine original Battery transitive Cyclone DDS TypeSupport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from tools.official_icd_evidence import inspected_zip
+          tmp=Path(os.environ["RUNNER_TEMP"])
+          root=tmp/"original-idl"
+          root.mkdir()
+          with inspected_zip(tmp/"original.zip") as z:
+              if z.testzip() is not None: raise RuntimeError("corrupt IDL ZIP")
+              z.extractall(root)
+          PY
+          python3 tools/official_idl_compile.py \
+            --root "$RUNNER_TEMP/original-idl" \
+            --source UMAA/EO/BatteryStatus/BatteryReportType.idl \
+            --out "$RUNNER_TEMP/native-battery"
+      - name: Compile original three-Cell publisher and independent one-/two-list SDK joiners
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/battery-live-build" \
+            -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/native-battery"
+          cmake --build "$RUNNER_TEMP/battery-live-build" --parallel 2 \
+            --target umaa_official_battery_multicell_publisher umaa_official_battery_multicell_consumer umaa_official_battery_multilist_consumer
+      - name: 'Original DDS: three-Cell and two-source List positive/negative checkpoint oracles'
+        run: |
+          ctest --test-dir "$RUNNER_TEMP/battery-live-build" \
+            -R '^official_umaa_battery_(multicell|multilist)_(good|bad_checkpoint|default_qos_rejected)$' \
+            --output-on-failure -V
+      - name: Explicit limitations
+        if: success()
+        run: |
+          echo "OFFICIAL_BATTERY_THREE_CELL_AND_TWO_SOURCE_LIST_ORIGINAL_DDS_E2E_PASS"
+          echo "No full Collection/Component QoS, vendor parity or conformance claim"

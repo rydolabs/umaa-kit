@@ -15,6 +15,7 @@ import sys
 import tempfile
 
 from tools import umaa_service_contracts as contracts
+from tools import verify_compliance_scope as scope_contract
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "catalog/umaa6-six-icd-reviewed.json"
@@ -101,7 +102,54 @@ def new(name, target):
         "id": name, "artifact": "shared-library"}, "services": []})
 
 
-def check_assembly(doc):
+def check_reference_component_roles(component_name: str, services: list[dict]) -> dict:
+    """Verify selected service roles against AUVSI Component Definitions §3.
+
+    Does not approve membership completeness, specific acquisition QoS,
+    official native Runtime, or compliance.
+    """
+    source = scope_contract.load_json(scope_contract.SCOPE)
+    catalog = scope_contract.load_json(scope_contract.CATALOG)
+    report = scope_contract.validate(catalog, source)
+    if report["errors"] or not report["component_role_symbol_legend_reviewed"]:
+        raise ProjectError("official Component source/role evidence invalid")
+    entry = next((x for x in source["component_candidates"]
+                  if x["name"] == component_name), None)
+    if entry is None:
+        raise ProjectError("unknown official public Component Definition")
+    reviewed = entry["service_assignment_candidates"]
+    permitted = {(row["service_name"], row["provider_consumer_role"])
+                 for row in reviewed if row["authoritative_role_reviewed"]}
+    known = catalog["services"]
+    for item in services:
+        name, role = item["id"], item["role"]
+        if name.startswith("Demo::"):
+            raise ProjectError("synthetic service cannot claim official Component role")
+        short = name.split("::")[-1]
+        # Source list names are unqualified. A collision between multiple
+        # official Service namespaces must not be guessed by suffix matching.
+        matches = [service["name"] for service in known
+                   if service["name"].split("::")[-1] == short]
+        if len(matches) != 1 or matches[0] != name:
+            raise ProjectError("ambiguous official Component Service identity: " + name)
+        if (short, role) not in permitted:
+            raise ProjectError("official Component Definition role mismatch: " +
+                               component_name + " / " + name + " / " + role)
+    return {
+        "componentDefinition": component_name,
+        "sourceSha256": scope_contract.COMPONENT_DEFINITION_SHA256,
+        "checkedRoleBindings": len(services),
+        "publishedRoleRows": len(reviewed),
+        "roleLegendVerified": True,
+        "completeMembershipApproved": False,
+        "componentSpecificationApproved": False,
+        "normativeQosClaim": False,
+        "officialRuntimeClaim": False,
+        "officialConformanceClaim": False,
+    }
+
+
+def check_assembly(doc, reference_component=None):
     """Pure shared CLI/Studio assembly gate; never creates files or executes code."""
     doc = validate(doc)
     official = [s["id"] for s in doc["services"] if s["id"] not in DEMO]
@@ -123,7 +171,7 @@ def check_assembly(doc):
         _, current_pin = contracts.catalog_names()
         if doc["catalogPin"]["sha256"] != current_pin:
             raise ProjectError("reviewed catalog changed: explicit contract revision is required")
-    return {
+    result = {
         "status": "VALID_ASSEMBLY_NOT_NORMATIVE_RUNTIME",
         "componentId": doc["component"]["id"],
         "services": len(doc["services"]),
@@ -132,11 +180,14 @@ def check_assembly(doc):
         "officialRuntimeClaim": False,
         "normativeQosClaim": False,
     }
+    if reference_component is not None:
+        result["referenceComponentEvidence"] = check_reference_component_roles(
+            reference_component, doc["services"])
+    return result
 
 
-
-def check_project(project):
-    return check_assembly(read(project))
+def check_project(project, reference_component=None):
+    return check_assembly(read(project), reference_component)
 
 def add(project, name, role):
     doc = read(project)
@@ -316,6 +367,9 @@ def main(argv=None):
     l.add_argument("--project", type=Path, default=Path("."))
     validate_cmd = commands.add_parser("validate", help="validate a Component assembly")
     validate_cmd.add_argument("--project", type=Path, default=Path("."))
+    validate_cmd.add_argument(
+        "--reference-component",
+        help="validate source-backed public Component roles only; not QoS or conformance")
     ct = commands.add_parser("contract", help="inspect/export reviewed partial Service Contracts")
     ct_actions = ct.add_subparsers(dest="contract_action", required=True)
     export = ct_actions.add_parser("export")
@@ -330,6 +384,18 @@ def main(argv=None):
     g.add_argument("--original-icd", type=Path, help="source PDF/file for digest checking")
     g.add_argument("--fixture", action="store_true",
                    help="allow Demo:: synthetic fixture only")
+    g.add_argument("--idl-root", type=Path,
+                   help="native vendor compiler IDL tree; no Python IDL parser")
+    g.add_argument("--idl-binding", action="append",
+                   help="explicit Type::Name=relative.idl mapping; repeat by Topic type")
+    g.add_argument("--backend", action="append",
+                   help="registered DDS compiler plugin; omit for all installed")
+    g.add_argument("--idl-archive", type=Path,
+                   help="original SHA-pinned IDL ZIP for official source verification")
+    g.add_argument("--runtime-report", help="explicit native synthetic Report type")
+    g.add_argument("--runtime-key", help="int32 Report native Key member")
+    g.add_argument("--runtime-value", help="int32 Report native data member")
+    g.add_argument("--runtime-schema", help="explicit Report schema identity")
     b = commands.add_parser("build")
     b.add_argument("--project", type=Path, default=Path("."))
     b.add_argument("--sdk-prefix", required=True, type=Path)
@@ -337,6 +403,8 @@ def main(argv=None):
     t.add_argument("--project", type=Path, default=Path("."))
     args = parser.parse_args(argv)
     try:
+        if args.cmd == "generate" and any((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)) and not all((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)):
+            raise ProjectError("all native Runtime Report fields required")
         if args.cmd == "new":
             new(args.name, args.output or Path(args.name))
         elif args.cmd == "service":
@@ -346,7 +414,8 @@ def main(argv=None):
                 for item in read(args.project)["services"]:
                     print(item["role"], item["id"])
         elif args.cmd == "validate":
-            print(json.dumps(check_project(args.project), sort_keys=True, indent=2))
+            print(json.dumps(check_project(args.project, args.reference_component),
+                             sort_keys=True, indent=2))
         elif args.cmd == "contract":
             if args.contract_action == "export":
                 snapshot = contracts.create_snapshot()
@@ -356,13 +425,33 @@ def main(argv=None):
                 snapshot = contracts.read_snapshot(args.input)
                 print(json.dumps(contracts.validate_snapshot(snapshot), sort_keys=True))
         elif args.cmd == "generate":
-            if args.yaml or args.idl or args.original_icd or args.fixture:
+            if args.idl_root or args.idl_binding or args.backend or args.idl_archive or args.runtime_report or args.runtime_key or args.runtime_value or args.runtime_schema:
+                if not args.yaml or not args.idl_root or not args.idl_binding or args.idl:
+                    raise ProjectError("native ICD codegen requires --yaml, --idl-root and explicit --idl-binding; no --idl")
+                from tools.umaa_icd_component_codegen import generate_native as native_project
+                from tools.native_component_codegen import _binding_map
+                print(json.dumps(native_project(args.project / MANIFEST,
+                     args.yaml, args.idl_root, _binding_map(args.idl_binding),
+                     args.project, backends=args.backend, fixture=args.fixture,
+                     original_icd=args.original_icd, idl_archive=args.idl_archive,
+                     runtime_report=({
+                        "typeName": args.runtime_report,
+                        "keyField": args.runtime_key,
+                        "valueField": args.runtime_value,
+                        "schemaId": args.runtime_schema,
+                     } if args.runtime_report else None)),
+                     sort_keys=True))
+            elif args.yaml or args.idl or args.original_icd or args.fixture:
+                # Old host-only scalar fixture generator is deliberately
+                # unavailable for official/native SDK generation.
+                if not args.fixture:
+                    raise ProjectError("official ICD generation requires native --idl-root and --idl-binding")
                 if not args.yaml or not args.idl:
-                    raise ProjectError("--yaml and --idl are both required for ICD generation")
+                    raise ProjectError("--yaml and --idl are required for legacy Demo:: fixture")
                 from tools.umaa_icd_component_codegen import generate as generate_icd
                 print(json.dumps(generate_icd(args.project / MANIFEST,
                      args.yaml, args.idl, args.project,
-                     fixture=args.fixture, original_icd=args.original_icd),
+                     fixture=True, original_icd=args.original_icd),
                      sort_keys=True))
             else:
                 generate(args.project)

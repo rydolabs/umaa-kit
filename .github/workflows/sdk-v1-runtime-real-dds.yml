@@ -1,0 +1,64 @@
+name: SDK v1 real DDS Component Runtime integration
+on:
+  pull_request:
+    paths:
+      - sdk/include/umaa/sdk_v1_application.hpp
+      - sdk/tests/real_dds_sdk_v1_runtime_cli.cpp
+      - sdk/tests/run_real_dds_sdk_v1_runtime.py
+      - dds-backends/cyclone/CMakeLists.txt
+      - dds-backends/fastdds/CMakeLists.txt
+      - .github/workflows/sdk-v1-runtime-real-dds.yml
+  push:
+    branches: [sdk/v1-runtime-real-dds-20261103]
+    paths:
+      - sdk/include/umaa/sdk_v1_application.hpp
+      - sdk/tests/real_dds_sdk_v1_runtime_cli.cpp
+      - sdk/tests/run_real_dds_sdk_v1_runtime.py
+      - dds-backends/cyclone/CMakeLists.txt
+      - dds-backends/fastdds/CMakeLists.txt
+      - .github/workflows/sdk-v1-runtime-real-dds.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  same-binary-both-vendors:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install actual Cyclone DDS, Fast DDS and IDL tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev libfastrtps-dev libfastcdr-dev fastddsgen
+      - name: Configure and build both vendor adapters and SDK runtime
+        run: |
+          cmake -S dds-backends/cyclone -B build/sdk-v1-cyclone -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/sdk-v1-cyclone --parallel 2
+          cmake -S dds-backends/fastdds -B build/sdk-v1-fastdds -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/sdk-v1-fastdds --parallel 2
+      - name: Same typed executable and DLL for Command+Report on both genuine DDS vendors
+        run: |
+          set -euo pipefail
+          exe="$PWD/build/sdk-v1-cyclone/umaa_cyclone_sdk_v1_runtime_cli"
+          module="$PWD/build/sdk-v1-cyclone/libumaa_cyclone_vehicle_component.so"
+          cyclone_command="$PWD/build/sdk-v1-cyclone/libumaa_dds_cyclone_command_demo.so"
+          cyclone_report="$PWD/build/sdk-v1-cyclone/libumaa_dds_cyclone_demo.so"
+          fast_command="$PWD/build/sdk-v1-fastdds/libumaa_dds_fastdds_command_demo.so"
+          fast_report="$PWD/build/sdk-v1-fastdds/libumaa_dds_fastdds_demo.so"
+          test -f "$exe" && test -f "$module"
+          for backend in cyclone fastdds; do
+            if [ "$backend" = cyclone ]; then
+              cmd="$cyclone_command"; report="$cyclone_report"
+            else
+              cmd="$fast_command"; report="$fast_report"
+            fi
+            for scenario in normal cancel update; do
+              echo "SDK v1 actual DDS backend=$backend scenario=$scenario"
+              python3 sdk/tests/run_real_dds_sdk_v1_runtime.py "$exe" "$cmd" "$report" "$module" "$scenario"
+            done
+          done
+          sha256sum "$exe" "$module"
+      - name: Preserve build and CTest logs
+        if: always()
+        run: |
+          find build/sdk-v1-* -name '*.so' -o -name 'CTestTestfile.cmake' | sort

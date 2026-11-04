@@ -1,0 +1,14 @@
+# Reviewed normative MINIMUM only. NOT a complete UMAA 6.0 QoS profile.
+# Source: EO ICD 6.0 (UMAA-SPEC-EOICD), section 3.8.1, PDF page 14.
+schemaVersion: "1"
+kind: "QosRequirements"
+source:
+  document: "UMAA-SPEC-EOICD-v6.0"
+  section: "3.8.1"
+  page: 14
+entries:
+  - serviceId: "UMAA::EO::BatteryStatus"
+    idlType: "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement"
+    required:
+      presentationScope: "topic"
+      orderedAccess: true

@@ -13,7 +13,6 @@ from pathlib import Path
 import re
 import sys
 
-from sdk.tools.umaa_codegen import parse_idl, render_types
 from tools import umaa_component_cli as cli
 from tools.umaa_contract_ir import resolve, ContractIRError
 
@@ -115,6 +114,7 @@ def render_trait(ir: dict) -> str:
              f'  static constexpr const char* schema_id = "{ir["scope"]}:{schema}:{fqtype}";',
              f'  static constexpr bool is_command = {"true" if kind == "Command" else "false"};',
              f'  static constexpr const char* topic_name = {cpp_literal(topic["ddsTopicName"])};',
+             f'  static constexpr const char* idl_type = {cpp_literal(topic["idlType"])};',
              f'  static constexpr const char* qos_profile = {cpp_literal(topic["qosProfileRef"])};',
              f"  using {kind} = ::{fqtype};"]
     if kind == "Command":
@@ -134,6 +134,124 @@ def render_trait(ir: dict) -> str:
         lines.append(f'    if (!codec::get_{field["type"]}(p, n, candidate.{field["name"]})) return false;')
     lines += ["    if (n != 0) return false;", "    v = std::move(candidate);",
               "    return true;", "  }", "};"]
+    return "\n".join(lines)
+
+
+def render_sdk_v1_traits(irs: list[dict]) -> str:
+    """C++17 ServiceTraits metadata for explicitly resolved Command/Report IR.
+
+    The generated WireService is the *host-only* Component codec, not a
+    native DDS TypeSupport. Collection/specialization IR is rejected upstream.
+    """
+    lines = [
+        '#pragma once',
+        '#include "generated/service_contracts.hpp"',
+        '#include "umaa/sdk_v1_core.hpp"',
+        'namespace umaa { namespace sdk_v1 {',
+    ]
+    for ir in irs:
+        name = identifier(ir["serviceId"])
+        kind, _, _, _ = service_type(ir)
+        flow = ("CommandResponse" if kind == "Command" else
+                "QuerylessRequestReply")
+        service_kind = "Control" if kind == "Command" else "Status"
+        lines.extend([
+            f"template<> struct ServiceTraits<::generated::{name}> {{",
+            f"  using WireService = ::generated::{name};",
+            f"  using {kind} = typename WireService::{kind};",
+            "  inline static constexpr ServiceDescriptor descriptor{",
+            f'    {cpp_literal(ir["serviceId"])},',
+            "    WireService::schema_id,",
+            f"    FlowKind::{flow},ServiceKind::{service_kind},",
+            "    CollectionShape::None,false};",
+            "};",
+        ])
+    lines += ["}} // namespace umaa::sdk_v1", ""]
+    return "\n".join(lines)
+
+
+def render_sdk_v1_smoke(irs: list[dict]) -> str:
+    lines = [
+        '#include "generated/sdk_v1_traits.hpp"',
+        '#include "umaa/sdk_v1.hpp"',
+        '#include <string_view>',
+        'int main(){',
+    ]
+    for i, ir in enumerate(irs):
+        name = identifier(ir["serviceId"])
+        kind, _, _, _ = service_type(ir)
+        expected = "CommandResponse" if kind == "Command" else "QuerylessRequestReply"
+        lines += [
+            f"  const auto& d{i}=umaa::sdk_v1::descriptor<::generated::{name}>();",
+            f"  if(d{i}.id!=std::string_view({cpp_literal(ir['serviceId'])}))return {10+i};",
+            f"  if(d{i}.flow!=umaa::sdk_v1::FlowKind::{expected})return {30+i};",
+            f"  if(d{i}.schema_id!=::generated::{name}::schema_id)return {50+i};",
+        ]
+    lines += ["  return 0;", "}", ""]
+    return "\n".join(lines)
+
+
+def render_checked_topic_bindings(irs: list[dict]) -> str:
+    """Emit explicit source-pinned DDS Topic+Schema+Key+QoS identifiers.
+
+    This is a vendor-neutral *contract*, not native DDS TypeSupport. No
+    mandatory QoS bitmask is inferred from an opaque QoS profile name.
+    """
+    lines = [
+        "#pragma once",
+        '#include "umaa/internal/dds_backend.h"',
+        "namespace generated {",
+    ]
+    for ir in irs:
+        name = identifier(ir["serviceId"])
+        lines.append(f"struct {name}ReviewedTopics {{")
+        lines.append("  static constexpr bool native_type_support_generated = false;")
+        for alias, topic in sorted(ir["topics"].items()):
+            tag = identifier(alias)
+            schema = (ir["scope"] + ":" + ir["inputs"]["idlSha256"] +
+                      ":" + topic["idlType"])
+            lines.extend([
+                f"  static UmaaDdsTopicV1 {tag}() {{",
+                "    return {" +
+                ", ".join((cpp_literal(topic["ddsTopicName"]),
+                           cpp_literal(schema),
+                           cpp_literal(topic["qosProfileRef"]), "0u")) +
+                "};",
+                "  }",
+                f"  static constexpr const char* {tag}_idl_type = " +
+                cpp_literal(topic["idlType"]) + ";",
+                f"  static constexpr const char* {tag}_key_fields = " +
+                cpp_literal(",".join(topic["keyFields"])) + ";",
+            ])
+        lines.append("};")
+    lines.extend(["} // namespace generated", ""])
+    return "\n".join(lines)
+
+
+def render_checked_topic_smoke(irs: list[dict]) -> str:
+    lines = [
+        '#include "generated/checked_topic_bindings.hpp"',
+        "#include <string_view>",
+        "int main(){",
+    ]
+    index = 0
+    for ir in irs:
+        name = identifier(ir["serviceId"])
+        lines.append(
+            f"  if(generated::{name}ReviewedTopics::native_type_support_generated)return 2;")
+        for alias, topic in sorted(ir["topics"].items()):
+            tag = identifier(alias)
+            lines += [
+                f"  const auto t{index}=generated::{name}ReviewedTopics::{tag}();",
+                f"  if(std::string_view(t{index}.topic_name)!=" +
+                f"std::string_view({cpp_literal(topic['ddsTopicName'])}))return {10+index};",
+                f"  if(std::string_view(t{index}.schema_id).empty())return {50+index};",
+                f"  if(std::string_view(t{index}.qos_profile)!=" +
+                f"std::string_view({cpp_literal(topic['qosProfileRef'])}))return {90+index};",
+                f"  if(t{index}.required_features!=0)return {120+index};",
+            ]
+            index += 1
+    lines.extend(["  return 0;", "}", ""])
     return "\n".join(lines)
 
 
@@ -223,6 +341,9 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
     providers = [mapping[s["id"]] for s in doc["services"] if s["role"] == "provider"]
     if not providers:
         raise ContractIRError("consumer-only Component runtime is not implemented")
+    if not fixture:
+        raise ContractIRError("official/native IDL must use registered vendor compiler path")
+    from sdk.tools.umaa_codegen import parse_idl, render_types  # Demo:: fixture only
     types = parse_idl(idl_path.read_text(encoding="utf-8"))
     output.mkdir(parents=True, exist_ok=True)
     write_generated(output / "generated/types.hpp", render_types(types))
@@ -233,6 +354,10 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
     traits.extend(render_trait(ir) for ir in irs)
     traits += ["} // namespace generated", ""]
     write_generated(output / "generated/service_contracts.hpp", "\n".join(traits))
+    write_generated(output / "generated/sdk_v1_traits.hpp",
+                    render_sdk_v1_traits(irs))
+    write_generated(output / "generated/checked_topic_bindings.hpp",
+                    render_checked_topic_bindings(irs))
     registration = [MARK.rstrip(), '#include "umaa/component.hpp"']
     for ir in providers:
         name = identifier(ir["serviceId"])
@@ -252,6 +377,10 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
                      f'UMAA_EXPORT_COMPONENT_V2("{doc["component"]["id"]}", register_services)', ""]
     write_generated(output / "generated/component_entry.cpp", "\n".join(registration))
     write_generated(output / "tests/codec_smoke.cpp", render_codec_smoke(irs))
+    write_generated(output / "tests/sdk_v1_traits_smoke.cpp",
+                    render_sdk_v1_smoke(irs))
+    write_generated(output / "tests/checked_topic_bindings_smoke.cpp",
+                    render_checked_topic_smoke(irs))
     expected = [f'  if (services[{i}].service != "{ir["serviceId"]}") return {10+i};'
                 for i, ir in enumerate(providers)]
     smoke = ['#include "umaa/component_module.hpp"', "#include <string>",
@@ -276,6 +405,16 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
              "target_compile_features(contract_codec_smoke PRIVATE cxx_std_17)",
              f"target_include_directories(contract_codec_smoke PRIVATE {d}{{CMAKE_CURRENT_SOURCE_DIR}})",
              "add_test(NAME contract_codec_smoke COMMAND contract_codec_smoke)",
+             "add_executable(sdk_v1_traits_smoke tests/sdk_v1_traits_smoke.cpp)",
+             "target_compile_features(sdk_v1_traits_smoke PRIVATE cxx_std_17)",
+             f"target_include_directories(sdk_v1_traits_smoke PRIVATE {d}{{CMAKE_CURRENT_SOURCE_DIR}})",
+             "target_link_libraries(sdk_v1_traits_smoke PRIVATE UMAA::Core)",
+             "add_test(NAME sdk_v1_traits_smoke COMMAND sdk_v1_traits_smoke)",
+             "add_executable(checked_topic_bindings_smoke tests/checked_topic_bindings_smoke.cpp)",
+             "target_compile_features(checked_topic_bindings_smoke PRIVATE cxx_std_17)",
+             f"target_include_directories(checked_topic_bindings_smoke PRIVATE {d}{{CMAKE_CURRENT_SOURCE_DIR}})",
+             "target_link_libraries(checked_topic_bindings_smoke PRIVATE UMAA::Core)",
+             "add_test(NAME checked_topic_bindings_smoke COMMAND checked_topic_bindings_smoke)",
              "add_executable(component_abi_smoke tests/module_smoke.cpp)",
              "target_compile_features(component_abi_smoke PRIVATE cxx_std_17)",
              "target_link_libraries(component_abi_smoke PRIVATE UMAA::Core)",
@@ -302,19 +441,66 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_path: Path,
     return summary
 
 
+def generate_native(manifest: Path, yaml_paths: list[Path], idl_root: Path,
+                    idl_bindings: dict[str, str], output: Path, *,
+                    backends: list[str] | None = None,
+                    fixture: bool = False,
+                    original_icd: Path | None = None,
+                    idl_archive: Path | None = None,
+                    runtime_report: dict | None = None) -> dict:
+    """Unified ICD codegen API: native compiler plugins, never regex IDL parsing."""
+    from tools.native_component_codegen import generate as native_project
+    return native_project(manifest, yaml_paths, idl_root, idl_bindings, output,
+                          backends=backends, fixture=fixture,
+                          original_icd=original_icd, idl_archive=idl_archive,
+                          runtime_report=runtime_report)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Source-checked YAML+IDL Component v2 scaffold")
     p.add_argument("--manifest", type=Path, required=True)
     p.add_argument("--yaml", type=Path, action="append", required=True)
-    p.add_argument("--idl", type=Path, required=True)
+    p.add_argument("--idl", type=Path, help="legacy Demo:: fixture only")
+    p.add_argument("--idl-root", type=Path,
+                   help="source tree for native DDS compiler plugins")
+    p.add_argument("--idl-binding", action="append",
+                   help="explicit Type::Name=relative.idl source binding")
+    p.add_argument("--backend", action="append",
+                   help="registered compiler backend plugin; repeat as needed")
+    p.add_argument("--idl-archive", type=Path,
+                   help="SHA-pinned original official IDL ZIP")
+    p.add_argument("--runtime-report")
+    p.add_argument("--runtime-key")
+    p.add_argument("--runtime-value")
+    p.add_argument("--runtime-schema")
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--original-icd", type=Path)
     p.add_argument("--fixture", action="store_true",
                    help="explicit Demo:: synthetic fixture; never certifies official UMAA")
     args = p.parse_args(argv)
     try:
-        result = generate(args.manifest, args.yaml, args.idl, args.out,
-                          fixture=args.fixture, original_icd=args.original_icd)
+        if any((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)) and not all((args.runtime_report,args.runtime_key,args.runtime_value,args.runtime_schema)):
+            raise ContractIRError("all native runtime codec fields required")
+        if args.idl_root or args.idl_binding or args.backend or args.idl_archive or args.runtime_report or args.runtime_key or args.runtime_value or args.runtime_schema:
+            if not args.idl_root or not args.idl_binding or args.idl:
+                raise ContractIRError("native ICD codegen requires --idl-root and --idl-binding, no --idl")
+            from tools.native_component_codegen import _binding_map
+            result = generate_native(args.manifest, args.yaml, args.idl_root,
+                                     _binding_map(args.idl_binding), args.out,
+                                     backends=args.backend, fixture=args.fixture,
+                                     original_icd=args.original_icd,
+                                     idl_archive=args.idl_archive,
+                                     runtime_report=({
+                                        "typeName": args.runtime_report,
+                                        "keyField": args.runtime_key,
+                                        "valueField": args.runtime_value,
+                                        "schemaId": args.runtime_schema,
+                                     } if args.runtime_report else None))
+        else:
+            if not args.fixture or not args.idl:
+                raise ContractIRError("legacy scalar parser requires explicit Demo:: --fixture and --idl")
+            result = generate(args.manifest, args.yaml, args.idl, args.out,
+                              fixture=True, original_icd=args.original_icd)
         print("ICD_COMPONENT_GENERATED: " + json.dumps(result, sort_keys=True))
         return 0
     except (OSError, ValueError, cli.ProjectError) as exc:

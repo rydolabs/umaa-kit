@@ -5,6 +5,7 @@
 #include "umaa/remote_command_client.hpp"
 #include "umaa/dds_command_request_server.hpp"
 #include "umaa/dds_collection_endpoint.hpp"
+#include "umaa/dds_split_collection_endpoint.hpp"
 #include "umaa/internal/component_runtime.hpp"
 #include "umaa/internal/dds_backend.h"
 #include "umaa/internal/runtime_config.hpp" // vendor-neutral event kinds only
@@ -20,6 +21,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 namespace umaa {
@@ -98,6 +100,12 @@ private:
   std::shared_ptr<internal::ComponentRuntime> host_;
 };
 
+template<class T,class=void> struct ServiceIdlType {
+  static constexpr const char* get(){return "";}
+};
+template<class T> struct ServiceIdlType<T,std::void_t<decltype(T::idl_type)>> {
+  static constexpr const char* get(){return T::idl_type;}
+};
 template<class Service> class ReportConsumer final {
   using ReportCallback=std::function<void(const typename Service::Report&,const std::string&)>;
   using DisposeCallback=std::function<void(const std::string&)>;
@@ -118,7 +126,8 @@ public:
       throw std::invalid_argument("invalid Report callback or polling interval");
     if(watcher_.joinable())throw std::logic_error("Report watch already started");
     if(!subscription_)subscription_=host_->subscribe_report_fixture(
-       Service::id,Service::topic_name,Service::schema_id,Service::qos_profile);
+       Service::id,Service::topic_name,Service::schema_id,Service::qos_profile,
+       ServiceIdlType<Service>::get());
     watch_stop_.store(false);
     watch_error_=nullptr;
     watcher_=std::thread([this,callback=std::move(on_report),
@@ -167,7 +176,8 @@ public:
   int32_t poll(uint32_t max_samples=1){
     if(watcher_.joinable())throw std::logic_error("manual poll while Report watcher owns Reader");
     if(!subscription_)subscription_=host_->subscribe_report_fixture(
-       Service::id,Service::topic_name,Service::schema_id,Service::qos_profile);
+       Service::id,Service::topic_name,Service::schema_id,Service::qos_profile,
+       ServiceIdlType<Service>::get());
     return subscription_->poll(max_samples);
   }
   bool latest(typename Service::Report& out,std::string& key) const {
@@ -231,6 +241,12 @@ public:
 private:
   std::unique_ptr<internal::ReportPublisher> endpoint_;
 };
+template<class T,class=void> struct ServiceQosName {
+  static constexpr const char* get(){return "demo-reliable";}
+};
+template<class T> struct ServiceQosName<T,std::void_t<decltype(T::qos_profile)>> {
+  static constexpr const char* get(){return T::qos_profile;}
+};
 class Application final {
 public:
   Application():host_(std::make_shared<internal::ComponentRuntime>()){}
@@ -238,8 +254,13 @@ public:
     auto config=internal::RuntimeConfig::read(config_path);
     Application app;
     app.use_backend(config.backend,config.domain_id);
+    app.host_->set_qos_profiles(config.qos_profiles);
     for(const auto& module:config.modules)app.load_component(module);
     return app;
+  }
+  void configure_qos_profiles(
+      const std::unordered_map<std::string,umaa::qos::Policy>& profiles) {
+    host_->set_qos_profiles(profiles);
   }
   void load_component(const std::string& path){host_->load_component(path);}
   // Cooperative in-process reload; not a crash-safe hot-upgrade.
@@ -249,7 +270,8 @@ public:
     static_assert(!Service::is_command,"publish<Service>() requires a Report contract");
     if(instance_key.empty())throw std::invalid_argument("Report instance key required");
     return ReportPublisherHandle<Service>(host_->open_report_fixture(
-      Service::id,Service::topic_name,Service::schema_id,instance_key));
+      Service::id,Service::topic_name,Service::schema_id,instance_key,
+      ServiceQosName<Service>::get(),ServiceIdlType<Service>::get()));
   }
 
   void use_backend(const std::string& path,uint32_t domain){
@@ -280,6 +302,23 @@ public:
     if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return std::make_unique<DdsCollectionConsumer<Service>>(
        backend_path_,domain_id_,instance_key,maximum);
+  }
+  // Two actual DDS topics, with SDK-owned application commit fence.
+  // This is NOT native DDS GROUP presentation; only explicit reviewed
+  // synthetic split bindings are supported by current vendor plugins.
+  template<class Service>
+  std::unique_ptr<DdsSplitCollectionPublisher<Service>> publish_split_collection(
+      const std::string& key,std::size_t maximum=1024) const {
+    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
+    return std::make_unique<DdsSplitCollectionPublisher<Service>>(
+      backend_path_,domain_id_,key,maximum);
+  }
+  template<class Service>
+  std::unique_ptr<DdsSplitCollectionConsumer<Service>> consume_split_collection(
+      const std::string& key,std::size_t maximum=1024) const {
+    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
+    return std::make_unique<DdsSplitCollectionConsumer<Service>>(
+      backend_path_,domain_id_,key,maximum);
   }
   // Typed remote Command provider: SDK owns DDS Request reader and
   // status/ack FSM. Device-specific business code is only provide<Service>().

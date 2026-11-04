@@ -20,11 +20,11 @@ if(UMAA_ENABLE_CYCLONE_ADAPTER)
   set_target_properties(umaa_sdk_cyclone PROPERTIES EXPORT_NAME Cyclone)
   target_compile_features(umaa_sdk_cyclone INTERFACE cxx_std_17)
   target_include_directories(umaa_sdk_cyclone INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
   target_link_libraries(umaa_sdk_cyclone INTERFACE UMAA::Core CycloneDDS::ddsc)
   install(TARGETS umaa_sdk_cyclone EXPORT UMAASDKTargets)
-  install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include/"
+  install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include/"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   set(UMAA_CYCLONE_FIND_DEPENDENCY
     "include(CMakeFindDependencyMacro)\nfind_dependency(CycloneDDS CONFIG REQUIRED)")
@@ -32,6 +32,9 @@ endif()
 option(UMAA_BUILD_TESTS "Build standalone core tests" ON)
 if(UMAA_BUILD_TESTS)
   enable_testing()
+  add_executable(umaa_qos_policy_test tests/test_qos_policy.cpp)
+  target_link_libraries(umaa_qos_policy_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_qos_policy_test COMMAND umaa_qos_policy_test)
   add_executable(umaa_reviewed_service_registry_test tests/test_reviewed_runtime_registry.cpp)
   target_link_libraries(umaa_reviewed_service_registry_test PRIVATE UMAA::Core)
   add_test(NAME umaa_reviewed_service_registry_test COMMAND umaa_reviewed_service_registry_test)
@@ -39,7 +42,7 @@ if(UMAA_BUILD_TESTS)
   target_link_libraries(umaa_cyclone_service_context_test PRIVATE UMAA::Core)
   target_include_directories(umaa_cyclone_service_context_test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include")
   add_test(NAME umaa_cyclone_service_context_test COMMAND umaa_cyclone_service_context_test)
   add_executable(umaa_command_identity_routing_test tests/test_command_identity_routing.cpp)
   target_link_libraries(umaa_command_identity_routing_test PRIVATE UMAA::Core)
@@ -53,19 +56,19 @@ if(UMAA_BUILD_TESTS)
   target_link_libraries(umaa_cyclone_command_adapter_test PRIVATE UMAA::Core)
   target_include_directories(umaa_cyclone_command_adapter_test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include")
   add_test(NAME umaa_cyclone_command_adapter_test COMMAND umaa_cyclone_command_adapter_test)
   add_executable(umaa_cyclone_report_writer_test tests/test_cyclone_report_writer.cpp)
   target_link_libraries(umaa_cyclone_report_writer_test PRIVATE UMAA::Core)
   target_include_directories(umaa_cyclone_report_writer_test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include")
   add_test(NAME umaa_cyclone_report_writer_test COMMAND umaa_cyclone_report_writer_test)
   add_executable(umaa_cyclone_report_reader_test tests/test_cyclone_report_reader.cpp)
   target_link_libraries(umaa_cyclone_report_reader_test PRIVATE UMAA::Core)
   target_include_directories(umaa_cyclone_report_reader_test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include")
   add_test(NAME umaa_cyclone_report_reader_test COMMAND umaa_cyclone_report_reader_test)
   # Independent Command-topic reader fake-ABI tests. The official EngineControl
   # host separately exercises this adapter with real CycloneDDS/UMAA TypeSupport.
@@ -73,7 +76,7 @@ if(UMAA_BUILD_TESTS)
   target_link_libraries(umaa_cyclone_command_reader_test PRIVATE UMAA::Core)
   target_include_directories(umaa_cyclone_command_reader_test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/fake_dds"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../dds/cyclone/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../dds-backends/cyclone/include")
   add_test(NAME umaa_cyclone_command_reader_test COMMAND umaa_cyclone_command_reader_test)
   add_executable(umaa_command_deadline_test tests/test_command_deadline.cpp)
   target_link_libraries(umaa_command_deadline_test PRIVATE UMAA::Core)
@@ -225,4 +228,51 @@ if(UMAA_BUILD_TESTS)
   add_executable(umaa_collection_frame_codec_test tests/test_collection_frame_codec.cpp)
   target_link_libraries(umaa_collection_frame_codec_test PRIVATE UMAA::Core)
   add_test(NAME umaa_collection_frame_codec_test COMMAND umaa_collection_frame_codec_test)
+endif()
+
+# SDK Core API v1: contract identity/correlation and adapters around existing engines.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_sdk_v1_core_test tests/test_sdk_v1_core.cpp)
+  target_link_libraries(umaa_sdk_v1_core_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_sdk_v1_core_test COMMAND umaa_sdk_v1_core_test)
+  add_executable(umaa_sdk_v1_bridge_test tests/test_sdk_v1_bridge.cpp)
+  target_link_libraries(umaa_sdk_v1_bridge_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_sdk_v1_bridge_test COMMAND umaa_sdk_v1_bridge_test)
+endif()
+
+# UMAA EO Flow Control protocol tests: state/reason, peer liveliness and cleanup.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_flow_protocol_v1_test tests/test_flow_protocol_v1.cpp)
+  target_link_libraries(umaa_flow_protocol_v1_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_flow_protocol_v1_test COMMAND umaa_flow_protocol_v1_test)
+endif()
+
+# SDK v1 Large Collection + Generalization/Specialization composition.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_sdk_v1_specialized_collection_test
+    tests/test_sdk_v1_specialized_collection.cpp)
+  target_link_libraries(umaa_sdk_v1_specialized_collection_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_sdk_v1_specialized_collection_test
+    COMMAND umaa_sdk_v1_specialized_collection_test)
+endif()
+
+# Two-Topic Collection commit fence correctness and recovery.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_split_collection_joiner_test
+    tests/test_split_collection_joiner.cpp)
+  target_include_directories(umaa_split_collection_joiner_test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+  target_link_libraries(umaa_split_collection_joiner_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_split_collection_joiner_test
+    COMMAND umaa_split_collection_joiner_test)
+endif()
+
+# 128-bit synthetic generalization/specialization binary contract.
+if(UMAA_BUILD_TESTS)
+  add_executable(umaa_specialization_packet_test
+    tests/test_specialization_packet.cpp)
+  target_include_directories(umaa_specialization_packet_test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+  target_link_libraries(umaa_specialization_packet_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_specialization_packet_test COMMAND umaa_specialization_packet_test)
 endif()

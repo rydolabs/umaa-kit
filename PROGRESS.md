@@ -526,3 +526,101 @@ results and the final documentation SHA independently before declaring
 the complete PR verified.
 
 **Integration resolution (2026-10-30):** PR #18 Supervisor owner-release and post-close worker tests were reconciled with the SDK, catalog, CLI and Studio changes on main. This does not establish physical hardware reconciliation, production IPC security or formal UMAA conformance.
+
+
+## 2026-11-03 — official Report source-candidate handoff (Draft PR #46)
+
+- **Ancestry:** Draft PR #46 `feat/official-report-source-handoff-20261103` stacks on Draft PR #45 `safety/official-runtime-evidence-gate-20261103`, then #44. Do not merge, deploy or reinterpret source verification as release approval.
+- Added `tools/official_report_source_handoff.py`: require an external exact original ICD byte digest, pinned external official IDL ZIP, authored official-reference Service YAML, and independent ZIP/YAML pins. Reuse existing audited IDL declarations to verify a single queryless provider Report Topic and Key fields without copying source files or inferring normative QoS.
+- Output is deliberately `UNAPPROVED_OFFICIAL_REPORT_SOURCE_CANDIDATE` with source member digest, provenance and unresolved requirements; `readyForOfficialNativeRuntime=false` and `officialConformanceClaim=false` unconditionally. No official native DDS/SDK runtime adapter was generated.
+- Added synthetic-only negative regression against incorrect original/IDL SHA, forgery, missing Key, wrong direction/protocol, unauthorized secondary transcription, overwrite attempts. Existing synthetic Report E2E path remains untouched.
+- **Observed CI for code+documentation snapshot `1d28ce2b5e79bfa8c79bfbaadbde6d5a3a0cfd0d`: Ubuntu and Windows `source-audit` jobs both SUCCESS in [run 41656536440](https://github.com/rydolabs/umaa-kit/actions/runs/41656536440). Other applicable jobs were still running when this note was written; their final results and this note's later HEAD need independent verification.
+- **Blocking evidence:** original authoritative ICD clause interpretation, Component Definition roles/applicability, mandatory DDS QoS, complete keyed semantics, reviewed nested payload codec, full lifecycle/Collection semantics, independent official vendor E2E/negative oracles, source reviewer acceptance and conformance gates remain OPEN.
+
+
+## 2026-11-04 — actual EO BatteryStatus source and Collection QoS evidence (Draft PR #47)
+
+- **Stack:** Draft #47 `feat/official-battery-source-qos-20261104` targets Draft #46, then #45/#44. No merges, deploys, or official Runtime enablement.
+- Source files were read **outside Git**. Independently measured public original EO ICD PDF SHA-256 `47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453` (see canonical evidence manifest for the exact digest); public UMAA 6.0 **with-EXP** ZIP SHA-256 `15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08`, **594 IDLs**, distinct from prior 352-IDL bundle. RTI QoS XML SHA-256 `84d0b7d84dda6ffd8c4a9ece18d11df8ff865a67b6471a98391ec032485f628b`.
+- Implemented pinned manifest (only hashes, source IDs and reviewed clause positions), `tools/official_battery_status_evidence.py` for offline authenticated source/IDL key/Topic/import checks, scoped EO ICD 3.8.1 element Topic ordering against the pre-existing QoS YAML, and **reference-only RTI XML** inspection. The RTI example has RTI Connext-only license restrictions and must not be copied into Cyclone/Fast DDS.
+- Extended the existing Report candidate CLI to optionally attach the authenticated Battery Report + separate Collection evidence. The canonical reviewed YAML, generation plugins, native SDK ABI and all official Runtime safeguards remain unchanged.
+- New synthetic positive/negative regression in `sdk/tests/test_official_icd_evidence.py` for forged Topic/Key, source SHA, QoS scope, RTI example drift, and unapproved Runtime flags; Linux/Windows source-audit workflow tracks all changed files. **Exact PR #47 CI pending** at this checkpoint; do not infer it passed from #46.
+- **Still OPEN:** full normative QoS, Component Specification role/applicability, original PDF semantic machine-review, official nested payload codecs, Large List semantics across Topics, independent official DDS E2E, mixed-vendor networking, RTI runtime and UMAA conformance.
+
+
+## 2026-11-04 — official BatteryStatus nested host structure (Draft PR #48)
+
+- **Base:** Draft #48 `feat/official-battery-payload-structure-20261104` stacks on Draft #47 then #46/#45/#44. It leaves official Runtime generation fail-closed.
+- Inspected original externally supplied **594-IDL** UMAA 6.0 bundle SHA-256 `15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08`. Targeted **six** structs and **nine** scalar typedef declarations, including Battery Report, Cell List element, BatteryCellDataType, IdentifierType, LargeListMetadata and DateTime. Report has six `@optional` measurement fields; element has optional nextElementID; types/keys/field order are preserved in `catalog/official-evidence/eo-battery-payload-v1.json`. No original IDL or PDFs added to Git.
+- `tools/official_battery_payload_structure.py` authenticates archive+selected member digests, exact nested IDL structure/annotation and typedef bounds, and the existing PR #47 Topic/Key ledger. An explicit **host JSON structural validator** checks required versus absent optional fields, nested data, 16-octet GUID represented as 32 lowercase hex digits, signed timestamp/nanoseconds, enum and measured IDL range limits. It is NOT a CDR codec, vendor TypeSupport ABI, or actual DDS transport.
+- Important non-inferred ranges: `EnergyPercent` original IDL 0..1000 (not 0..100), `DateTimeSeconds` signed 64-bit with decimal-string bounds in JSON manifest to preserve exact integer precision, `DateTimeNanoseconds` 0..999999999.
+- Added synthetic-only positive/tamper/negative suite `sdk/tests/test_official_battery_payload_structure.py`; it runs in the existing Linux/Windows source audit CI. The actual original IDL is checked locally, not uploaded as runner test material.
+- Added `validate_completed_list_snapshot` for an externally assembled Battery List: exact listID/size, linked chain, timestamped update checkpoint, and NIL empty-list validation (EO ICD §3.8.2–3.8.5). Missing Dispose/tombstone evidence deliberately rejects nonempty timestamp-less updates. This is post-hoc host-only validation, **not** live DDS buffering/coherence/Dispose proof.
+- **PENDING** exact-head PR #48 check completion, including older backend regressions. Preserve Draft/unmerged status.
+- **BLOCKED:** official native DDS TypeSupport↔host codec, full QoS and Component roles, separate Report/ListElement lifecycle/Dispose/coherence, independent actual official Cyclone and Fast DDS E2E; no formal UMAA conformity claim.
+
+
+## 2026-11-04 — official BatteryStatus Cyclone native host codec + independent two-topic DDS wire (Draft #49)
+
+- Based on Draft #48 exact previously verified head `c12ecb0fc8017dfb47459e91245f41e3f6881f43` (**15/15 GitHub checks SUCCESS**). Draft #49 stacks on #48; do not merge or deploy.
+- Added a DDS-header-free C++ SDK host model for original nested BatteryStatus Report, IdentifierType, DateTime, LargeListMetadata, Cell and ListElement; a **Cyclone-only native adapter** maps it into actual compiler-generated AUVSI 6.0 C TypeSupport and decodes it back. Six optional measurement values have bounded, per-sample stable native pointer backing; Key GUIDs are 16 bytes, and timestamp/enum/scalar bounds fail closed. No handwritten DDS CDR.
+- Added a real two-Topic Cyclone DDS publisher and **independent standalone C oracle** verifying all selected Report fields, separate Cell fields, source/list/element IDs, metadata checkpoint and both keyed Dispose events over separate OS processes. An intentional mismatched metadata checkpoint must be detected and rejected by the oracle (exact exit code), not silently accepted.
+- Added source-pinned dedicated `.github/workflows/official-battery-native-wire.yml` to download the original **594-IDL** ZIP (SHA-256 `15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08`) into temporary CI storage; validate the selected original payload declaration closure, generate *only* transitive Battery TypeSupport with idlc, and execute two CTests (positive and deliberate negative). Original source/RTI example/generation outputs are not committed or uploaded. Other existing synthetic and Windows regression workflows remain independent.
+- **PR #49 new head native CI PENDING** at the time of this checkpoint; exact CI run/job, errors and outcomes must be checked and repaired. A green original-scope test does NOT constitute a full official UMAA service, Fast DDS official Runtime, reviewed per-Component QoS or conformance.
+- Still OPEN: Fast DDS native nested Battery mapping and independent E2E; complete cross-topic collection lifecycle including deletion/tombstones/recovery; report Provider business module binding, source GUID and actual Component Definition/Specification; full QoS & deployment; independent negative protocol cases and certification.
+
+
+
+### 2026-11-04 — isolated DDS netem regression investigation
+
+- On PR #49 snapshot `db21cb0931dd091a19ac4da3035031227f93edfa`, the dedicated **official nested Battery TypeSupport / independent C oracle job PASSED**, including positive data/Dispose and deliberate bad checkpoint rejection (run 41729227092). Most legacy jobs passed.
+- One existing `isolated-dds-wire` run (41729227031, job 126241899689) failed only on the **third** 1% packet-loss iteration of the older SDK scalar Battery Report reader: `Battery Report subscriber incomplete`. The preceding two impaired repetitions, independent real DDS tests and blackout recovery steps passed. It is NOT a failure of the new Battery codec job.
+- The original failing job was rerun individually to assess reproducibility; results require exact run-attempt checking.
+- Increased the old scalar official Report **test-only** impaired Writer final-Dispose retention from 1s to 3s and reader impairment poll budget from ~6.25s to ~15s, while still requiring two ordered data events, a keyed Dispose, cache removal and epoch safety. Clean/unimpaired settings unchanged; the receiver now reports the incomplete phase. This is a bounded test robustness adjustment, NOT an invented DDS or UMAA QoS requirement and NOT evidence that application-level Dispose ACK exists.
+- **Current HEAD regressions must be rerun at the new SHA before declaring this fix verified.** If errors persist, capture the exact phase, source and DDS reader info and quarantine the flaky netem case rather than weakening the oracle.
+
+
+## 2026-11-04 — bounded EO Battery multi-list host routing (Draft PR #58)
+
+- Stack: Draft PR #58 is based on verified Draft #57, then #56, then #55. `main` remains unchanged; no Runtime unlock or cross-vendor claim.
+- Added `sdk/include/umaa/official_battery_collection_router.hpp`: bounded per-listID routing over existing LargeListJoiner, interleaved independent reports/elements/Dispose, explicit retirement and disconnect invalidation; aggregate record cap prevents silent unlimited buffering.
+- Hardened `LargeListJoiner::on_report`: reject over-limit and invalid initial NIL metadata before advancing source/timestamp/pending state; later valid Reports can proceed without a forced reset from the rejected input.
+- Expanded the original host C++ regression for two interleaved list IDs and distinct sources, independent generations, reused-listID source collision, capacity, retirement, unverified QoS, and reset/replay. Linux/Windows Battery host test workflow tracks the added header.
+- **Verified on exact PR #58 SHA `3004e8499ece55477d0f87145c5e059d298e9c10`: 10/10 GitHub Actions workflows SUCCESS**, including both Linux and Windows host router tests, existing native Cyclone 3-cell and one-list Topic E2E, cross-platform SDK, independent verifier, Cyclone/Fast DDS plugin regressions. [host router run 41822483427](https://github.com/rydolabs/umaa-kit/actions/runs/41822483427), [original three-cell DDS run 41822483459](https://github.com/rydolabs/umaa-kit/actions/runs/41822483459). Native source/list ownership, official two-list E2E, cross-topic atomicity, reconnect replay, full Component QoS, vendor interoperability and conformance remained OPEN at that SHA.
+
+
+## 2026-11-04 — actual two-source EO Battery original DDS List isolation (Draft PR #59)
+
+- Base: exact verified Draft PR #58 SHA `3004e8499ece55477d0f87145c5e059d298e9c10` (10/10 workflows successful); #58 stacks on Draft #57 → #56 → #55. `main` unchanged.
+- Extended original Cyclone TypeSupport multicell publisher with opt-in two-source/two-list mode. Interleave 2 Report source GUIDs, 4 Cell key pairs across 2 listIDs, 2 original Report Dispose and 4 original Element Dispose events. Retain existing single-list options and tests unchanged.
+- Added independent two-list consumer using actual original TypeSupport, real DDS instance handles and the host `LargeListRouter`. Require both independently stable payload-checked snapshots and all six genuine keyed Dispose events. Negative mode corrupts only second list's checkpoint: all data/disposals must still arrive, first list stays stable and second must never be stable.
+- Added separate Python process supervisor, two CTests, and the original-source-pinned multi-cell Cyclone workflow now invokes **four** positive/negative tests, subject to exact-head CI. No copyrighted source is committed.
+- **Verified on exact code/documentation snapshot `c9d5320383ff9ee889c05d304dfa19eba08c3677`: 12/12 triggered GitHub Actions workflows SUCCESS; 0 failures/pending.** The original source-pinned Cyclone DDS [native two-list run 41823468936](https://github.com/rydolabs/umaa-kit/actions/runs/41823468936) compiled all original types and ran **4/4 CTests PASS**, including both new independent two-source List positive/negative cases and existing three-Cell checks. [Windows official DDS run 41823468940](https://github.com/rydolabs/umaa-kit/actions/runs/41823468940) and [Linux isolated netns recovery run 41823468939](https://github.com/rydolabs/umaa-kit/actions/runs/41823468939) also succeeded; cross-platform SDK, both DDS plugin regressions and same-binary vendor parity were successful. This later progress-only text commit is NOT claimed to have independent new exact-head Actions. Linux/Windows host tests ran at verified #58 code; the native two-list oracle runs on Ubuntu. This scoped real-wire proof does not establish full native QoS, Component roles, source/list ownership for arbitrary inputs, Fast DDS two-list parity, network reconnect or official conformance.
+
+
+## 2026-11-04 — source-reviewed UMAA Component role projection and native QoS checks
+
+- Original AUVSI 6.0 Component Definitions v1.0 §3 reviewed: a tilde
+  marks Consumer, absence marks Provider. Existing 91 source-extracted
+  service mention rows now record 51 Provider/40 Consumer source roles,
+  with original 12-page PDF SHA-256 pin and a mandatory ephemeral
+  PDF-to-row CI cross-check. No original PDF or licensed IDL committed.
+- `tools/verify_compliance_scope.py` preserves all 53/113 candidate Topic
+  counts, checks exact role symbol evidence, requires undetermined
+  applicability and refuses any unsupported Component membership/QoS or
+  conformance PASS; strict gate remains intentionally code 3.
+- SDK Component assembly `validate --reference-component '<published name>'`
+  rejects conflicting source roles and ambiguous service identities without
+  changing Runtime generation, and accepts one Component exposing the same
+  service as both Provider and Consumer when §3 lists both roles.
+- Cyclone original Battery two-list source-pinned DDS producer and
+  independent consumer check the **actual** Publisher/Subscriber
+  Presentation QoS; a separate default-QoS negative CTest rejects missing
+  EO §3.8.1 mandatory Topic ordered access.
+- No selected platform Component Specification, complete per-service QoS,
+  nonexperimental CO trace, native official all-service Runtime, production
+  Device safety or formal UMAA conformance has been claimed.
+- **Pending exact-head CI verification:** original PDF role audit,
+  synthetic SDK CLI negative tests, original Cyclone DDS 5 native CTests,
+  and triggered cross-platform/vendor regressions. Do not merge on docs
+  or previous green CI alone.

@@ -193,6 +193,37 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
     PROPERTIES TIMEOUT 15
     PASS_REGULAR_EXPRESSION "BATTERY_OFFICIAL_ELEMENT_DEFAULT_QOS_REJECTED")
 
+  # Narrow original AUVSI Battery SDK receiver: a user supplies business
+  # Handler only; the Cyclone SDK adapter creates DDS Participant, Topics,
+  # DataReaders, native Key/Dispose decoding and host subscription.
+  add_executable(umaa_official_battery_sdk_native_reader_consumer
+    src/official_battery_sdk_native_reader_consumer.cpp)
+  target_compile_features(umaa_official_battery_sdk_native_reader_consumer PRIVATE cxx_std_17)
+  target_include_directories(umaa_official_battery_sdk_native_reader_consumer PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../dds-backends/cyclone/include")
+  target_link_libraries(umaa_official_battery_sdk_native_reader_consumer PRIVATE
+    umaa_official_type_support)
+
+  add_test(NAME official_umaa_battery_sdk_native_reader_good
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_multilist.py"
+      "$<TARGET_FILE:umaa_official_battery_multicell_publisher>"
+      "$<TARGET_FILE:umaa_official_battery_sdk_native_reader_consumer>")
+  set_tests_properties(official_umaa_battery_sdk_native_reader_good
+    PROPERTIES TIMEOUT 55
+    PASS_REGULAR_EXPRESSION "SDK_BATTERY_NATIVE_READER_HANDLER_PASS")
+
+  add_test(NAME official_umaa_battery_sdk_native_reader_bad_checkpoint
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_multilist.py"
+      "$<TARGET_FILE:umaa_official_battery_multicell_publisher>"
+      "$<TARGET_FILE:umaa_official_battery_sdk_native_reader_consumer>"
+      --bad-checkpoint)
+  set_tests_properties(official_umaa_battery_sdk_native_reader_bad_checkpoint
+    PROPERTIES TIMEOUT 55
+    PASS_REGULAR_EXPRESSION "SDK_BATTERY_NATIVE_READER_BAD_CHECKPOINT_ISOLATED")
+
   # Actual official Battery SDK Handler/BoundReportProvider, distinct from
   # the prior direct native sample publisher. Independent oracle remains the
   # C-only original-TypeSupport receiver with no SDK linkage.

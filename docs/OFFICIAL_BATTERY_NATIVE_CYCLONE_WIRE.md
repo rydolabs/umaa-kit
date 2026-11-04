@@ -76,3 +76,40 @@ The official Runtime fail-closed gate from Draft #45 remains in effect.
 Reviewer acceptance of the full source mapping, complete QoS/Component
 requirements, lossless native codec coverage, and independent vendor
 negative tests are needed before that gate can change.
+
+
+## 2026-11-05 — SDK-owned native Cyclone DataReader (scoped candidate)
+
+`dds-backends/cyclone/include/umaa/cyclone_official_battery_reader.hpp`
+implements `OriginalBatteryStatusReader` for the original verified EO
+BatteryStatus two-Topic subset. The SDK-owned Cyclone adapter now creates
+and deletes the real Participant, original TypeSupport-backed Report and
+Cell Topics, Subscriber, and DataReaders. It performs an **effective
+Subscriber** TOPIC+ordered-access QoS query, rather than trusting only
+the user-requested value. Reliability and History(16) are **demo choices**,
+not declared official per-Component defaults.
+
+Native `dds_take` samples are owned by scoped guards invoking the
+correct original generated TypeSupport `dds_sample_free` even after
+decoder/Handler exceptions. Actual `instance_handle` → original
+Source Identifier (including ParentID) and (listID, elementID) Keys
+are tracked independently for Report and Cell Topics; only a true
+`NOT_ALIVE_DISPOSED` event with a previously observed native handle
+can retire a source/list. Unknown instance states fail closed.
+
+The application in
+`tests/integration/cyclone/src/official_battery_sdk_native_reader_consumer.cpp`
+only implements typed `BatteryStatusHandler`, polls the adapter,
+verifies two separate source snapshots, and explicitly restarts
+and stops the reader. Normal and intentionally mismatched second
+List checkpoint oracles use a separate sender process with the actual
+original, SHA-pinned AUVSI IDL-generated wire support.
+
+**Remaining:** this is a limited Cyclone-only source-backed native
+adapter, not a plugin-neutral or automatically generated official
+Runtime for every UMAA Service. Native Publisher QoS and cross-Topic
+GROUP coherence are not proven from local Subscriber QoS, real
+network-partition continuation/replay is not implemented, Fast DDS
+ordered TOPIC behavior is still unsupported, and complete original
+Component/Platform requirements remain unresolved. The generic
+official Runtime generation guard remains active.

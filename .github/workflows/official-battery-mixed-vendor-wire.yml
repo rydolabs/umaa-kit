@@ -65,9 +65,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # AUVSI did not annotate every aggregated type's extensibility.
+          # Cyclone idlc defaults FINAL, while standard XTypes and Fast DDS
+          # default APPENDABLE. This compiler-only experiment preserves every
+          # byte of the original source while aligning TypeObject semantics.
           python3 tools/official_idl_compile.py \
             --root "$RUNNER_TEMP/official-idl" \
             --source UMAA/EO/BatteryStatus/BatteryReportType.idl \
+            --default-extensibility appendable \
             --out "$RUNNER_TEMP/cyclone-type"
           python3 -m tools.native_dds_codegen \
             --root "$RUNNER_TEMP/official-idl" \

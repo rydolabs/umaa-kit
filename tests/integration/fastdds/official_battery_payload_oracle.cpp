@@ -102,6 +102,7 @@ int main() {
     q.reliability().kind = fd::RELIABLE_RELIABILITY_QOS;
     q.history().kind = fd::KEEP_LAST_HISTORY_QOS;
     q.history().depth = 16;
+    q.representation().m_value = {fd::XCDR2_DATA_REPRESENTATION};
     auto* report_reader = sub->create_datareader(topic1, q);
     auto* element_reader = sub->create_datareader(topic2, q);
     if (!report_reader || !element_reader) throw std::runtime_error("readers failed");

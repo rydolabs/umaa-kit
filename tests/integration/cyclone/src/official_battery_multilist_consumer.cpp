@@ -4,7 +4,7 @@
 // full Component QoS, reconnect replay, or an UMAA conformance claim.
 #include <dds/dds.h>
 #include "UMAA/EO/BatteryStatus/BatteryReportType.h"
-#include "umaa/official_battery_collection_router.hpp"
+#include "umaa/official_battery_subscription.hpp"
 #include "umaa/cyclone_official_battery_codec.hpp"
 
 #include <cstdio>
@@ -77,6 +77,46 @@ static void verify_b(const host::StableList& state) {
     throw std::runtime_error("source B snapshot/payload corrupt");
 }
 
+// The application implements only typed business callbacks. The SDK
+// subscription handles the two-List state machine, source/list Key binding,
+// epoch separation, invalidation and genuine keyed Report Dispose retirement.
+struct BatteryHandler final : host::BatteryStatusHandler {
+  bool stable_a{false};
+  bool stable_b{false};
+  std::set<host::Guid> disposed_sources;
+  std::set<host::Guid> invalidated_lists;
+  host::ReaderEpoch last_epoch{};
+
+  void on_stable_list(const host::StableList& stable,
+                      host::ReaderEpoch epoch) override {
+    if (!epoch || (last_epoch && epoch != last_epoch))
+      throw std::runtime_error("Battery Handler callback from wrong reader");
+    last_epoch = epoch;
+    if (stable.report.source.id == guid(0x33)) {
+      if (stable_a) throw std::runtime_error("duplicate source A stable Handler callback");
+      verify_a(stable);
+      stable_a = true;
+    } else if (stable.report.source.id == guid(0x44)) {
+      if (stable_b) throw std::runtime_error("duplicate source B stable Handler callback");
+      verify_b(stable);
+      stable_b = true;
+    } else {
+      throw std::runtime_error("unknown source delivered to Battery business Handler");
+    }
+  }
+  void on_list_invalidated(const host::Guid& list,
+                           host::ReaderEpoch epoch) override {
+    if (epoch != last_epoch)
+      throw std::runtime_error("late Battery invalidation callback");
+    invalidated_lists.insert(list);
+  }
+  void on_source_disposed(const host::Identifier& source,
+                          const host::Guid&, host::ReaderEpoch epoch) override {
+    if (epoch != last_epoch || !disposed_sources.insert(source.id).second)
+      throw std::runtime_error("unknown or duplicate Source Dispose callback");
+  }
+};
+
 int main(int argc, char** argv) {
   const bool negative =
       argc == 2 && std::string(argv[1]) == "--bad-checkpoint";
@@ -131,14 +171,15 @@ int main(int argc, char** argv) {
     require(report_reader, "create Report reader");
     require(element_reader, "create Cell reader");
 
-    host::LargeListRouter router(
-        host::LargeListJoiner::ElementOrdering::CallerVerifiedTopicOrdered,
+    BatteryHandler handler;
+    host::BatteryStatusSubscription subscription(
+        handler, host::LargeListJoiner::ElementOrdering::CallerVerifiedTopicOrdered,
         2, 16, 4);
+    const auto epoch = subscription.start();
     std::map<dds_instance_handle_t, host::Identifier> reports_by_handle;
     std::map<dds_instance_handle_t, CellKey> cells_by_handle;
     std::set<host::Guid> report_data, report_disposed;
     std::set<CellKey> cell_data, cell_disposed;
-    bool stable_a = false, stable_b = false;
 
     // We never manufacture a Dispose event. A callback is considered genuine
     // only after seeing NOT_ALIVE_DISPOSED and matching its native DDS handle
@@ -164,7 +205,7 @@ int main(int argc, char** argv) {
               throw std::runtime_error("unexpected or duplicate Report source/listID");
             reports_by_handle.insert_or_assign(info[0].instance_handle,
                                                value.source);
-            router.on_report(value);
+            subscription.on_report(value, epoch);
           } else if (info[0].instance_state == DDS_IST_NOT_ALIVE_DISPOSED) {
             const auto known = reports_by_handle.find(info[0].instance_handle);
             if (known == reports_by_handle.end() ||
@@ -189,7 +230,7 @@ int main(int argc, char** argv) {
             if (!known_cell(key) || !cell_data.insert(key).second)
               throw std::runtime_error("unknown or duplicate Cell list/element Key");
             cells_by_handle.insert_or_assign(info[0].instance_handle, key);
-            router.on_element(value);
+            subscription.on_element(value, epoch);
           } else if (info[0].instance_state == DDS_IST_NOT_ALIVE_DISPOSED) {
             const auto known = cells_by_handle.find(info[0].instance_handle);
             if (known == cells_by_handle.end() ||
@@ -205,14 +246,6 @@ int main(int argc, char** argv) {
         }
       }
 
-      if (!stable_a && router.latest_stable(guid(0x11))) {
-        verify_a(*router.latest_stable(guid(0x11)));
-        stable_a = true;
-      }
-      if (!stable_b && router.latest_stable(guid(0x12))) {
-        verify_b(*router.latest_stable(guid(0x12)));
-        stable_b = true;
-      }
       if (!(report_data.size() == 2 && report_disposed.size() == 2 &&
             cell_data.size() == 4 && cell_disposed.size() == 4))
         dds_sleepfor(DDS_MSECS(20));
@@ -220,22 +253,42 @@ int main(int argc, char** argv) {
 
     if (report_data.size() != 2 || report_disposed.size() != 2 ||
         cell_data.size() != 4 || cell_disposed.size() != 4 ||
-        router.active_lists() != 2)
+        subscription.active_lists() != 2)
       throw std::runtime_error("incomplete two-list native DDS data/Dispose trace");
-    if (!stable_a)
-      throw std::runtime_error("valid first List was not independently stable");
-    if (negative && stable_b)
-      throw std::runtime_error("bad second List checkpoint was accepted");
-    if (!negative && !stable_b)
-      throw std::runtime_error("valid second List did not reach stable state");
+    if (!handler.stable_a || !subscription.latest(guid(0x11)))
+      throw std::runtime_error("valid source A Handler snapshot missing");
+    if (negative && (handler.stable_b || subscription.latest(guid(0x12))))
+      throw std::runtime_error("bad source B checkpoint reached business Handler");
+    if (!negative && (!handler.stable_b || !subscription.latest(guid(0x12))))
+      throw std::runtime_error("valid source B Handler snapshot missing");
 
+    // These are only actual DDS instance-handle-resolved Dispose callbacks
+    // collected above, not fabricated zero-payload events. The test applies
+    // them after checking the original stable snapshots, because the two
+    // native Topic readers have no cross-Topic ordering guarantee.
     for (const auto& entry : cells_by_handle)
-      router.on_dispose(entry.second.first, entry.second.second);
-    router.reset_after_disconnect();
-    if (router.active_lists() != 0 ||
-        router.latest_stable(guid(0x11)) ||
-        router.latest_stable(guid(0x12)))
-      throw std::runtime_error("native Report Dispose left stale List snapshots");
+      if (!subscription.on_element_dispose(
+              entry.second.first, entry.second.second, epoch))
+        throw std::runtime_error("native Cell Dispose did not reach SDK");
+    if (subscription.latest(guid(0x11)))
+      throw std::runtime_error("real Cell tombstone exposed stale business List");
+    for (const auto& entry : reports_by_handle)
+      if (!subscription.on_source_dispose(entry.second, epoch))
+        throw std::runtime_error("real Report Dispose did not reach SDK");
+    if (handler.disposed_sources.size() != 2 ||
+        handler.disposed_sources.count(guid(0x33)) != 1 ||
+        handler.disposed_sources.count(guid(0x44)) != 1 ||
+        subscription.active_lists() != 0 ||
+        subscription.latest(guid(0x11)) ||
+        subscription.latest(guid(0x12)))
+      throw std::runtime_error("native keyed Report Dispose left stale SDK state");
+    subscription.reset_after_disconnect();
+    const auto next_epoch = subscription.start();
+    if (next_epoch == epoch || subscription.on_source_dispose(
+            reports_by_handle.begin()->second, epoch) ||
+        subscription.active_lists() != 0)
+      throw std::runtime_error("stale DDS reader epoch revived old Battery source");
+    subscription.stop();
     require(dds_delete(p), "delete two-list DDS participant");
     p = 0;
 

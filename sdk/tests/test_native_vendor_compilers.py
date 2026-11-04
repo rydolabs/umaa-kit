@@ -141,6 +141,22 @@ class NativeCompilerOrchestrationTests(TestCase):
             run.assert_not_called()
         self.assertFalse(self.out.exists())
 
+    def test_output_ancestor_symlink_rejected_before_compiler(self):
+        private = self.folder / "private"
+        private.mkdir()
+        alias = self.folder / "output-alias"
+        try:
+            alias.symlink_to(private, target_is_directory=True)
+        except (OSError, NotImplementedError) as exc:
+            self.skipTest("directory symlinks unavailable: " + str(exc))
+        output = alias / "generated"
+        self.assertFalse(output.is_symlink())
+        with patch("subprocess.run") as run:
+            with self.assertRaisesRegex(ValueError, "output cannot use symlinks"):
+                native_generate(self.root, "Device.idl", output)
+            run.assert_not_called()
+        self.assertFalse((private / "generated").exists())
+
     def test_path_traversal_and_symlink_rejected(self):
         with self.assertRaisesRegex(ValueError, "relative"):
             native_generate(self.root, "../secret.idl", self.out)

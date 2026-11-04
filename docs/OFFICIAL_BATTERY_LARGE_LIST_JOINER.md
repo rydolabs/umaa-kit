@@ -129,3 +129,45 @@ Dispose-key extraction, actual network discovery/recovery replay,
 source/list ownership and duplicate-ID collisions, full QoS/Component settings, and
 independent official E2E for both Cyclone and Fast DDS. The existing
 one-Cell Cyclone wire evidence from Draft #49 remains distinct.
+
+
+## 2026-11-05 — BatteryStatus typed SDK Handler subscription (scoped host Runtime increment)
+
+The SDK now provides `sdk/include/umaa/official_battery_subscription.hpp`:
+`BatteryStatusSubscription` consumes **already source-validated** EO
+BatteryStatus `Report`, `ListElement` and genuine keyed DDS Dispose
+events, owns bounded per-list assembly, ties each Source Identifier (both
+ID and Parent ID) to its original listID, and calls a user's
+`BatteryStatusHandler::on_stable_list()` only on a newly complete
+checkpoint. It also reports incomplete-update invalidation and genuine
+source Dispose. Handler code does not manipulate the internal
+`LargeListRouter`.
+
+Reader epochs distinguish reconnects: old DDS callbacks are refused after
+explicit `reset_after_disconnect()` and `start()`. Source/List collisions,
+NIL identifiers, a mismatched Parent key, replay after Dispose and Handler
+exceptions fail closed, clear the reader's state and require explicit
+reset; the SDK does **not** silently replay uncertain DDS operations.
+Previously committed snapshots are not exposed as current during
+an incomplete new checkpoint. Explicit source Dispose retires the
+corresponding buffered list so late Cell tombstones cannot recreate it.
+
+The original AUVSI IDL/Cyclone DDS two-source List test now routes real
+vendor-generated TypeSupport data to this SDK subscription rather
+than calling the joiner directly; a small business-only Handler verifies
+the two independent one-generation snapshots. Six actual DDS Dispose
+events are captured by native instance handles, then applied to the SDK
+after inspecting the completed snapshots because the two Topics have
+no guaranteed relative delivery ordering. A source-level Dispose must
+remove SDK-visible state. Host-only C++17 tests independently verify
+positive and negative handling on Linux and Windows.
+
+**Scope limit:** upstream DDS receiver creation and native decoding
+remain part of the explicit integration fixture, not yet a generated
+official service Application Runtime. The caller must authenticate
+official TypeSupport, original keys, effective ordered TOPIC
+Presentation on the vendor's Publisher and Subscriber, and genuine
+Dispose notification. No broader official Component profile, QoS,
+GROUP coherence, native Fast DDS official two-list parity, automatic
+reconnect replay, or UMAA conformity is asserted. The generic
+official Runtime code generator remains fail-closed.

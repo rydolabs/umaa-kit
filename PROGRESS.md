@@ -663,3 +663,28 @@ the complete PR verified.
 - This is NOT automatically generated official native DDS Runtime, complete
   Service QoS/Component requirements or full UMAA conformance. The
   official native Runtime generation gate remains unchanged.
+
+
+## 2026-11-05 — native Cyclone BatteryStatus SDK Reader ownership candidate
+
+- Parent: merged #61, `main` SHA
+  `019678442fd016afee88bf4bc42e1788475e695b`.
+- Added `OriginalBatteryStatusReader` under the existing Cyclone vendor
+  include tree. It owns actual original TypeSupport-backed DDS
+  Participant/Subscriber/Report and Collection Element Readers, queries
+  effective TOPIC ordered Presentation, decodes original Report/Cell
+  samples and resolves two original instance Keys per Cell from genuine
+  native DDS handles. DDS resources and native sample allocations have
+  explicit RAII cleanup on normal, fault and restart paths.
+- Added a separate business-only Handler application: no DDS vendor calls
+  in user application logic, two original Source/List Report snapshots,
+  full Cell payload checks, native keyed Dispose counts, independent
+  negative mismatched List checkpoint and new Reader restart.
+- Native original source-pinned CTest workflow requires **7 CTests**
+  (prior 5 + 2 SDK-owned native Reader cases). Existing source-pinned
+  eight-case official Cyclone workflow, standalone SDK and vendor
+  synthetic regressions remain enabled.
+- **Verification pending for this PR exact HEAD.** Do NOT claim
+  automatically generated/approved official Runtime, full Component QoS,
+  GROUP coherence, network-partition reconnect recovery, Fast DDS
+  official two-list parity, or formal UMAA conformance.

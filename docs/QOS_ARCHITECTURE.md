@@ -22,6 +22,35 @@ using an optional V2 extension. No claim of full UMAA 6.0 conformance.
   Metadata and element Topics have no cross-topic ordering guarantee,
   and the service-level assembler must still handle out-of-order arrival.
 
+## 2026-11-04 original source review and native DDS negative proof
+
+AUVSI [Component Definitions v1.0 §3](https://www.auvsi.org/wp-content/uploads/2025/03/Distro_A_UMAA_Component_Definitions_v1.0.pdf)
+specifies **configuration without recompilation** for DDS Participant,
+endpoints and Topics, Domain ID, partitions, and valid non-NIL source/
+destination GUIDs. It explicitly leaves **specific QoS settings to the
+selected Component Specification**. The symbol legend in the same §3
+also establishes 51 Provider and 40 Consumer service-role mention rows
+across nine public Component Definition entries. This legend does **not**
+provide Reliability, Deadline, Durability or History defaults for a
+service; none was invented.
+
+The new original-TypeSupport Cyclone Battery two-source DDS test queries
+the **effective** Publisher and Subscriber QoS through
+`dds_get_qos` / `dds_qget_presentation`, requiring
+`DDS_PRESENTATION_TOPIC` and `ordered_access=true` for the
+reviewed Battery Collection Element minimum (EO ICD §3.8.1). An
+unconfigured default Subscriber is a separate **negative CTest** and
+must be rejected before a reader can claim collection stability.
+These tests prove one actual Cyclone QoS observation, **not** every
+Endpoint QoS requirement or native GROUP/coherent guarantees.
+The Fast DDS backend still refuses unsupported ordered TOPIC access.
+
+The original AUVSI Component PDF and IDL remain outside the repository;
+CI authenticates their hashes before reading/compiling them.
+Per-Component full QoS, runtime changes to existing endpoints, security,
+partitions beyond one, and selected acquisition requirements remain
+OPEN.
+
 ## Architecture and API compatibility
 
 ```

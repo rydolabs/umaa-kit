@@ -60,6 +60,38 @@ DDS reader verified TOPIC ordered Presentation, has complete callback
 coverage, correctly extracted Dispose keys, or implements reconnect replay.
 No native DDS coherence proof or formal UMAA approval flag is set.
 
+## Independent native two-list Cyclone DDS proof (candidate, Draft PR #59)
+
+The existing original-source-pinned native Cyclone publisher additionally has
+a `--two-lists` mode. In one real DDS Domain and the original Report/Cell
+Topic pair it writes **two keyed Report Source instances** (GUID 0x33 and
+0x44), **two listIDs** (0x11 and 0x12), three cells for the first list and
+one for the second, interleaving data, then producing **six genuine keyed
+DDS Dispose notifications**. No handwritten serializer or simulated wire
+event is used.
+
+The independent `official_battery_multilist_consumer.cpp` uses the real
+vendor-generated original TypeSupport and the SDK `LargeListRouter`. It
+checks DDS instance handles against the original Report/Element keys and
+asserts both distinct stable snapshots, element order, payload values, and
+the six actual Dispose events. A separate
+`--two-lists-bad-checkpoint` sender mode corrupts **only** list 0x12's
+Report update timestamp: the oracle must observe all samples/disposals,
+retain list 0x11 as independently stable, and **never** stabilize list 0x12.
+A negative timeout/discovery failure does not count as expected rejection.
+
+`.github/workflows/official-battery-multicell-native-wire.yml` runs both
+original single-list CTests and new two-list CTests against the externally
+SHA-256-pinned AUVSI original 594-IDL archive inside ephemeral CI storage.
+Original code/assets are not redistributed.
+
+**Scope limit:** this is one controlled two-source, two-list original
+Cyclone DDS publication+Dispose checkpoint test. It does NOT prove
+source ownership of arbitrary Element-only data, source GUID collision
+handling across live DDS, full Collection recovery after a network
+partition, native DDS GROUP atomicity, complete QoS/Component contracts,
+Fast DDS official two-list behavior, mixed-vendor operation or conformity.
+
 ## Mandatory external precondition
 
 The caller must select

@@ -586,4 +586,41 @@ the complete PR verified.
 - Added `sdk/include/umaa/official_battery_collection_router.hpp`: bounded per-listID routing over existing LargeListJoiner, interleaved independent reports/elements/Dispose, explicit retirement and disconnect invalidation; aggregate record cap prevents silent unlimited buffering.
 - Hardened `LargeListJoiner::on_report`: reject over-limit and invalid initial NIL metadata before advancing source/timestamp/pending state; later valid Reports can proceed without a forced reset from the rejected input.
 - Expanded the original host C++ regression for two interleaved list IDs and distinct sources, independent generations, reused-listID source collision, capacity, retirement, unverified QoS, and reset/replay. Linux/Windows Battery host test workflow tracks the added header.
-- **Verification pending for the exact new PR head:** do not infer passes from earlier PR #55–#57 CI. Native DDS callback source/list ownership, official multi-list E2E, cross-topic atomicity, reconnect replay, full Component QoS, vendor interoperability and conformance remain OPEN.
+- **Verified on exact PR #58 SHA `3004e8499ece55477d0f87145c5e059d298e9c10`: 10/10 GitHub Actions workflows SUCCESS**, including both Linux and Windows host router tests, existing native Cyclone 3-cell and one-list Topic E2E, cross-platform SDK, independent verifier, Cyclone/Fast DDS plugin regressions. [host router run 41822483427](https://github.com/rydolabs/umaa-kit/actions/runs/41822483427), [original three-cell DDS run 41822483459](https://github.com/rydolabs/umaa-kit/actions/runs/41822483459). Native source/list ownership, official two-list E2E, cross-topic atomicity, reconnect replay, full Component QoS, vendor interoperability and conformance remained OPEN at that SHA.
+
+
+## 2026-11-04 — actual two-source EO Battery original DDS List isolation (Draft PR #59)
+
+- Base: exact verified Draft PR #58 SHA `3004e8499ece55477d0f87145c5e059d298e9c10` (10/10 workflows successful); #58 stacks on Draft #57 → #56 → #55. `main` unchanged.
+- Extended original Cyclone TypeSupport multicell publisher with opt-in two-source/two-list mode. Interleave 2 Report source GUIDs, 4 Cell key pairs across 2 listIDs, 2 original Report Dispose and 4 original Element Dispose events. Retain existing single-list options and tests unchanged.
+- Added independent two-list consumer using actual original TypeSupport, real DDS instance handles and the host `LargeListRouter`. Require both independently stable payload-checked snapshots and all six genuine keyed Dispose events. Negative mode corrupts only second list's checkpoint: all data/disposals must still arrive, first list stays stable and second must never be stable.
+- Added separate Python process supervisor, two CTests, and the original-source-pinned multi-cell Cyclone workflow now invokes **four** positive/negative tests, subject to exact-head CI. No copyrighted source is committed.
+- **Verified on exact code/documentation snapshot `c9d5320383ff9ee889c05d304dfa19eba08c3677`: 12/12 triggered GitHub Actions workflows SUCCESS; 0 failures/pending.** The original source-pinned Cyclone DDS [native two-list run 41823468936](https://github.com/rydolabs/umaa-kit/actions/runs/41823468936) compiled all original types and ran **4/4 CTests PASS**, including both new independent two-source List positive/negative cases and existing three-Cell checks. [Windows official DDS run 41823468940](https://github.com/rydolabs/umaa-kit/actions/runs/41823468940) and [Linux isolated netns recovery run 41823468939](https://github.com/rydolabs/umaa-kit/actions/runs/41823468939) also succeeded; cross-platform SDK, both DDS plugin regressions and same-binary vendor parity were successful. This later progress-only text commit is NOT claimed to have independent new exact-head Actions. Linux/Windows host tests ran at verified #58 code; the native two-list oracle runs on Ubuntu. This scoped real-wire proof does not establish full native QoS, Component roles, source/list ownership for arbitrary inputs, Fast DDS two-list parity, network reconnect or official conformance.
+
+
+## 2026-11-04 — source-reviewed UMAA Component role projection and native QoS checks
+
+- Original AUVSI 6.0 Component Definitions v1.0 §3 reviewed: a tilde
+  marks Consumer, absence marks Provider. Existing 91 source-extracted
+  service mention rows now record 51 Provider/40 Consumer source roles,
+  with original 12-page PDF SHA-256 pin and a mandatory ephemeral
+  PDF-to-row CI cross-check. No original PDF or licensed IDL committed.
+- `tools/verify_compliance_scope.py` preserves all 53/113 candidate Topic
+  counts, checks exact role symbol evidence, requires undetermined
+  applicability and refuses any unsupported Component membership/QoS or
+  conformance PASS; strict gate remains intentionally code 3.
+- SDK Component assembly `validate --reference-component '<published name>'`
+  rejects conflicting source roles and ambiguous service identities without
+  changing Runtime generation, and accepts one Component exposing the same
+  service as both Provider and Consumer when §3 lists both roles.
+- Cyclone original Battery two-list source-pinned DDS producer and
+  independent consumer check the **actual** Publisher/Subscriber
+  Presentation QoS; a separate default-QoS negative CTest rejects missing
+  EO §3.8.1 mandatory Topic ordered access.
+- No selected platform Component Specification, complete per-service QoS,
+  nonexperimental CO trace, native official all-service Runtime, production
+  Device safety or formal UMAA conformance has been claimed.
+- **Pending exact-head CI verification:** original PDF role audit,
+  synthetic SDK CLI negative tests, original Cyclone DDS 5 native CTests,
+  and triggered cross-platform/vendor regressions. Do not merge on docs
+  or previous green CI alone.

@@ -17,6 +17,20 @@ namespace codec = umaa::cyclone::official_battery;
 static void require(dds_return_t rc, const char* action) {
   if (rc < 0) throw std::runtime_error(std::string(action) + ": " + dds_strretcode(-rc));
 }
+// EO ICD 6.0 §3.8.1 requires TOPIC ordered Presentation on the
+// Collection Element Publisher. Inspect actual DDS entity QoS in addition
+// to setting it, rather than trusting a caller-asserted flag.
+static void require_ordered_publisher(dds_entity_t publisher) {
+  std::unique_ptr<dds_qos_t, decltype(&dds_delete_qos)> actual(
+      dds_create_qos(), &dds_delete_qos);
+  if (!actual) throw std::runtime_error("cannot allocate actual Publisher QoS");
+  require(dds_get_qos(publisher, actual.get()), "read effective Publisher QoS");
+  dds_presentation_access_scope_kind_t scope = DDS_PRESENTATION_INSTANCE;
+  bool coherent = false, ordered = false;
+  if (!dds_qget_presentation(actual.get(), &scope, &coherent, &ordered) ||
+      scope != DDS_PRESENTATION_TOPIC || !ordered)
+    throw std::runtime_error("original Battery Publisher lacks reviewed EO Topic ordered Presentation");
+}
 static host::Guid guid(unsigned char v) {
   host::Guid x{}; x[0] = v; return x;
 }
@@ -106,6 +120,7 @@ int main(int argc, char** argv) {
     dds_qset_history(endpoints.get(), DDS_HISTORY_KEEP_LAST, 16);
     const dds_entity_t pub = dds_create_publisher(p, presentation.get(), nullptr);
     require(pub, "publisher");
+    require_ordered_publisher(pub);
     const dds_entity_t report_w = dds_create_writer(pub, report_t, endpoints.get(), nullptr);
     const dds_entity_t cell_w = dds_create_writer(pub, element_t, endpoints.get(), nullptr);
     require(report_w, "report writer"); require(cell_w, "cell writer");

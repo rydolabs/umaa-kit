@@ -624,3 +624,42 @@ the complete PR verified.
   synthetic SDK CLI negative tests, original Cyclone DDS 5 native CTests,
   and triggered cross-platform/vendor regressions. Do not merge on docs
   or previous green CI alone.
+
+
+## 2026-11-05 — typed BatteryStatus Handler subscriber (scoped, CI pending)
+
+- New SDK header `sdk/include/umaa/official_battery_subscription.hpp`
+  owns the **host-side** BatteryStatus List state and dispatches accepted
+  original `Report`+`Element` snapshots to a business-only Handler.
+  Explicit Source/Parent ID → List ID binding, per-reader epoch, true
+  keyed Dispose retirement and stale callback rejection are implemented.
+- Partial Report/Cell updates invalidate the current snapshot until
+  a complete checkpoint is observed. Source collision, wrong Parent,
+  replay of retired IDs and business Handler exceptions fault the
+  subscription and require an explicit reset. No stale automatic replay.
+- The original Cyclone DDS independent two-source/two-list CTest now
+  calls the SDK subscription; business Handler only receives callbacks.
+  The original TypeSupport, native Publisher/Subscriber QoS inspection
+  and genuine DDS instance-handle-derived Dispose oracle remain.
+- Added C++17 Linux/Windows host regressions for two sources, independent
+  update generations, source Dispose, late Cell tombstones, no resurrected
+  data, reader epoch rotation, invalid input and Handler failure/recovery.
+- **Verified exact code snapshot:** commit
+  `683fbbd16ad9bf19a234605ec6d5321db6d9f5f8`, GitHub Actions
+  **12/12 workflows SUCCESS, 0 failures/pending** (11 PR events plus the
+  branch push event). [Linux/Windows Handler host run 41931272014](https://github.com/rydolabs/umaa-kit/actions/runs/41931272014):
+  both platforms compiled -Werror/WX and **2/2 CTests PASS** per platform.
+  [Authentic original Cyclone two-List run 41931271957](https://github.com/rydolabs/umaa-kit/actions/runs/41931271957):
+  **5/5 native CTests PASS**, including two distinct Source business
+  Handler snapshots, scoped bad-checkpoint isolation, genuine 6
+  keyed DDS Disposes and default-QoS negative.
+  [Full native source-pinned integration run 41931271922](https://github.com/rydolabs/umaa-kit/actions/runs/41931271922),
+  [Windows official DDS run 41931271967](https://github.com/rydolabs/umaa-kit/actions/runs/41931271967),
+  [Linux netns fault/recovery run 41931272030](https://github.com/rydolabs/umaa-kit/actions/runs/41931272030),
+  and independent SDK/Fast DDS plugin and same-binary substitution checks
+  also succeeded. This later evidence-only documentation commit requires
+  a separate HEAD-status check; do not misattribute the earlier exact
+  code SHA's CI to a later commit.
+- This is NOT automatically generated official native DDS Runtime, complete
+  Service QoS/Component requirements or full UMAA conformance. The
+  official native Runtime generation gate remains unchanged.

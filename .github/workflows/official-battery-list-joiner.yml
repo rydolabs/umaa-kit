@@ -5,6 +5,8 @@ on:
       - '.github/workflows/official-battery-list-joiner.yml'
       - 'sdk/include/umaa/official_battery_collection.hpp'
       - 'sdk/include/umaa/official_battery_collection_router.hpp'
+      - 'sdk/include/umaa/official_battery_subscription.hpp'
+      - 'sdk/tests/official_battery_subscription_test.cpp'
       - 'sdk/include/umaa/official_battery_host.hpp'
       - 'sdk/tests/official_battery_collection_joiner_test.cpp'
       - 'tests/integration/battery_collection/**'
@@ -25,5 +27,5 @@ jobs:
         run: cmake -S tests/integration/battery_collection -B build/battery-joiner -DCMAKE_BUILD_TYPE=Debug
       - name: Compile against strict C++17 diagnostic flags
         run: cmake --build build/battery-joiner --config Debug --parallel 2
-      - name: Prove multi-list interleaving, bounded buffers, Dispose, replay and reconnect
+      - name: Prove multi-list Host and SDK Handler subscription, actual Dispose Keys, epochs and fault recovery
         run: ctest --test-dir build/battery-joiner -C Debug --output-on-failure -V

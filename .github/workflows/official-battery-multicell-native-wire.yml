@@ -68,7 +68,14 @@ jobs:
       - name: 'Original DDS: three-Cell and two-source List positive/negative checkpoint oracles'
         run: |
           ctest --test-dir "$RUNNER_TEMP/battery-live-build" \
-            -R '^official_umaa_battery_(multicell|multilist)_(good|bad_checkpoint)$' \
+            -R '^official_umaa_battery_(multicell|multilist)_(good|bad_checkpoint|default_qos_rejected) \
+            --output-on-failure -V
+      - name: Explicit limitations
+        if: success()
+        run: |
+          echo "OFFICIAL_BATTERY_THREE_CELL_AND_TWO_SOURCE_LIST_ORIGINAL_DDS_E2E_PASS"
+          echo "No full Collection/Component QoS, vendor parity or conformance claim"
+ \
             --output-on-failure -V
       - name: Explicit limitations
         if: success()

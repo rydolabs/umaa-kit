@@ -184,6 +184,15 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
   set_tests_properties(official_umaa_battery_multilist_bad_checkpoint
     PROPERTIES TIMEOUT 55)
 
+  # Native Cyclone DDS Subscriber with no configured Topic ordered
+  # presentation cannot claim the reviewed original EO §3.8.1 minimum.
+  add_test(NAME official_umaa_battery_multilist_default_qos_rejected
+    COMMAND "$<TARGET_FILE:umaa_official_battery_multilist_consumer>"
+            --reject-default-qos)
+  set_tests_properties(official_umaa_battery_multilist_default_qos_rejected
+    PROPERTIES TIMEOUT 15
+    PASS_REGULAR_EXPRESSION "BATTERY_OFFICIAL_ELEMENT_DEFAULT_QOS_REJECTED")
+
   # Actual official Battery SDK Handler/BoundReportProvider, distinct from
   # the prior direct native sample publisher. Independent oracle remains the
   # C-only original-TypeSupport receiver with no SDK linkage.

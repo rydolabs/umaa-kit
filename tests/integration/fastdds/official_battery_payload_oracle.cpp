@@ -111,7 +111,7 @@ int main() {
     std::int64_t rsec = 0, esec = 0;
     std::int32_t rns = 0, ens = 0;
     int code = 9;
-    for (int i = 0; i < 450 && !(got_report && got_element &&
+    for (int i = 0; i < 1000 && !(got_report && got_element &&
                                    disposed_report && disposed_element); ++i) {
       for (int topic_id = 0; topic_id < 2; ++topic_id) {
         fd::SampleInfo info{};
@@ -156,10 +156,12 @@ int main() {
     (void)report_reader->get_requested_incompatible_qos_status(report_incompatible);
     (void)element_reader->get_requested_incompatible_qos_status(element_incompatible);
     std::fprintf(stderr,
-      "FASTDDS_ENDPOINT_DIAG report_matches=%d element_matches=%d "
+      "FASTDDS_ENDPOINT_DIAG report_total=%d report_current=%d "
+      "element_total=%d element_current=%d "
       "report_qos_incompatible=%u report_qos_policy=%d "
       "element_qos_incompatible=%u element_qos_policy=%d\n",
-      report_matches.total_count, element_matches.total_count,
+      report_matches.total_count, report_matches.current_count,
+      element_matches.total_count, element_matches.current_count,
       report_incompatible.total_count, static_cast<int>(report_incompatible.last_policy_id),
       element_incompatible.total_count, static_cast<int>(element_incompatible.last_policy_id));
     if (!got_report || !got_element || !disposed_report || !disposed_element) {

@@ -65,17 +65,10 @@ jobs:
       - name: 'Three real keyed instances: positive List and rejected bad metadata checkpoint'
         run: |
           ctest --test-dir "$RUNNER_TEMP/battery-live-build" \
-            -R '^official_umaa_battery_multicell_(good|bad_checkpoint) \
+            -R '^official_umaa_battery_multicell_(good|bad_checkpoint)$' \
             --output-on-failure -V
       - name: Explicit limitations
         if: success()
         run: |
           echo "OFFICIAL_BATTERY_THREE_CELL_ORIGINAL_DDS_E2E_PASS"
-          echo "No full Collection/Component QoS, vendor parity or conformance claim"
- \
-            --output-on-failure -V
-      - name: Explicit limitations
-        if: success()
-        run: |
-          echo "OFFICIAL_BATTERY_LIVE_JOINER_REAL_CYCLONE_WIRE_PASS"
           echo "No full Collection/Component QoS, vendor parity or conformance claim"

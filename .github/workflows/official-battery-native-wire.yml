@@ -5,6 +5,7 @@ on:
       - '.github/workflows/official-battery-native-wire.yml'
       - 'sdk/include/umaa/official_battery_host.hpp'
       - 'sdk/include/umaa/official_battery_collection.hpp'
+      - 'sdk/include/umaa/official_battery_subscription.hpp'
       - 'sdk/include/umaa/report_transport.hpp'
       - 'dds-backends/cyclone/include/umaa/cyclone_official_battery_codec.hpp'
       - 'tests/integration/cyclone/CMakeLists.txt'

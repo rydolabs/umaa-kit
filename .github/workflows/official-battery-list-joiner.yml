@@ -1,0 +1,28 @@
+name: BatteryStatus Large List host event joiner (Linux and Windows)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/official-battery-list-joiner.yml'
+      - 'sdk/include/umaa/official_battery_collection.hpp'
+      - 'sdk/include/umaa/official_battery_host.hpp'
+      - 'sdk/tests/official_battery_collection_joiner_test.cpp'
+      - 'tests/integration/battery_collection/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  battery-large-list-host-joiner:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure independent host-only event validator
+        run: cmake -S tests/integration/battery_collection -B build/battery-joiner -DCMAKE_BUILD_TYPE=Debug
+      - name: Compile against strict C++17 diagnostic flags
+        run: cmake --build build/battery-joiner --config Debug --parallel 2
+      - name: Prove metadata-before/after, batched updates, Dispose, replay and reconnect
+        run: ctest --test-dir build/battery-joiner -C Debug --output-on-failure -V

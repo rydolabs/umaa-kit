@@ -93,6 +93,33 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
   set_tests_properties(official_umaa_battery_payload_bad_checkpoint_rejected
     PROPERTIES TIMEOUT 45)
 
+  # Real DDS callback path: original Cyclone native values are converted into
+  # the SDK LargeListJoiner, which must observe both sample Topics and DDS
+  # Dispose instance handles. Independent direct publisher from Draft #49.
+  add_executable(umaa_official_battery_live_joiner_consumer
+    src/official_battery_live_joiner_consumer.cpp)
+  target_compile_features(umaa_official_battery_live_joiner_consumer PRIVATE cxx_std_17)
+  target_include_directories(umaa_official_battery_live_joiner_consumer PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../dds-backends/cyclone/include")
+  target_link_libraries(umaa_official_battery_live_joiner_consumer PRIVATE
+    umaa_official_type_support)
+  foreach(mode IN ITEMS good bad)
+    if(mode STREQUAL "good")
+      set(flag "")
+    else()
+      set(flag "--bad-checkpoint")
+    endif()
+    add_test(NAME "official_umaa_battery_live_joiner_${mode}"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_live_joiner.py"
+        "$<TARGET_FILE:umaa_official_battery_payload_publisher>"
+        "$<TARGET_FILE:umaa_official_battery_live_joiner_consumer>"
+        ${flag})
+    set_tests_properties("official_umaa_battery_live_joiner_${mode}"
+      PROPERTIES TIMEOUT 50)
+  endforeach()
+
 endif()
 
 

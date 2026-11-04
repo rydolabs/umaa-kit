@@ -99,12 +99,11 @@ int main(int argc, char** argv) {
             if (!report_data || known == report_keys.end() ||
                 known->second.id != guid(0x33))
               throw std::runtime_error("unrecognized Battery Report DDS Dispose");
+            // Report and Cell Topics have NO relative delivery ordering.
+            // Retain the pending host cycle until both Topics' data and
+            // terminal disposals have arrived, then invalidate it. Resetting
+            // here could erase metadata before a delayed Cell sample arrives.
             report_disposed = true;
-            // The keyed report is now disposed: no previous stable snapshot
-            // may survive a new subscription cycle/reconnect.
-            joiner.reset_after_disconnect();
-            if (joiner.latest_stable())
-              throw std::runtime_error("disposed Report snapshot resurrected");
           }
           dds_sample_free(&sample,
               &UMAA_EO_BatteryStatus_BatteryReportType_desc, DDS_FREE_CONTENTS);
@@ -130,8 +129,7 @@ int main(int argc, char** argv) {
                 known->second.first != guid(0x11) ||
                 known->second.second != guid(0x22))
               throw std::runtime_error("unrecognized Battery Cell DDS Dispose");
-            if (!report_disposed)
-              joiner.on_dispose(known->second.first, known->second.second);
+            joiner.on_dispose(known->second.first, known->second.second);
             element_disposed = true;
           }
           dds_sample_free(&sample,
@@ -149,6 +147,11 @@ int main(int argc, char** argv) {
 
     if (!report_data || !element_data || !report_disposed || !element_disposed)
       throw std::runtime_error("incomplete real DDS Report/Cell data or Dispose events");
+    // Actual keyed Report Dispose is the lifetime boundary, but in this
+    // two-topic test the four required events must be observed first.
+    joiner.reset_after_disconnect();
+    if (joiner.latest_stable() || joiner.buffered_elements() || joiner.pending_reports())
+      throw std::runtime_error("disposed Report left stale SDK Collection state");
     check(dds_delete(participant), "delete official Battery reader participant");
     participant = 0;
 

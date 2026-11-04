@@ -21,6 +21,8 @@ jobs:
       UMAA_IDL_SHA256: 15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08
       UMAA_BATTERY_IDL_SHA256: 39a2c920cfaba9afc3c15c4c12f5d4470911ab8b7c197c9e27b08284e54b713c
       UMAA_IDL_URL: https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl-with-exp-services.zip
+      # Diagnostic interop mode: disable Fast DDS SHM, use standard UDPv4 RTPS.
+      FASTDDS_BUILTIN_TRANSPORTS: UDPv4
     steps:
       - name: Install matched real Cyclone DDS and Fast DDS 3 compilers
         shell: bash
@@ -85,28 +87,50 @@ jobs:
             -DUMAA_OFFICIAL_FASTDDS_GENERATED_ROOT="$RUNNER_TEMP/fastdds-type/fastdds"
           cmake --build "$RUNNER_TEMP/fast-build" --parallel 2 \
             --target umaa_fastdds_official_battery_publisher umaa_fastdds_official_battery_oracle
-      - name: Verify real Cyclone publisher to independent Fast DDS reader plus negative oracle
+      - name: Run all four independent real mixed-vendor positive and negative cases
         shell: bash
         run: |
-          set -euo pipefail
-          python3 simulator/dds/run_battery_mixed.py cyclone-to-fastdds \
+          set -uo pipefail
+          failures=0
+          # Capture bounded Cyclone discovery + type negotiation for diagnosis
+          # if a standard RTPS interop case fails; never upload original IDL.
+          export CYCLONEDDS_URI="<Tracing><Category>discovery,topic,plist</Category><OutputFile>$RUNNER_TEMP/cyclone-interop.log</OutputFile></Tracing>"
+          run_case() {
+            label="$1"
+            shift
+            echo "START_CASE: $label"
+            if "$@"; then
+              echo "PASS_CASE: $label"
+            else
+              rc=$?
+              echo "FAIL_CASE: $label rc=$rc"
+              failures=$((failures + 1))
+            fi
+          }
+          run_case cyclone_to_fastdds_valid \
+            python3 simulator/dds/run_battery_mixed.py cyclone-to-fastdds \
             "$RUNNER_TEMP/cyclone-build/umaa_official_battery_payload_publisher" \
             "$RUNNER_TEMP/fast-build/umaa_fastdds_official_battery_oracle"
-          python3 simulator/dds/run_battery_mixed.py cyclone-to-fastdds \
+          run_case cyclone_to_fastdds_invalid_checkpoint \
+            python3 simulator/dds/run_battery_mixed.py cyclone-to-fastdds \
             "$RUNNER_TEMP/cyclone-build/umaa_official_battery_payload_publisher" \
             "$RUNNER_TEMP/fast-build/umaa_fastdds_official_battery_oracle" \
             --bad-checkpoint
-      - name: Verify real Fast DDS publisher to independent Cyclone reader plus negative oracle
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 simulator/dds/run_battery_mixed.py fastdds-to-cyclone \
+          run_case fastdds_to_cyclone_valid \
+            python3 simulator/dds/run_battery_mixed.py fastdds-to-cyclone \
             "$RUNNER_TEMP/fast-build/umaa_fastdds_official_battery_publisher" \
             "$RUNNER_TEMP/cyclone-build/umaa_official_battery_payload_oracle"
-          python3 simulator/dds/run_battery_mixed.py fastdds-to-cyclone \
+          run_case fastdds_to_cyclone_invalid_checkpoint \
+            python3 simulator/dds/run_battery_mixed.py fastdds-to-cyclone \
             "$RUNNER_TEMP/fast-build/umaa_fastdds_official_battery_publisher" \
             "$RUNNER_TEMP/cyclone-build/umaa_official_battery_payload_oracle" \
             --bad-checkpoint
+          echo "MIXED_VENDOR_CASE_FAILURES=$failures"
+          if [ "$failures" -gt 0 ]; then
+            echo "CYCLONE_DISCOVERY_TRACE_TAIL:"
+            tail -n 130 "$RUNNER_TEMP/cyclone-interop.log" || true
+            exit 1
+          fi
       - name: Scope and original source handling
         if: success()
         run: |

@@ -1,0 +1,113 @@
+name: Original UMAA Battery two-way Cyclone/Fast DDS interoperability
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/official-battery-mixed-vendor-wire.yml'
+      - 'simulator/dds/run_battery_mixed.py'
+      - 'tests/integration/cyclone/src/official_battery_payload_publisher.cpp'
+      - 'tests/integration/fastdds/official_battery_payload_publisher.cpp'
+      - 'tests/integration/fastdds/official_battery_payload_oracle.cpp'
+      - 'simulator/dds/official_battery_payload_oracle.c'
+      - 'tools/native_dds_codegen.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-battery-cross-vendor-wire:
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 40
+    env:
+      UMAA_IDL_SHA256: 15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08
+      UMAA_BATTERY_IDL_SHA256: 39a2c920cfaba9afc3c15c4c12f5d4470911ab8b7c197c9e27b08284e54b713c
+      UMAA_IDL_URL: https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl-with-exp-services.zip
+    steps:
+      - name: Install matched real Cyclone DDS and Fast DDS 3 compilers
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            git curl ca-certificates cmake g++ make python3 \
+            cyclonedds-dev libfastdds-dev libfastcdr-dev fastddsgen
+          idlc -v || true
+          fastddsgen -version || true
+      - uses: actions/checkout@v4
+
+      - name: Download and verify exact original public AUVSI 594-IDL archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            --connect-timeout 20 --max-time 120 "$UMAA_IDL_URL" \
+            -o "$RUNNER_TEMP/original.zip"
+          printf '%s  %s\n' "$UMAA_IDL_SHA256" "$RUNNER_TEMP/original.zip" | sha256sum --check
+      - name: Validate nested Battery IDL source pins and dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m tools.official_battery_payload_structure --idl-zip "$RUNNER_TEMP/original.zip"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from tools.official_icd_evidence import inspected_zip
+          root=Path(os.environ["RUNNER_TEMP"])/"official-idl"
+          root.mkdir()
+          with inspected_zip(Path(os.environ["RUNNER_TEMP"])/"original.zip") as z:
+              if z.testzip() is not None: raise RuntimeError("corrupt original IDL ZIP")
+              z.extractall(root)
+          PY
+      - name: Generate original Cyclone and Fast DDS native TypeSupport in separate temp roots
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/official_idl_compile.py \
+            --root "$RUNNER_TEMP/official-idl" \
+            --source UMAA/EO/BatteryStatus/BatteryReportType.idl \
+            --out "$RUNNER_TEMP/cyclone-type"
+          python3 -m tools.native_dds_codegen \
+            --root "$RUNNER_TEMP/official-idl" \
+            --source UMAA/EO/BatteryStatus/BatteryReportType.idl \
+            --source-sha256 "$UMAA_BATTERY_IDL_SHA256" \
+            --vendor fastdds \
+            --out "$RUNNER_TEMP/fastdds-type"
+      - name: Compile independent official Cyclone and Fast DDS original C/C++ processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/cyclone-build" \
+            -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/cyclone-type"
+          cmake --build "$RUNNER_TEMP/cyclone-build" --parallel 2 \
+            --target umaa_official_battery_payload_publisher umaa_official_battery_payload_oracle
+          cmake -S tests/integration/fastdds -B "$RUNNER_TEMP/fast-build" \
+            -DUMAA_OFFICIAL_FASTDDS_GENERATED_ROOT="$RUNNER_TEMP/fastdds-type/fastdds"
+          cmake --build "$RUNNER_TEMP/fast-build" --parallel 2 \
+            --target umaa_fastdds_official_battery_publisher umaa_fastdds_official_battery_oracle
+      - name: Verify real Cyclone publisher to independent Fast DDS reader plus negative oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 simulator/dds/run_battery_mixed.py cyclone-to-fastdds \
+            "$RUNNER_TEMP/cyclone-build/umaa_official_battery_payload_publisher" \
+            "$RUNNER_TEMP/fast-build/umaa_fastdds_official_battery_oracle"
+          python3 simulator/dds/run_battery_mixed.py cyclone-to-fastdds \
+            "$RUNNER_TEMP/cyclone-build/umaa_official_battery_payload_publisher" \
+            "$RUNNER_TEMP/fast-build/umaa_fastdds_official_battery_oracle" \
+            --bad-checkpoint
+      - name: Verify real Fast DDS publisher to independent Cyclone reader plus negative oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 simulator/dds/run_battery_mixed.py fastdds-to-cyclone \
+            "$RUNNER_TEMP/fast-build/umaa_fastdds_official_battery_publisher" \
+            "$RUNNER_TEMP/cyclone-build/umaa_official_battery_payload_oracle"
+          python3 simulator/dds/run_battery_mixed.py fastdds-to-cyclone \
+            "$RUNNER_TEMP/fast-build/umaa_fastdds_official_battery_publisher" \
+            "$RUNNER_TEMP/cyclone-build/umaa_official_battery_payload_oracle" \
+            --bad-checkpoint
+      - name: Scope and original source handling
+        if: success()
+        run: |
+          echo "OFFICIAL_BATTERY_TWO_WAY_CROSS_VENDOR_WIRE_PASS"
+          echo "Original IDL and vendor TypeSupport remain in RUNNER_TEMP."
+          echo "No full QoS, Component conformance, or multi-cycle Collection semantics."

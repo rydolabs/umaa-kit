@@ -132,6 +132,53 @@ class ReviewedContractTest(unittest.TestCase):
         with self.assertRaisesRegex(cli.ProjectError, "unpinned"):
             cli.check_project(proj)
 
+    def test_official_component_definition_role_lookup_in_sdk_cli(self):
+        # Source: AUVSI Component Definitions v1.0 section 3:
+        # ~ is a consumer, no ~ is a provider. This is NOT an
+        # acquisition-specific Component Specification or Runtime approval.
+        autopilot = self.root / "pilot"
+        cli.new("pilot", autopilot)
+        cli.add(autopilot, "UMAA::SA::GlobalPoseStatus", "consumer")
+        result = cli.check_project(autopilot, "Autopilot")
+        proof = result["referenceComponentEvidence"]
+        self.assertTrue(proof["roleLegendVerified"])
+        self.assertEqual(proof["checkedRoleBindings"], 1)
+        self.assertEqual(proof["publishedRoleRows"], 14)
+        self.assertFalse(proof["completeMembershipApproved"])
+        self.assertFalse(proof["componentSpecificationApproved"])
+        self.assertFalse(proof["normativeQosClaim"])
+        self.assertFalse(proof["officialRuntimeClaim"])
+        self.assertFalse(proof["officialConformanceClaim"])
+        self.assertFalse(result["codegenReady"])
+        with self.assertRaisesRegex(cli.ProjectError, "role mismatch"):
+            cli.check_project(autopilot, "USV Navigation")
+        with self.assertRaisesRegex(cli.ProjectError, "unknown official public Component"):
+            cli.check_project(autopilot, "Nonexistent Autopilot")
+
+        usv = self.root / "usv"
+        cli.new("usv", usv)
+        cli.add(usv, "UMAA::SA::GlobalPoseStatus", "provider")
+        self.assertEqual(cli.check_project(usv, "USV Navigation")[
+            "referenceComponentEvidence"]["checkedRoleBindings"], 1)
+        with self.assertRaisesRegex(cli.ProjectError, "role mismatch"):
+            cli.check_project(usv, "Autopilot")
+
+        # Official UUV Navigation Definition lists GlobalPoseStatus both
+        # as Provider and as Consumer; keep the two independent rows.
+        uuv = self.root / "uuv"
+        cli.new("uuv", uuv)
+        cli.add(uuv, "UMAA::SA::GlobalPoseStatus", "provider")
+        cli.add(uuv, "UMAA::SA::GlobalPoseStatus", "consumer")
+        self.assertEqual(cli.check_project(uuv, "UUV Navigation")[
+            "referenceComponentEvidence"]["checkedRoleBindings"], 2)
+        self.assertFalse(cli.check_project(uuv, "UUV Navigation")["codegenReady"])
+
+        demo = self.root / "demo"
+        cli.new("demo", demo)
+        cli.add(demo, "Demo::EO::BatteryStatus", "provider")
+        with self.assertRaisesRegex(cli.ProjectError, "synthetic service"):
+            cli.check_project(demo, "Autopilot")
+
     def test_existing_synthetic_manifest_stays_buildable_and_unpinned(self):
         proj = self.root / "project"
         cli.new("engine", proj)

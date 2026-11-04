@@ -73,8 +73,12 @@ def generate(manifest: Path, yaml_paths: list[Path], idl_root: Path,
              original_icd: Path | None = None,
              idl_archive: Path | None = None,
              runtime_report: dict | None = None) -> dict:
-    if not yaml_paths or output.is_symlink():
-        raise ContractIRError("missing Service YAML or symlinked output")
+    if not yaml_paths:
+        raise ContractIRError("missing Service YAML")
+    # Reject an aliased ancestor *before* resolve() hides the symlink.
+    # Otherwise native compiler output could escape into a different tree.
+    if output.is_symlink() or any(parent.is_symlink() for parent in output.parents):
+        raise ContractIRError("symlinked native Component output forbidden")
     doc = validate_component(json.loads(manifest.read_text(encoding="utf-8")),
                              nonempty=True)
     services = [load_service(p) for p in yaml_paths]

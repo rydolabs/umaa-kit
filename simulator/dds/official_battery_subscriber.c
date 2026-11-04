@@ -17,7 +17,10 @@ int main(void) {
   dds_delete_qos(q);
   if(reader<0)return 2;
   int phase=0;
-  const int attempts = getenv("UMAA_NETEM_RECOVERY") ? 1600 : 250;
+  // Loss-impaired network-namespace tests require extra time for the actual
+  // keyed DDS Dispose. Keep exact 20/80/Dispose validation; do not skip it.
+  const int attempts = getenv("UMAA_NETEM_RECOVERY") ? 1600 :
+                       getenv("UMAA_NETEM_RETAIN_FINAL") ? 600 : 250;
   for(int i=0;i<attempts && phase<3;++i){
     UMAA_EO_BatteryStatus_BatteryReportType data={0};
     void* samples[1]={&data};

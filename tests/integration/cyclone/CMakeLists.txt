@@ -156,6 +156,43 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
       --bad-checkpoint)
   set_tests_properties(official_umaa_battery_multicell_bad_checkpoint PROPERTIES TIMEOUT 50)
 
+  # Two independently keyed original Report sources and two Large Lists
+  # across the same genuine DDS Report/Cell Topic pair. A poisoned second
+  # checkpoint must not invalidate the first source's stable SDK snapshot.
+  add_executable(umaa_official_battery_multilist_consumer
+    src/official_battery_multilist_consumer.cpp)
+  target_compile_features(umaa_official_battery_multilist_consumer PRIVATE cxx_std_17)
+  target_include_directories(umaa_official_battery_multilist_consumer PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../dds-backends/cyclone/include")
+  target_link_libraries(umaa_official_battery_multilist_consumer PRIVATE
+    umaa_official_type_support)
+
+  add_test(NAME official_umaa_battery_multilist_good
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_multilist.py"
+      "$<TARGET_FILE:umaa_official_battery_multicell_publisher>"
+      "$<TARGET_FILE:umaa_official_battery_multilist_consumer>")
+  set_tests_properties(official_umaa_battery_multilist_good PROPERTIES TIMEOUT 55)
+
+  add_test(NAME official_umaa_battery_multilist_bad_checkpoint
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_multilist.py"
+      "$<TARGET_FILE:umaa_official_battery_multicell_publisher>"
+      "$<TARGET_FILE:umaa_official_battery_multilist_consumer>"
+      --bad-checkpoint)
+  set_tests_properties(official_umaa_battery_multilist_bad_checkpoint
+    PROPERTIES TIMEOUT 55)
+
+  # Native Cyclone DDS Subscriber with no configured Topic ordered
+  # presentation cannot claim the reviewed original EO §3.8.1 minimum.
+  add_test(NAME official_umaa_battery_multilist_default_qos_rejected
+    COMMAND "$<TARGET_FILE:umaa_official_battery_multilist_consumer>"
+            --reject-default-qos)
+  set_tests_properties(official_umaa_battery_multilist_default_qos_rejected
+    PROPERTIES TIMEOUT 15
+    PASS_REGULAR_EXPRESSION "BATTERY_OFFICIAL_ELEMENT_DEFAULT_QOS_REJECTED")
+
   # Actual official Battery SDK Handler/BoundReportProvider, distinct from
   # the prior direct native sample publisher. Independent oracle remains the
   # C-only original-TypeSupport receiver with no SDK linkage.

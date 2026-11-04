@@ -52,6 +52,17 @@ class LargeListJoiner final {
     if (ordering_ != ElementOrdering::CallerVerifiedTopicOrdered)
       throw std::logic_error("cannot assemble without verified ordered element Topic QoS");
     const auto& meta = report.cellsListMetadata;
+    // Reject impossible metadata before changing source, timestamp or queue.
+    // Otherwise a rejected oversized Report becomes a permanent front
+    // barrier even after an otherwise valid Report arrives.
+    if (static_cast<std::size_t>(meta.size) > max_elements_)
+      throw std::runtime_error("Battery collection exceeds configured maximum");
+    const bool empty_initial = meta.size == 0 &&
+                               meta.updateElementID == nil_guid() &&
+                               !meta.updateElementTimestamp;
+    if (empty_initial &&
+        ((committed_ && !committed_->ordered.empty()) || !elements_.empty()))
+      throw std::runtime_error("NIL checkpoint cannot erase a nonempty list");
     select_list(meta.listID);
     if (source_ && (source_->id != report.source.id ||
                     source_->parentID != report.source.parentID))

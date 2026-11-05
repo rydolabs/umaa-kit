@@ -103,6 +103,27 @@ class NetnsConfigurationTests(unittest.TestCase):
             self.assertIsNotNone(proc.returncode)
             self.assertNotEqual(proc.returncode, 0)
 
+    def test_first_dispose_fault_injection_never_leaks_into_publisher_or_normal_reader(self):
+        with patch('run_netns.subprocess.Popen') as child:
+            spawn('umaa_ci_sim1', '/original-reader', impaired=True,
+                  receipt_dir='/private/fresh-session',
+                  suppress_first_native_dispose=True)
+            reader_env = child.call_args.kwargs['env']
+            self.assertEqual(reader_env['UMAA_NETEM_SUPPRESS_FIRST_NATIVE_DISPOSE'], '1')
+            self.assertEqual(reader_env['UMAA_NETEM_RECEIPT_FILE'],
+                             '/private/fresh-session/umaa_ci_sim1.receipt')
+            spawn('umaa_ci_sim2', '/normal-reader', impaired=True,
+                  receipt_dir='/private/fresh-session')
+            self.assertNotIn('UMAA_NETEM_SUPPRESS_FIRST_NATIVE_DISPOSE',
+                             child.call_args.kwargs['env'])
+            with self.assertRaises(ValueError):
+                spawn('umaa_ci_pub', '/publisher', impaired=True,
+                      receipt_dir='/private/fresh-session',
+                      suppress_first_native_dispose=True)
+            with self.assertRaises(ValueError):
+                spawn('umaa_ci_sim1', '/reader-no-receipt',
+                      suppress_first_native_dispose=True)
+
     def test_uses_netns_exec(self):
         self.assertEqual(command_for_node('umaa_ci_pub', '/bin/true'),
                          ['ip', 'netns', 'exec', 'umaa_ci_pub', '/bin/true'])

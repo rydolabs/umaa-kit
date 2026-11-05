@@ -35,7 +35,7 @@ public:
         if (api_->service_at(instance_, i, &descriptor) != UMAA_COMPONENT_OK ||
             !descriptor.service_id || !*descriptor.service_id ||
             !descriptor.schema_id || !*descriptor.schema_id ||
-            descriptor.kinds == 0 || (descriptor.kinds & ~7u))
+            descriptor.kinds == 0 || (descriptor.kinds & ~31u))
           throw std::runtime_error("invalid component service descriptor");
         for (const auto& known : services_) {
           if (known.service == descriptor.service_id)
@@ -69,7 +69,9 @@ public:
     for (const auto& s : services_)
       if (s.service == service &&
           ((action >= 1 && action <= 3 && (s.actions & (1u << (action - 1)))) ||
-           (action == UMAA_COMPONENT_COMMAND_POLL && (s.actions & 1u))))
+           (action == UMAA_COMPONENT_COMMAND_POLL && (s.actions & 1u)) ||
+           (action == UMAA_COMPONENT_REPORT_ACCEPT && (s.actions & 8u)) ||
+           (action == UMAA_COMPONENT_REPORT_DISPOSE && (s.actions & 16u))))
         authorized = true;
     if (!authorized) return UMAA_COMPONENT_NOT_FOUND;
     // Admit a call before stop can drain/unload it. Hardware operations

@@ -153,7 +153,12 @@ def check_assembly(doc, reference_component=None):
     """Pure shared CLI/Studio assembly gate; never creates files or executes code."""
     doc = validate(doc)
     official = [s["id"] for s in doc["services"] if s["id"] not in DEMO]
-    ready = all(s["role"] == "provider" and s["id"] in DEMO for s in doc["services"])
+    # A synthetic Report Consumer is now a buildable development ABI-v2
+    # Handler. Command Consumers and all official bindings remain gated.
+    ready = all(s["id"] in DEMO and
+                (s["role"] == "provider" or
+                 (s["role"] == "consumer" and DEMO[s["id"]][2] == "report"))
+                for s in doc["services"])
     current_pin = None
     if official:
         try:
@@ -231,7 +236,11 @@ def contract_header(services):
     out = [MARK, "#pragma once", '#include "umaa/component.hpp"',
            "#include <cstdint>", "#include <cstring>", "#include <vector>",
            "namespace generated {"]
+    seen_types = set()
     for service in services:
+        if service["id"] in seen_types:
+            continue  # provider + consumer share precisely one Type definition
+        seen_types.add(service["id"])
         short, schema, kind = DEMO[service["id"]]
         out += [f"struct {short} {{",
                 f'  static constexpr const char* id = "{service["id"]}";',
@@ -249,12 +258,29 @@ def contract_header(services):
                 "  static std::vector<std::uint8_t> encode_report(const Report& r) {",
                 "    std::vector<std::uint8_t> b(sizeof(r.level_pct));",
                 "    std::memcpy(b.data(), &r.level_pct, b.size()); return b;",
+                "  }",
+                "  static bool decode_report(const std::uint8_t* p, std::size_t n, Report& r) {",
+                "    if (!p || n != sizeof(r.level_pct)) return false;",
+                "    std::memcpy(&r.level_pct, p, n); return true;",
                 "  }"]
         out += ["};"]
     return "\n".join(out + ["} // namespace generated", ""])
 
 
-def handler_header(name, kind):
+def handler_header(name, kind, role="provider"):
+    if role == "consumer":
+        if kind != "report":
+            raise ProjectError("synthetic Command consumer bindings not yet implemented")
+        return ("#pragma once\n// USER OWNED: never overwritten on regeneration.\n"
+                '#include "service_contracts.hpp"\n#include <cstdint>\n'
+                f"namespace user {{\nclass {name}ConsumerLogic final : "
+                f"public umaa::ReportSink<generated::{name}> {{\npublic:\n"
+                "  // Default fail closed: no synthetic Report is accepted implicitly.\n"
+                f"  umaa::Result on_report(const generated::{name}::Report&, "
+                "std::uint64_t) override { return umaa::Result::Rejected; }\n"
+                "  umaa::Result on_dispose(std::uint64_t) override "
+                "{ return umaa::Result::Rejected; }\n"
+                "};\n}\n")
     base = "CommandHandler" if kind == "command" else "ReportSource"
     methods = (
         f"  umaa::Result execute(const generated::{name}::Command&) override {{ return umaa::Result::Rejected; }}\n"
@@ -275,23 +301,29 @@ def generate(project):
     doc = validate(read(project), nonempty=True)
     services = doc["services"]
     for item in services:
-        if item["role"] != "provider":
-            raise ProjectError("consumer module bindings not yet implemented: " + item["id"])
         if item["id"] not in DEMO:
             raise ProjectError("official service needs verified TypeSupport/key/QoS/role binding: " + item["id"])
+        if item["role"] == "consumer" and DEMO[item["id"]][2] != "report":
+            raise ProjectError("synthetic Command consumer module bindings not yet implemented: " + item["id"])
     name = doc["component"]["id"]
     write_generated(project / "generated/service_contracts.hpp", contract_header(services))
     entries = [MARK, '#include "umaa/component.hpp"']
     for item in services:
         short, schema, kind = DEMO[item["id"]]
-        filename = re.sub(r"(?<!^)(?=[A-Z])", "_", short).lower() + ".hpp"
-        write_user(project / "src/handlers" / filename, handler_header(short, kind))
+        suffix = "_consumer" if item["role"] == "consumer" else ""
+        filename = re.sub(r"(?<!^)(?=[A-Z])", "_", short).lower() + suffix + ".hpp"
+        write_user(project / "src/handlers" / filename,
+                   handler_header(short, kind, item["role"]))
         entries.append(f'#include "handlers/{filename}"')
     entries += ["namespace {", "void register_services(umaa::Component& c) {"]
     for item in services:
         short = DEMO[item["id"]][0]
-        entries += [f"  static user::{short}Logic h_{short};",
-                    f"  c.provide<generated::{short}>(h_{short});"]
+        if item["role"] == "consumer":
+            entries += [f"  static user::{short}ConsumerLogic h_{short}_consumer;",
+                        f"  c.consume<generated::{short}>(h_{short}_consumer);"]
+        else:
+            entries += [f"  static user::{short}Logic h_{short}_provider;",
+                        f"  c.provide<generated::{short}>(h_{short}_provider);"]
     entries += ["}", "}", f'UMAA_EXPORT_COMPONENT_V2("{name}", register_services)', ""]
     write_generated(project / "generated/component_entry.cpp", "\n".join(entries))
     dollar = "$"
@@ -314,22 +346,55 @@ def generate(project):
         f"install(TARGETS {name} LIBRARY DESTINATION lib RUNTIME DESTINATION bin)",
         ""])
     write_generated(project / "CMakeLists.txt", cmake, CMAKE_MARK)
-    expected = [f'    {{"{s["id"]}", "{DEMO[s["id"]][1]}"}},' for s in services]
+    # The ABI exports each Service only once, even when a Component both
+    # provides and consumes it; the merged action bits preserve both roles.
+    registered = {}
+    for item in services:
+        service_id = item["id"]
+        mask = (3 if DEMO[service_id][2] == "command" else 4) if item["role"] == "provider" else 24
+        if service_id not in registered:
+            registered[service_id] = [DEMO[service_id][1], 0]
+        registered[service_id][1] |= mask
+    expected = [f'    {{"{service}", "{schema}", {mask}u}},'
+                for service, (schema, mask) in registered.items()]
     smoke = [MARK, '#include "umaa/component_module.hpp"',
-             "#include <string>", "#include <utility>", "#include <vector>",
+             '#include "umaa/component.hpp"',
+             "#include <cstdint>", "#include <string>", "#include <vector>",
+             "struct Expected { const char* service; const char* schema; std::uint32_t actions; };",
              "int main(int argc, char** argv) {",
              "  if (argc != 2) return 2;",
              "  umaa::ComponentModule module(argv[1]);",
              f'  if (module.name() != "{name}") return 3;',
              "  const auto& got = module.services();",
-             f"  if (got.size() != {len(services)}) return 4;",
-             "  const std::vector<std::pair<std::string,std::string>> expected = {"]
+             f"  if (got.size() != {len(registered)}) return 4;",
+             "  const std::vector<Expected> expected = {"]
     smoke += expected + [
         "  };",
         "  for (std::size_t i = 0; i < expected.size(); ++i)",
-        "    if (got[i].service != expected[i].first || got[i].schema != expected[i].second) return 5;",
-        "  return module.stop() ? 0 : 6;",
-        "}", ""]
+        "    if (got[i].service != expected[i].service ||",
+        "        got[i].schema != expected[i].schema ||",
+        "        got[i].actions != expected[i].actions) return 5;"]
+    for service_id in dict.fromkeys(
+            item["id"] for item in services if item["role"] == "consumer"):
+        smoke += [
+            "  {",
+            "    std::vector<std::uint8_t> output;",
+            "    std::int32_t business = -1;",
+            "    std::vector<std::uint8_t> valid_report{0u, 0u, 0u, 0u};",
+            f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_ACCEPT,',
+            "          valid_report, output, business, 42) != UMAA_COMPONENT_OK ||",
+            "        business != static_cast<std::int32_t>(umaa::Result::Rejected)) return 7;",
+            f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_DISPOSE,',
+            "          {}, output, business, 42) != UMAA_COMPONENT_OK ||",
+            "        business != static_cast<std::int32_t>(umaa::Result::Rejected)) return 8;",
+            f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_ACCEPT,',
+            "          {1u, 2u}, output, business, 42) != UMAA_COMPONENT_INVALID) return 9;",
+            f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_ACCEPT,',
+            "          valid_report, output, business, 0) != UMAA_COMPONENT_INVALID) return 10;",
+            f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_DISPOSE,',
+            "          {}, output, business, 0) != UMAA_COMPONENT_INVALID) return 11;",
+            "  }"]
+    smoke += ["  return module.stop() ? 0 : 6;", "}", ""]
     write_generated(project / "tests/module_smoke.cpp", "\n".join(smoke))
     write_user(project / "README.md",
                f"# {name}\n\nSynthetic ABI v2 Component development fixture only.\n"

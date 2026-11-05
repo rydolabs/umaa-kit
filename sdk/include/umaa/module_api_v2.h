@@ -27,6 +27,13 @@ extern "C" {
 #define UMAA_COMPONENT_CANCEL  2u
 #define UMAA_COMPONENT_REPORT  3u
 #define UMAA_COMPONENT_COMMAND_POLL 4u /* host-local session query; not DDS Ack/Status */
+/* Development-only inbound Report to a Component Consumer Handler.
+ * No DDS wire framing or official Source/Key claim: session_id is an
+ * opaque nonzero host-local source token. The actual DDS adapter must
+ * authenticate source identity, TypeSupport, QoS and keyed Dispose.
+ * Extends the v2 action set without changing the C ABI struct layout. */
+#define UMAA_COMPONENT_REPORT_ACCEPT 5u
+#define UMAA_COMPONENT_REPORT_DISPOSE 6u
 #define UMAA_COMPONENT_OK 0
 #define UMAA_COMPONENT_REJECTED 1
 #define UMAA_COMPONENT_NOT_FOUND -1
@@ -38,7 +45,8 @@ extern "C" {
 typedef struct UmaaComponentServiceV2 {
   const char* service_id;
   const char* schema_id;
-  uint32_t kinds; /* bitmask: 1=COMMAND, 2=CANCEL, 4=REPORT; poll requires COMMAND */
+  uint32_t kinds; /* bitmask: 1=COMMAND, 2=CANCEL, 4=REPORT_PROVIDER,
+                   8=REPORT_ACCEPT, 16=REPORT_DISPOSE; poll requires COMMAND */
   uint32_t reserved;
 } UmaaComponentServiceV2;
 

@@ -44,11 +44,48 @@ class ComponentCliTest(unittest.TestCase):
             cli.generate(self.project)
         self.assertFalse((self.project / "CMakeLists.txt").exists())
 
-    def test_consumer_role_requires_explicit_runtime_binding(self):
+    def test_synthetic_report_consumer_and_dual_role_scaffolds(self):
         cli.new("engine", self.project)
+        cli.add(self.project, "Demo::EO::EngineControl", "provider")
         cli.add(self.project, "Demo::EO::BatteryStatus", "consumer")
-        with self.assertRaisesRegex(cli.ProjectError, "consumer module bindings"):
+        self.assertTrue(cli.check_project(self.project)["codegenReady"])
+        cli.generate(self.project)
+        entry = (self.project / "generated/component_entry.cpp").read_text()
+        self.assertIn("c.provide<generated::EngineControl>", entry)
+        self.assertIn("c.consume<generated::BatteryStatus>", entry)
+        consumer = self.project / "src/handlers/battery_status_consumer.hpp"
+        original = consumer.read_text()
+        self.assertIn("ReportSink<generated::BatteryStatus>", original)
+        self.assertIn("umaa::Result::Rejected", original)
+        consumer.write_text(original + "// user-owned consumer customization\n")
+        cli.generate(self.project)
+        self.assertIn("// user-owned consumer customization", consumer.read_text())
+        smoke = (self.project / "tests/module_smoke.cpp").read_text()
+        self.assertIn("UMAA_COMPONENT_REPORT_ACCEPT", smoke)
+        self.assertIn("UMAA_COMPONENT_REPORT_DISPOSE", smoke)
+        self.assertIn("24u", smoke)
+
+        both = self.root / "bidirectional"
+        cli.new("bidirectional", both)
+        cli.add(both, "Demo::EO::BatteryStatus", "provider")
+        cli.add(both, "Demo::EO::BatteryStatus", "consumer")
+        self.assertTrue(cli.check_project(both)["codegenReady"])
+        cli.generate(both)
+        self.assertEqual((both / "generated/service_contracts.hpp").
+                         read_text().count("struct BatteryStatus {"), 1)
+        self.assertIn("28u", (both / "tests/module_smoke.cpp").read_text())
+        self.assertIn("c.provide<generated::BatteryStatus>",
+                      (both / "generated/component_entry.cpp").read_text())
+        self.assertIn("c.consume<generated::BatteryStatus>",
+                      (both / "generated/component_entry.cpp").read_text())
+
+    def test_unimplemented_synthetic_command_consumer_stays_blocked(self):
+        cli.new("engine", self.project)
+        cli.add(self.project, "Demo::EO::EngineControl", "consumer")
+        self.assertFalse(cli.check_project(self.project)["codegenReady"])
+        with self.assertRaisesRegex(cli.ProjectError, "Command consumer module bindings"):
             cli.generate(self.project)
+        self.assertFalse((self.project / "CMakeLists.txt").exists())
 
     def test_duplicate_unknown_and_bad_role_are_rejected(self):
         cli.new("engine", self.project)
@@ -119,6 +156,25 @@ class ComponentCliTest(unittest.TestCase):
                        check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         cli.run_cmake(self.project, prefix)
         cli.run_test(self.project)
+
+        # The same installed SDK must load real native C++ modules containing
+        # both Provider and Consumer Service entries, then one Service with
+        # *both* roles combined under a single ABI-v2 descriptor.
+        mixed = self.root / "mixed"
+        cli.new("mixed", mixed)
+        cli.add(mixed, "Demo::EO::EngineControl", "provider")
+        cli.add(mixed, "Demo::EO::BatteryStatus", "consumer")
+        cli.generate(mixed)
+        cli.run_cmake(mixed, prefix)
+        cli.run_test(mixed)
+
+        both = self.root / "both"
+        cli.new("both", both)
+        cli.add(both, "Demo::EO::BatteryStatus", "provider")
+        cli.add(both, "Demo::EO::BatteryStatus", "consumer")
+        cli.generate(both)
+        cli.run_cmake(both, prefix)
+        cli.run_test(both)
 
 
 if __name__ == "__main__":

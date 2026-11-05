@@ -748,3 +748,40 @@ diagnostic evidence.
 - Latest merged-main network namespace workflow [41944916113](https://github.com/rydolabs/umaa-kit/actions/runs/41944916113) **FAILED** after two successful impaired original Battery runs. The third run reported `official module/transport error: independent application Dispose observation not confirmed` and independent `OFFICIAL_SIM: incomplete 2/3`. This is an **unresolved real DDS delivery/lifecycle issue**, not an acceptable PASS.
 - The harness then raised a *second*, unrelated `ValueError: I/O operation on closed file` in `stop()` while re-calling `communicate()` on an already-closed stream, obscuring the original failure. Fix cleanup to use bounded `wait()` for closed streams and bounded `communicate()` otherwise; add real child-process negative regressions for both paths.
 - This change is **diagnostic hardening only**. It does not alter Cyclone DDS QoS, lengthen timeouts, synthesize Dispose, suppress the independent oracle, or establish reconnection correctness. The impaired test must remain red if a genuine DDS Dispose is absent.
+
+## 2026-11-05 — Component v2 mixed Provider + synthetic Report Consumer
+
+- Based on README visual-architecture merge `main`
+  `6a1a5c96dbc472a3275c65a9bc3ee4cc0c74b4ad`.
+  This increment implements a missing **development** assembly lane:
+  the same generated native DLL/SO can both provide and consume
+  synthetic `Demo::EO` Services and can bind the same synthetic
+  Report Service in both roles. This is a scoped prototype, NOT
+  official native UMAA 6.0 Runtime generation.
+- C ABI v2 structure/layout/version unchanged. New explicitly
+  host-local `UMAA_COMPONENT_REPORT_ACCEPT` (5; bit 8) and
+  `UMAA_COMPONENT_REPORT_DISPOSE` (6; bit 16) actions carry a
+  nonzero opaque host-local source token via the existing
+  `session_id` field; the caller must validate genuine external
+  DDS Keys, Topic/QoS and disposal. The default generated
+  `ReportSink` user callbacks always reject, no silent success.
+- The C++ `Component` registration merges disjoint Consumer and
+  Provider actions for the same Service ID/schema under one
+  ABI-v2 descriptor, but rejects duplicate overlapping roles or
+  differing schema IDs. Host loader checks new bits and still
+  drains in-flight callbacks before module unload.
+- CLI generates a protected business Consumer Handler file,
+  adds the synthetic Report decoder and validates a mixed-role
+  manifest; official Service and Command Consumer generation
+  remain **fail closed**. The generated native smoke additionally
+  rejects malformed Report payloads, invalid source tokens and
+  fake Dispose data, and verifies module action bits.
+- New portable C++ CTest validates actual Consumer Handler
+  callbacks, keyed opaque source token, Dispose, exception
+  fencing and same-Service bi-directional dispatch. Existing
+  Python CLI suite builds and runs synthetic Provider, mixed,
+  and bidirectional DLL/SO projects against installed SDK.
+- **Original feature HEAD CI 19/19 success; integrated branch HEAD CI pending**. No official
+  TypeSupport, native DDS Consumer reader ownership, full
+  per-Component QoS, source GUID attestation or UMAA conformance
+  claim; no original AUVSI source files committed.

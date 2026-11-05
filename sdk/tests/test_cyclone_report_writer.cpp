@@ -1,6 +1,7 @@
 // Test-only DDS C shim: operation failure injection and lifecycle ordering.
 // The official wire coverage is independently executed on hosted runners.
 #include "umaa/cyclone_report_writer.hpp"
+#include <algorithm>
 #include <cassert>
 #include <stdexcept>
 #include <string>
@@ -119,5 +120,54 @@ int main() {
     assert(writer.state() == Writer::State::Faulted);
     fail = nullptr;
     throws([&] { writer.register_source("src"); });
+  }
+
+  // The optional impaired-netns-only native Dispose repair must NEVER be
+  // activated without a genuine independent observer. Its default is off.
+  const auto acked = [] { return true; };
+  throws([&] { Writer w("src",1,2,&qos,Mapper{},1,200,0,{},250,100,1); });
+  throws([&] { Writer w("src",1,2,&qos,Mapper{},1,200,0,acked,250,99,1); });
+  throws([&] { Writer w("src",1,2,&qos,Mapper{},1,200,0,acked,250,100,0); });
+  throws([&] { Writer w("src",1,2,&qos,Mapper{},1,200,0,acked,250,100,9); });
+  throws([&] { Writer w("src",1,2,&qos,Mapper{},1,200,0,acked,100,100,1); });
+  current_readers = 1;
+  fail = nullptr;
+  calls.clear();
+  {
+    Writer writer("src",1,2,&qos,Mapper{},1,200,0,acked,250,100,2);
+    writer.register_source("src");
+    writer.dispose("src",3);
+    writer.unregister_source("src");
+    assert(std::count(calls.begin(),calls.end(),"dispose") == 1);
+    assert(writer.state() == Writer::State::Stopped);
+  }
+  calls.clear();
+  {
+    // Receipt arrives only after a second native dds_dispose. This is an
+    // actual middleware operation, never a synthetic success or fake ACK.
+    const auto observed_second_native = [] {
+      return std::count(calls.begin(), calls.end(), "dispose") >= 2;
+    };
+    Writer writer("src",1,2,&qos,Mapper{},1,200,0,
+                  observed_second_native,450,100,2);
+    writer.register_source("src");
+    writer.dispose("src",3);
+    writer.unregister_source("src");
+    assert(std::count(calls.begin(),calls.end(),"dispose") == 2);
+    assert(writer.native_dispose_reassertions() == 1u);
+    assert(writer.state() == Writer::State::Stopped);
+  }
+  calls.clear();
+  {
+    // Never turn a lost Dispose into PASS. Even after a limited number
+    // of REAL DDS reassertions, no independent receipt means FAULT.
+    Writer writer("src",1,2,&qos,Mapper{},1,200,0,[] { return false; },
+                  260,100,1);
+    writer.register_source("src");
+    writer.dispose("src",3);
+    throws([&] { writer.unregister_source("src"); });
+    assert(std::count(calls.begin(),calls.end(),"dispose") == 2);
+    assert(writer.state() == Writer::State::Faulted && writer.entity() > 0);
+    assert(std::count(calls.begin(),calls.end(),"delete") == 0);
   }
 }

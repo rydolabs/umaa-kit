@@ -181,11 +181,14 @@ jobs:
           sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_simulator build/netns-dds/libumaa_dds_battery_module.so --subscribers 2 | tee build/netns-evidence/official-report-3node.log
           sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_engine_host build/netns-dds/umaa_official_engine_simulator build/netns-dds/libumaa_dds_engine_module.so | tee build/netns-evidence/official-command-2node.log
           sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_engine_host build/netns-dds/umaa_official_engine_simulator build/netns-dds/libumaa_dds_engine_module.so --update | tee build/netns-evidence/official-update-2node.log
+      # Eight fresh, independently observed runs per reader type expose
+      # nondeterministic 1%-loss Dispose retirement; never reduce the oracle
+      # to middleware ACK or a test-harness marker from a previous iteration.
       - name: DDS with tc netem delay, jitter, and loss (Linux)
         shell: bash
         run: |
           set -euo pipefail
-          for iteration in 1 2 3; do
+          for iteration in 1 2 3 4 5 6 7 8; do
             sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_simulator build/netns-dds/libumaa_dds_battery_module.so --subscribers 2 --profile degraded --require-observed-dispose | tee "build/netns-evidence/netem-official-report-degraded-${iteration}.log"
           done
           sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_engine_host build/netns-dds/umaa_official_engine_simulator build/netns-dds/libumaa_dds_engine_module.so --profile degraded | tee build/netns-evidence/netem-official-command-degraded.log
@@ -200,7 +203,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_sdk_consumer build/netns-dds/libumaa_dds_battery_module.so | tee build/netns-evidence/sdk-report-reader-2node-clean.log
-          for iteration in 1 2 3; do
+          for iteration in 1 2 3 4 5 6 7 8; do
             sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_sdk_consumer build/netns-dds/libumaa_dds_battery_module.so --profile degraded --require-observed-dispose | tee "build/netns-evidence/sdk-report-reader-2node-degraded-${iteration}.log"
           done
           sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_sdk_consumer build/netns-dds/libumaa_dds_battery_module.so --profile outage-recover --require-observed-dispose | tee build/netns-evidence/sdk-report-reader-2node-recovery.log

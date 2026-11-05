@@ -748,3 +748,34 @@ diagnostic evidence.
 - Latest merged-main network namespace workflow [41944916113](https://github.com/rydolabs/umaa-kit/actions/runs/41944916113) **FAILED** after two successful impaired original Battery runs. The third run reported `official module/transport error: independent application Dispose observation not confirmed` and independent `OFFICIAL_SIM: incomplete 2/3`. This is an **unresolved real DDS delivery/lifecycle issue**, not an acceptable PASS.
 - The harness then raised a *second*, unrelated `ValueError: I/O operation on closed file` in `stop()` while re-calling `communicate()` on an already-closed stream, obscuring the original failure. Fix cleanup to use bounded `wait()` for closed streams and bounded `communicate()` otherwise; add real child-process negative regressions for both paths.
 - This change is **diagnostic hardening only**. It does not alter Cyclone DDS QoS, lengthen timeouts, synthesize Dispose, suppress the independent oracle, or establish reconnection correctness. The impaired test must remain red if a genuine DDS Dispose is absent.
+
+
+## 2026-11-05 — bounded native DDS Dispose reassert under strict impaired-netns receipts (candidate)
+
+- Historical `main` failure [41944916113](https://github.com/rydolabs/umaa-kit/actions/runs/41944916113):
+  first two 1%-loss original Battery runs had independent real
+  20/80/Dispose evidence, while a later run ended `incomplete 2/3`
+  with no actual Dispose observation. Middleware `dds_wait_for_acks`
+  and keeping the Publisher alive for 15 seconds were insufficient.
+  The secondary closed-pipe cleanup error is separately fixed/merged in #66.
+- `ReportWriter` now has **optional**, bounded native `dds_dispose`
+  reassert parameters (defaults **disabled**; never a broad QoS policy).
+  Only the **test-only** original Battery Publisher with an enabled
+  impairment/independent-receipt gate configures up to six additional
+  real native DDS Dispose calls spaced at least 1.25 seconds apart
+  while retaining the same original instance and Writer. It neither
+  fabricates a Report/ACK nor grants success without the exact external
+  independent reader receipts. Original Source/Key/Reader oracles stay
+  unchanged and a missing observation still faults the Writer and CI.
+- Standalone C++ Writer negative/positive tests prove reassert
+  preconditions, one reassert on delayed independent receipt, zero
+  reassert on immediate receipt, maximum retry budget and hard fault
+  if no reader proof arrives.
+- The Linux netns workflow now runs **eight** separate 1%-loss C
+  original Battery Reader cases and **eight** original SDK Reader
+  cases, keeping fresh temporary receipts per run and the 100% outage
+  recovery cases. Logs include native reassert count for diagnosis.
+- **Verification pending for this PR exact HEAD.** Even sustained
+  tests would prove only this narrow Cyclone demo profile and test-only
+  retry policy, not general DDS reliability, exactly-once lifecycle,
+  mandatory official QoS or production conformance.

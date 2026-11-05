@@ -22,18 +22,27 @@ class ReportWriter final : public ReportTransport<Value> {
                int discovery_attempts = 200,
                std::uint32_t retire_grace_ms = 0,
                std::function<bool()> observed_dispose = {},
-               std::uint32_t observation_timeout_ms = 0)
+               std::uint32_t observation_timeout_ms = 0,
+               std::uint32_t native_reassert_interval_ms = 0,
+               std::uint32_t native_reassert_limit = 0)
       : source_(std::move(source)), participant_(participant), topic_(topic),
         qos_(qos), mapper_(std::move(mapper)), expected_readers_(expected_readers),
         discovery_attempts_(discovery_attempts),
         retire_grace_ms_(retire_grace_ms),
         observed_dispose_(std::move(observed_dispose)),
-        observation_timeout_ms_(observation_timeout_ms) {
+        observation_timeout_ms_(observation_timeout_ms),
+        native_reassert_interval_ms_(native_reassert_interval_ms),
+        native_reassert_limit_(native_reassert_limit) {
     if (source_.empty() || participant_ <= 0 || topic_ <= 0 || !qos_ ||
         expected_readers_ < 0 || discovery_attempts_ <= 0 ||
         retire_grace_ms_ > 5000 ||
         (static_cast<bool>(observed_dispose_) != (observation_timeout_ms_ != 0)) ||
-        observation_timeout_ms_ > 30000)
+        observation_timeout_ms_ > 30000 ||
+        (native_reassert_interval_ms_ != 0) != (native_reassert_limit_ != 0) ||
+        (native_reassert_interval_ms_ != 0 &&
+         (!observed_dispose_ || native_reassert_interval_ms_ < 100 ||
+          native_reassert_limit_ > 8 ||
+          native_reassert_interval_ms_ >= observation_timeout_ms_)))
       throw std::invalid_argument("Report Writer requires explicit source, entities and QoS");
   }
   ReportWriter(const ReportWriter&) = delete;
@@ -76,6 +85,7 @@ class ReportWriter final : public ReportTransport<Value> {
     try {
       WireSample sample = mapper_.make_dispose(source, timestamp);
       check(dds_dispose(writer_, &sample), "dispose Report");
+      last_dispose_timestamp_ = timestamp;
     } catch (...) { state_ = State::Faulted; throw; }
   }
   void unregister_source(const std::string& source) override {
@@ -100,10 +110,32 @@ class ReportWriter final : public ReportTransport<Value> {
         const auto deadline = std::chrono::steady_clock::now() +
             std::chrono::milliseconds(observation_timeout_ms_);
         bool confirmed = false;
+        auto next_reassert = std::chrono::steady_clock::now() +
+            std::chrono::milliseconds(native_reassert_interval_ms_);
+        std::uint32_t reassertions = 0;
         do {
+          // Only a real independent reader receipt may complete this gate.
           if (observed_dispose_()) { confirmed = true; break; }
+          const auto now = std::chrono::steady_clock::now();
+          if (now >= deadline) break;
+          // Opt-in, test-only repair under impaired Cyclone DDS: reassert
+          // the SAME genuine native keyed Dispose on the still-live Writer.
+          // Never fabricate a Report/ACK/receipt or infer a successful
+          // application observation from DDS reliability acknowledgments.
+          // This is *not* an approved production QoS or an exactly-once claim.
+          if (native_reassert_interval_ms_ && now >= next_reassert &&
+              reassertions < native_reassert_limit_) {
+            if (last_dispose_timestamp_ <= 0)
+              throw std::logic_error("cannot reassert a never-issued DDS Dispose");
+            WireSample sample = mapper_.make_dispose(source_, last_dispose_timestamp_);
+            check(dds_dispose(writer_, &sample), "reassert original Report Dispose");
+            ++reassertions;
+            native_reassertions_ = reassertions;
+            next_reassert = now +
+                std::chrono::milliseconds(native_reassert_interval_ms_);
+          }
           dds_sleepfor(DDS_MSECS(25));
-        } while (std::chrono::steady_clock::now() < deadline);
+        } while (true);
         if (!confirmed)
           throw std::runtime_error(
               "independent application Dispose observation not confirmed");
@@ -115,6 +147,10 @@ class ReportWriter final : public ReportTransport<Value> {
   }
   State state() const { return state_; }
   dds_entity_t entity() const { return writer_; }
+  // Diagnostic only: an actual DDS dispose call, NOT a receiver success.
+  std::uint32_t native_dispose_reassertions() const noexcept {
+    return native_reassertions_;
+  }
 
  private:
   void require(const std::string& source, State required) const {
@@ -135,6 +171,10 @@ class ReportWriter final : public ReportTransport<Value> {
   std::uint32_t retire_grace_ms_{0};
   std::function<bool()> observed_dispose_;
   std::uint32_t observation_timeout_ms_{0};
+  std::uint32_t native_reassert_interval_ms_{0};
+  std::uint32_t native_reassert_limit_{0};
+  std::int64_t last_dispose_timestamp_{0};
+  std::uint32_t native_reassertions_{0};
   dds_entity_t writer_{0};
   State state_{State::Idle};
 };

@@ -52,8 +52,9 @@ int main(){
           out.report.hours==v.report.hours&&
           out.report.temp==v.report.temp&&
           out.report.voltage==v.report.voltage&&
-          out.report.cellsListMetadata.updateElementTimestamp==
-            v.report.cellsListMetadata.updateElementTimestamp&&
+          out.report.cellsListMetadata.updateElementTimestamp.has_value()&&
+          out.report.cellsListMetadata.updateElementTimestamp->seconds==1700001000&&
+          out.report.cellsListMetadata.updateElementTimestamp->nanoseconds==201&&
           out.ordered.size()==2&&out.ordered[1].element.voltage==4.25&&
           out.ordered[0].nextElementID==guid(0x22),
           "host preview silently dropped source/metadata/payload fields");

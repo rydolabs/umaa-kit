@@ -103,7 +103,9 @@ int main(int argc, char** argv) {
                                 BatteryMapper> transport(
         "battery-demo", participant, topic, qos.get(), BatteryMapper{},
         readers, attempts, grace_ms, std::move(observation_gate),
-        require_observation ? 15000u : 0u);
+        require_observation ? 15000u : 0u,
+        require_observation ? 1250u : 0u,
+        require_observation ? 6u : 0u);
     umaa::BoundReportProvider<double> provider("battery-demo", handler, transport);
     provider.start(1);
     dds_sleepfor(DDS_MSECS(150));

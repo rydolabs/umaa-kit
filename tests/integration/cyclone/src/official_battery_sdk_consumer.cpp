@@ -7,6 +7,7 @@
 #include "umaa/report_transport.hpp"
 #include "umaa/cyclone_report_reader.hpp"
 #include <cstdio>
+#include <fstream>
 #include <cstdlib>
 #include <exception>
 #include <memory>
@@ -79,6 +80,18 @@ int main() {
     consumer.shutdown();
     check_dds(dds_delete(participant), "delete participant");
     participant = 0;
+    // Test-only proof emitted by the independent SDK receiver only after
+    // validating both real Report values, a keyed DDS Dispose, no stale
+    // cached state, and a fresh reader epoch. Not a synthetic DDS event.
+    if (const char* path = std::getenv("UMAA_NETEM_RECEIPT_FILE")) {
+      if (*path) {
+        std::ofstream receipt(path, std::ios::binary | std::ios::trunc);
+        if (!receipt) throw std::runtime_error("open SDK Dispose observation receipt");
+        receipt << "NATIVE_BATTERY_REPORT_DISPOSE_OBSERVED\n";
+        receipt.flush();
+        if (!receipt) throw std::runtime_error("write SDK Dispose observation receipt");
+      }
+    }
     std::puts("SDK_SIM: PASS official BatteryReportType subscribe/dispose/reader epoch");
     return 0;
   } catch (const std::exception& e) {

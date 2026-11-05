@@ -1,7 +1,11 @@
 import unittest
 import xml.etree.ElementTree as ET
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 from run_netns import (
-    NODES, NETEM_PROFILES, cyclone_config, command_for_node, tc_command, parse_netem_drops
+    NODES, NETEM_PROFILES, DISPOSE_RECEIPT, cyclone_config, command_for_node,
+    tc_command, parse_netem_drops, confirmed_dispose_receipts, spawn
 )
 
 
@@ -36,6 +40,41 @@ class NetnsConfigurationTests(unittest.TestCase):
         self.assertEqual(NETEM_PROFILES['outage-recover'], ('loss', '100%'))
         with self.assertRaises(ValueError):
             tc_command('host-network', 'show')
+
+    def test_observer_receipts_require_two_independent_real_disposes(self):
+        with tempfile.TemporaryDirectory() as base:
+            directory = Path(base)
+            nodes = ['umaa_ci_sim1', 'umaa_ci_sim2']
+            self.assertFalse(confirmed_dispose_receipts(directory, nodes))
+            (directory / 'umaa_ci_sim1.receipt').write_bytes(DISPOSE_RECEIPT)
+            self.assertFalse(confirmed_dispose_receipts(directory, nodes))
+            (directory / 'umaa_ci_sim2.receipt').write_bytes(b'DDS_ACK_ONLY\\n')
+            self.assertFalse(confirmed_dispose_receipts(directory, nodes))
+            (directory / 'umaa_ci_sim2.receipt').write_bytes(DISPOSE_RECEIPT)
+            self.assertTrue(confirmed_dispose_receipts(directory, nodes))
+            # Reusing an earlier PASS is forbidden by the unique directory.
+            with tempfile.TemporaryDirectory() as other:
+                self.assertFalse(confirmed_dispose_receipts(other, nodes))
+            (directory / 'umaa_ci_sim1.receipt').write_bytes(DISPOSE_RECEIPT +
+                                                              b'forged-extra')
+            self.assertFalse(confirmed_dispose_receipts(directory, nodes))
+            with self.assertRaises(ValueError):
+                confirmed_dispose_receipts(directory, ['umaa_ci_pub'])
+
+    def test_receipt_path_only_for_opt_in_impaired_namespace_process(self):
+        with patch('run_netns.subprocess.Popen') as subprocess_spawn:
+            spawn('umaa_ci_pub', '/publisher', '/module', readers=2,
+                  impaired=True, receipt_dir='/unique/session')
+            options = subprocess_spawn.call_args.kwargs
+            self.assertEqual(options['env']['UMAA_NETEM_RECEIPT_DIR'],
+                             '/unique/session')
+            self.assertNotIn('UMAA_NETEM_RECEIPT_FILE', options['env'])
+            spawn('umaa_ci_sim2', '/independent-reader', impaired=True,
+                  receipt_dir='/unique/session')
+            options = subprocess_spawn.call_args.kwargs
+            self.assertEqual(options['env']['UMAA_NETEM_RECEIPT_FILE'],
+                             '/unique/session/umaa_ci_sim2.receipt')
+            self.assertNotIn('UMAA_NETEM_RECEIPT_DIR', options['env'])
 
     def test_uses_netns_exec(self):
         self.assertEqual(command_for_node('umaa_ci_pub', '/bin/true'),

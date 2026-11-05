@@ -688,3 +688,57 @@ the complete PR verified.
   automatically generated/approved official Runtime, full Component QoS,
   GROUP coherence, network-partition reconnect recovery, Fast DDS
   official two-list parity, or formal UMAA conformance.
+
+
+## 2026-11-05 — real DDS delayed-Dispose observer proof (netns candidate)
+
+- Investigated merged-main [Linux namespace run 41934679212](https://github.com/rydolabs/umaa-kit/actions/runs/41934679212):
+  during the third 1% packet-loss/delay repetition the independent
+  BatteryStatus C reader observed **both** ordered Report values but
+  **no real DDS keyed Dispose** (`OFFICIAL_SIM: incomplete 2/3`, rc=6).
+  Existing native `dds_wait_for_acks` and fixed three-second
+  Writer-retirement grace had completed; middleware ACK alone is not
+  evidence that the separate reader application observed Dispose.
+- Added a **strictly opt-in** bounded original Cyclone `ReportWriter`
+  retirement-observation callback. When enabled it retains the real DDS
+  Writer until a higher-level independently verified observation is
+  confirmed or throws on deadline; default output and lifecycle remain
+  unchanged, and no fake DDS/UMAA on-wire ACK is introduced.
+- Linux `run_netns.py` now creates a new temporary private receipt
+  directory **per impaired run**, shares only its paths with its isolated
+  process actors, and requires one receipt for each actual independent
+  reader before returning PASS. Original independent C Battery reader
+  writes the marker **only after exact 20/80/real keyed DDS Dispose**
+  and clean teardown. The C++ SDK reader writes it only after the same
+  on-wire evidence, cache disposal and stale-epoch rejection. Publisher
+  waits for the exact marker for all configured readers (max 15s) before
+  retiring the DDS Writer. Malformed, missing, stale or wrong-node
+  receipts are negative-tested, not treated as success.
+- These private marker files are **test-harness-only out-of-band
+  coordination**; they are not additional UMAA Topics, official protocol
+  acknowledgments, durable evidence or production hardware success.
+  A missing real DDS event still fails the independent oracle, publisher
+  gate and namespace supervisor. Normal/non-impaired deployments retain
+  the existing default fail-closed behavior.
+- **Exact-head netns & cross-vendor CI remains to be run for this branch.**
+  No official QoS profile, GROUP coherence, Fast DDS ordered TOPIC,
+  mixed-vendor operation, automatic reconnect replay or formal
+  conformance is claimed.
+
+
+### Netns negative CI correction (same 2026-11-05 branch)
+
+The first [netns run 41942073180](https://github.com/rydolabs/umaa-kit/actions/runs/41942073180)
+confirmed **three separate real 1%-loss Battery tests**, each with actual
+20/80/Dispose at BOTH original C readers and exact receipt markers:
+`DDS_NETEM_INDEPENDENT_DISPOSE_RECEIPTS_PASS` appeared three times.
+Its next EngineControl degradation test then failed **in the harness**
+because the receipt gate was initially enabled for all impaired services;
+the original Engine Command/Ack/Status/Dispose oracle itself had passed.
+The fixed harness now enables the observation check only with explicit
+`--require-observed-dispose`, applied to the four native Battery impaired
+workflow commands (two C reader scenarios and two SDK reader scenarios),
+and rejects this flag on clean or Engine UPDATE scenarios. No EngineControl
+sender/receiver, normative role or QoS is changed. Exact new-head CI must
+pass before merging; the first failed workflow is retained as negative
+diagnostic evidence.

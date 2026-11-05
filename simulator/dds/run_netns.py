@@ -10,6 +10,8 @@ import signal
 import subprocess
 import sys
 import time
+import tempfile
+from pathlib import Path
 import xml.etree.ElementTree as ET
 
 NETEM_PROFILES = {
@@ -61,7 +63,31 @@ def confirm_isolation(nodes):
     print('DDS_NETNS_ISOLATION_PASS: ' + ', '.join(nodes), flush=True)
 
 
-def spawn(node, executable, *arguments, readers=1, recovery=False, impaired=False):
+DISPOSE_RECEIPT = b'NATIVE_BATTERY_REPORT_DISPOSE_OBSERVED\n'
+
+
+def confirmed_dispose_receipts(directory, nodes):
+    """Pure test-harness evidence gate: all *independent* readers proved
+    exact original 20/80/Dispose in their own process before Writer retires.
+
+    No transport ACK is inferred and a missing, wrong or stale marker is a
+    hard failure. The containing temporary directory is unique per run.
+    """
+    root = Path(directory)
+    for node in nodes:
+        if node not in NODES or node == 'umaa_ci_pub':
+            raise ValueError('not an independent DDS reader node: ' + node)
+        path = root / (node + '.receipt')
+        try:
+            if path.read_bytes() != DISPOSE_RECEIPT:
+                return False
+        except FileNotFoundError:
+            return False
+    return bool(nodes)
+
+
+def spawn(node, executable, *arguments, readers=1, recovery=False,
+          impaired=False, receipt_dir=None):
     env = dict(os.environ)
     env['CYCLONEDDS_URI'] = cyclone_config(node)
     env['UMAA_EXPECT_READERS'] = str(readers)
@@ -72,6 +98,12 @@ def spawn(node, executable, *arguments, readers=1, recovery=False, impaired=Fals
     # the netem test subjects it to jitter, loss or discovery blackout.
     if recovery or impaired:
         env['UMAA_NETEM_RETAIN_FINAL'] = '1'
+    if receipt_dir:
+        if node == 'umaa_ci_pub':
+            env['UMAA_NETEM_RECEIPT_DIR'] = receipt_dir
+        else:
+            env['UMAA_NETEM_RECEIPT_FILE'] = str(
+                Path(receipt_dir) / (node + '.receipt'))
     return subprocess.Popen(command_for_node(node, executable, *arguments),
                             env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             text=True, start_new_session=True)
@@ -145,17 +177,27 @@ def main():
     parser.add_argument('module')
     parser.add_argument('--subscribers', type=int, choices=(1, 2), default=1)
     parser.add_argument('--update', action='store_true')
+    parser.add_argument('--require-observed-dispose', action='store_true',
+                        help='only for original Battery Report: require independent DDS Dispose receipts')
     parser.add_argument('--profile', choices=('clean', *NETEM_PROFILES), default='clean',
                         help='network impairment; outage-recover blocks DDS discovery then heals')
     args = parser.parse_args()
     if args.update and args.subscribers != 1:
         parser.error('update requires one EngineControl simulator')
+    if args.require_observed_dispose and args.profile == 'clean':
+        parser.error('Dispose observation proof requires an impaired DDS profile')
+    if args.require_observed_dispose and args.update:
+        parser.error('Battery Report Dispose observation cannot check Engine UPDATE')
     sims = []
     host = None
     sim_nodes = ['umaa_ci_sim1'] + (['umaa_ci_sim2'] if args.subscribers == 2 else [])
     nodes = ['umaa_ci_pub', *sim_nodes]
     confirm_isolation(nodes)
     netem_active = False
+    # Each fault-injection run, including the three degraded repetitions,
+    # has a fresh private receipt directory so no earlier PASS can be reused.
+    receipt_dir = tempfile.TemporaryDirectory(prefix='umaa-dds-receipts-') \
+        if args.require_observed_dispose else None
     try:
         if args.profile != 'clean':
             # Even rootless unit tests can check the exact command composition.
@@ -164,11 +206,13 @@ def main():
         for node in sim_nodes:
             sims.append(spawn(node, args.simulator, *(['--update'] if args.update else []),
                               recovery=args.profile == 'outage-recover',
-                              impaired=args.profile != 'clean'))
+                              impaired=args.profile != 'clean',
+                              receipt_dir=receipt_dir.name if receipt_dir else None))
         time.sleep(0.8)
         host = spawn('umaa_ci_pub', args.host, args.module, readers=args.subscribers,
                      recovery=args.profile == 'outage-recover',
-                     impaired=args.profile != 'clean')
+                     impaired=args.profile != 'clean',
+                     receipt_dir=receipt_dir.name if receipt_dir else None)
         if args.profile == 'outage-recover':
             # During blackout all participating egress qdiscs drop every packet.
             # Heal while DDS processes are alive, not between test runs.
@@ -193,6 +237,11 @@ def main():
             if sim.returncode != 0 or not any('PASS' in line and 'SIM:' in line
                                                for line in out.splitlines()):
                 raise RuntimeError(node + ': simulator failed, rc=' + str(sim.returncode))
+        if receipt_dir is not None:
+            if not confirmed_dispose_receipts(receipt_dir.name, sim_nodes):
+                raise RuntimeError('missing independently verified keyed DDS Dispose receipts')
+            print('DDS_NETEM_INDEPENDENT_DISPOSE_RECEIPTS_PASS: ' +
+                  ', '.join(sim_nodes), flush=True)
         if args.profile == 'outage-recover':
             print('DDS_NETEM_RECOVERY_PASS: DDS wire data observed after 100% loss', flush=True)
         elif args.profile == 'degraded':
@@ -209,6 +258,8 @@ def main():
             stop(proc)
         if netem_active:
             clear_netem(nodes)
+        if receipt_dir is not None:
+            receipt_dir.cleanup()
 
 
 if __name__ == '__main__':

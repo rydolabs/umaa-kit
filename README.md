@@ -60,6 +60,12 @@ flowchart LR
 
 **Architecture goal, not a claim of complete official code generation:** the CLI already creates buildable **synthetic `Demo::`** modules. Official UMAA contracts are source-gated; the verified BatteryStatus Cyclone DDS implementation is currently a **selected, manually integrated slice**, not an automatically generated all-service module.
 
+### Two ways to compose — one Manifest
+
+![CLI available now and React Flow Studio planned: both edit the same Component Manifest](docs/assets/umaa-kit-workflows.svg)
+
+The **CLI is usable today**. The planned **React Flow Studio** designer will edit that same Manifest and reuse the same generator — not create a separate, incompatible code path.
+
 ## The patterns live in the SDK
 
 | Pattern | DDS contract and message flow | The SDK's responsibility |

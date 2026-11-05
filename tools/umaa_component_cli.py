@@ -301,23 +301,29 @@ def generate(project):
     doc = validate(read(project), nonempty=True)
     services = doc["services"]
     for item in services:
-        if item["role"] != "provider":
-            raise ProjectError("consumer module bindings not yet implemented: " + item["id"])
         if item["id"] not in DEMO:
             raise ProjectError("official service needs verified TypeSupport/key/QoS/role binding: " + item["id"])
+        if item["role"] == "consumer" and DEMO[item["id"]][2] != "report":
+            raise ProjectError("synthetic Command consumer module bindings not yet implemented: " + item["id"])
     name = doc["component"]["id"]
     write_generated(project / "generated/service_contracts.hpp", contract_header(services))
     entries = [MARK, '#include "umaa/component.hpp"']
     for item in services:
         short, schema, kind = DEMO[item["id"]]
-        filename = re.sub(r"(?<!^)(?=[A-Z])", "_", short).lower() + ".hpp"
-        write_user(project / "src/handlers" / filename, handler_header(short, kind))
+        suffix = "_consumer" if item["role"] == "consumer" else ""
+        filename = re.sub(r"(?<!^)(?=[A-Z])", "_", short).lower() + suffix + ".hpp"
+        write_user(project / "src/handlers" / filename,
+                   handler_header(short, kind, item["role"]))
         entries.append(f'#include "handlers/{filename}"')
     entries += ["namespace {", "void register_services(umaa::Component& c) {"]
     for item in services:
         short = DEMO[item["id"]][0]
-        entries += [f"  static user::{short}Logic h_{short};",
-                    f"  c.provide<generated::{short}>(h_{short});"]
+        if item["role"] == "consumer":
+            entries += [f"  static user::{short}ConsumerLogic h_{short}_consumer;",
+                        f"  c.consume<generated::{short}>(h_{short}_consumer);"]
+        else:
+            entries += [f"  static user::{short}Logic h_{short}_provider;",
+                        f"  c.provide<generated::{short}>(h_{short}_provider);"]
     entries += ["}", "}", f'UMAA_EXPORT_COMPONENT_V2("{name}", register_services)', ""]
     write_generated(project / "generated/component_entry.cpp", "\n".join(entries))
     dollar = "$"

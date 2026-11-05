@@ -346,22 +346,55 @@ def generate(project):
         f"install(TARGETS {name} LIBRARY DESTINATION lib RUNTIME DESTINATION bin)",
         ""])
     write_generated(project / "CMakeLists.txt", cmake, CMAKE_MARK)
-    expected = [f'    {{"{s["id"]}", "{DEMO[s["id"]][1]}"}},' for s in services]
+    # The ABI exports each Service only once, even when a Component both
+    # provides and consumes it; the merged action bits preserve both roles.
+    registered = {}
+    for item in services:
+        service_id = item["id"]
+        mask = (3 if DEMO[service_id][2] == "command" else 4) if item["role"] == "provider" else 24
+        if service_id not in registered:
+            registered[service_id] = [DEMO[service_id][1], 0]
+        registered[service_id][1] |= mask
+    expected = [f'    {{"{service}", "{schema}", {mask}u}},'
+                for service, (schema, mask) in registered.items()]
     smoke = [MARK, '#include "umaa/component_module.hpp"',
-             "#include <string>", "#include <utility>", "#include <vector>",
+             '#include "umaa/component.hpp"',
+             "#include <cstdint>", "#include <string>", "#include <vector>",
+             "struct Expected { const char* service; const char* schema; std::uint32_t actions; };",
              "int main(int argc, char** argv) {",
              "  if (argc != 2) return 2;",
              "  umaa::ComponentModule module(argv[1]);",
              f'  if (module.name() != "{name}") return 3;',
              "  const auto& got = module.services();",
-             f"  if (got.size() != {len(services)}) return 4;",
-             "  const std::vector<std::pair<std::string,std::string>> expected = {"]
+             f"  if (got.size() != {len(registered)}) return 4;",
+             "  const std::vector<Expected> expected = {"]
     smoke += expected + [
         "  };",
         "  for (std::size_t i = 0; i < expected.size(); ++i)",
-        "    if (got[i].service != expected[i].first || got[i].schema != expected[i].second) return 5;",
-        "  return module.stop() ? 0 : 6;",
-        "}", ""]
+        "    if (got[i].service != expected[i].service ||",
+        "        got[i].schema != expected[i].schema ||",
+        "        got[i].actions != expected[i].actions) return 5;"]
+    for service_id in dict.fromkeys(
+            item["id"] for item in services if item["role"] == "consumer"):
+        smoke += [
+            "  {",
+            "    std::vector<std::uint8_t> output;",
+            "    std::int32_t business = -1;",
+            "    std::vector<std::uint8_t> valid_report{0u, 0u, 0u, 0u};",
+            f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_ACCEPT,',
+            "          valid_report, output, business, 42) != UMAA_COMPONENT_OK ||",
+            "        business != static_cast<std::int32_t>(umaa::Result::Rejected)) return 7;",
+            f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_DISPOSE,',
+            "          {}, output, business, 42) != UMAA_COMPONENT_OK ||",
+            "        business != static_cast<std::int32_t>(umaa::Result::Rejected)) return 8;",
+            f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_ACCEPT,',
+            "          {1u, 2u}, output, business, 42) != UMAA_COMPONENT_INVALID) return 9;",
+            f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_ACCEPT,',
+            "          valid_report, output, business, 0) != UMAA_COMPONENT_INVALID) return 10;",
+            f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_DISPOSE,',
+            "          {}, output, business, 0) != UMAA_COMPONENT_INVALID) return 11;",
+            "  }"]
+    smoke += ["  return module.stop() ? 0 : 6;", "}", ""]
     write_generated(project / "tests/module_smoke.cpp", "\n".join(smoke))
     write_user(project / "README.md",
                f"# {name}\n\nSynthetic ABI v2 Component development fixture only.\n"

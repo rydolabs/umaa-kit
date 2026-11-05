@@ -113,6 +113,9 @@ int main(int argc, char** argv) {
     provider.update(2);
     dds_sleepfor(DDS_MSECS(150));
     provider.shutdown(3);
+    if (require_observation)
+      std::printf("OFFICIAL_NETNS_NATIVE_DISPOSE_REASSERTIONS=%u\\n",
+                  transport.native_dispose_reassertions());
     if (provider.state() != umaa::BoundReportProvider<double>::State::Stopped)
       throw std::logic_error("Report provider not stopped");
     context.close();

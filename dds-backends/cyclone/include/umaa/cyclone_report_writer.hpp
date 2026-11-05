@@ -130,6 +130,7 @@ class ReportWriter final : public ReportTransport<Value> {
             WireSample sample = mapper_.make_dispose(source_, last_dispose_timestamp_);
             check(dds_dispose(writer_, &sample), "reassert original Report Dispose");
             ++reassertions;
+            native_reassertions_ = reassertions;
             next_reassert = now +
                 std::chrono::milliseconds(native_reassert_interval_ms_);
           }
@@ -146,6 +147,10 @@ class ReportWriter final : public ReportTransport<Value> {
   }
   State state() const { return state_; }
   dds_entity_t entity() const { return writer_; }
+  // Diagnostic only: an actual DDS dispose call, NOT a receiver success.
+  std::uint32_t native_dispose_reassertions() const noexcept {
+    return native_reassertions_;
+  }
 
  private:
   void require(const std::string& source, State required) const {
@@ -169,6 +174,7 @@ class ReportWriter final : public ReportTransport<Value> {
   std::uint32_t native_reassert_interval_ms_{0};
   std::uint32_t native_reassert_limit_{0};
   std::int64_t last_dispose_timestamp_{0};
+  std::uint32_t native_reassertions_{0};
   dds_entity_t writer_{0};
   State state_{State::Idle};
 };

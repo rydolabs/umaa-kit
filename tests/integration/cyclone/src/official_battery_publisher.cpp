@@ -8,6 +8,9 @@
 #include "umaa/cyclone_report_writer.hpp"
 #include "umaa/cyclone_service_context.hpp"
 #include <cstdio>
+#include <fstream>
+#include <functional>
+#include <filesystem>
 #include <cstdlib>
 #include <exception>
 #include <memory>
@@ -71,11 +74,36 @@ int main(int argc, char** argv) {
     // after ACK while a late-repaired final Dispose is not yet observable by
     // the independent application-level reader under 1% packet loss.
     const bool impaired = std::getenv("UMAA_NETEM_RETAIN_FINAL");
-    const std::uint32_t grace_ms = impaired ? 3000u : 0u;
+    const char* receipt_dir = std::getenv("UMAA_NETEM_RECEIPT_DIR");
+    const bool require_observation = impaired && receipt_dir && *receipt_dir;
+    // Test-only source-backed observer fence. The independent readers write
+    // unique receipt files only AFTER verifying 20/80/genuine keyed Dispose.
+    // Do not retire a Writer because middleware ACK alone reported success.
+    // Never enable this filesystem handshake in ordinary DDS deployments.
+    std::function<bool()> observation_gate;
+    if (require_observation) {
+      const auto dir = std::filesystem::path(receipt_dir);
+      observation_gate = [dir, readers]() -> bool {
+        for (int i = 1; i <= readers; ++i) {
+          const auto marker = dir / ("umaa_ci_sim" + std::to_string(i) + ".receipt");
+          std::ifstream input(marker, std::ios::binary);
+          std::string evidence;
+          if (!std::getline(input, evidence) ||
+              evidence != "NATIVE_BATTERY_REPORT_DISPOSE_OBSERVED")
+            return false;
+        }
+        return true;
+      };
+    }
+    // Legacy 3s grace only applies to an explicitly impaired run with no
+    // independent receipt channel. In netns CI, require observed Dispose
+    // instead; timeout faults the Provider rather than assuming success.
+    const std::uint32_t grace_ms = impaired && !require_observation ? 3000u : 0u;
     umaa::cyclone::ReportWriter<double, UMAA_EO_BatteryStatus_BatteryReportType,
                                 BatteryMapper> transport(
         "battery-demo", participant, topic, qos.get(), BatteryMapper{},
-        readers, attempts, grace_ms);
+        readers, attempts, grace_ms, std::move(observation_gate),
+        require_observation ? 15000u : 0u);
     umaa::BoundReportProvider<double> provider("battery-demo", handler, transport);
     provider.start(1);
     dds_sleepfor(DDS_MSECS(150));

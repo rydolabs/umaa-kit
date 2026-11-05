@@ -75,6 +75,34 @@ int main(){
     check(!Codec::decode_report(forged.data(),forged.size(),out),
           "NIL original Source accepted");
     check(!Codec::decode_report(nullptr,0,out),"null buffer accepted");
+    // Every rejected encoding must fail before an ABI callback can
+    // observe a partially valid snapshot. Restore the known-good fixture.
+    const auto original=v;
+    auto expect_bad=[&](const char* reason) {
+      bool rejected=false;
+      try {(void)Codec::encode_report(v);}
+      catch(const std::invalid_argument&) {rejected=true;}
+      check(rejected,reason);
+      v=original;
+    };
+    v.report.state=static_cast<b::State>(999);
+    expect_bad("unknown Battery state encoded");
+    v.ordered[0].elementID={};
+    expect_bad("NIL Battery List element encoded");
+    v.ordered[1].elementID=v.ordered[0].elementID;
+    expect_bad("duplicate Battery List element encoded");
+    v.ordered[0].nextElementID=guid(0x77);
+    expect_bad("broken Battery List chain encoded");
+    v.ordered[0].nextElementID.reset();
+    expect_bad("nonterminal missing successor encoded");
+    v.ordered[1].nextElementID=guid(0x21);
+    expect_bad("terminal Battery List cycle encoded");
+    v.report.cellsListMetadata.startingElementID=guid(0x44);
+    expect_bad("mismatched Battery List head encoded");
+    v.ordered[0].elementTimestamp.nanoseconds=1000000000;
+    expect_bad("invalid Battery List timestamp encoded");
+    // The original record remains representable after all negative probes.
+    check(Codec::encode_report(v)==bytes,"negative probes corrupted valid ABI encoding");
     v.nativeDdsCoherenceProved=true;
     bool refused=false;
     try{(void)Codec::encode_report(v);}catch(const std::invalid_argument&){refused=true;}

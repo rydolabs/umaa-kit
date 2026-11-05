@@ -32,6 +32,11 @@ endif()
 option(UMAA_BUILD_TESTS "Build standalone core tests" ON)
 if(UMAA_BUILD_TESTS)
   enable_testing()
+  # Vendor-free ABI-v2 Report Consumer, bidirectional service fusion,
+  # malformed payload and user Handler fault guards (synthetic only).
+  add_executable(umaa_component_report_sink_test tests/test_component_report_sink.cpp)
+  target_link_libraries(umaa_component_report_sink_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_component_report_sink_test COMMAND umaa_component_report_sink_test)
   add_executable(umaa_qos_policy_test tests/test_qos_policy.cpp)
   target_link_libraries(umaa_qos_policy_test PRIVATE UMAA::Core)
   add_test(NAME umaa_qos_policy_test COMMAND umaa_qos_policy_test)

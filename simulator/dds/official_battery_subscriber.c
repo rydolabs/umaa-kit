@@ -50,7 +50,9 @@ int main(void) {
     FILE* out=fopen(receipt,"wb");
     if(!out){perror("DDS Dispose receipt open");return 7;}
     const int written=fputs("NATIVE_BATTERY_REPORT_DISPOSE_OBSERVED\n",out);
-    if(written<0 || fflush(out)!=0 || fclose(out)!=0){
+    const int flushed=fflush(out);
+    const int closed=fclose(out);
+    if(written<0 || flushed!=0 || closed!=0){
       fprintf(stderr,"OFFICIAL_SIM: DDS Dispose receipt write failed\n");
       return 7;
     }

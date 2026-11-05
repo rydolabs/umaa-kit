@@ -50,6 +50,13 @@ int main(int argc,char** argv){
     reader.restart();
     if(reader.epoch()==first_epoch || reader.active_lists()!=0)
       throw std::runtime_error("native Reader was not fenced after restart");
+    // Both genuine Report Sources have already been Disposed. Host ABI
+    // tombstones may now rotate to the new native Reader epoch, but the
+    // business DLL/SO still sees no fabricated Report or Dispose on reset.
+    handler.begin_reader_epoch(reader.epoch());
+    if(handler.faulted() || handler.active_sources()!=0 ||
+       handler.current_known(guid(0x11)) || handler.current_known(guid(0x12)))
+      throw std::runtime_error("clean native Reader epoch revived stale ABI List");
     reader.close();
     if(!module.stop())
       throw std::runtime_error("ABI-v2 Component refused safe unload");

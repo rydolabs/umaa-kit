@@ -18,6 +18,10 @@ on:
       - 'dds-backends/cyclone/include/umaa/cyclone_official_battery_reader.hpp'
       - 'sdk/include/umaa/official_battery_subscription.hpp'
       - 'tests/integration/cyclone/src/official_battery_sdk_native_reader_consumer.cpp'
+      - 'sdk/include/umaa/official_battery_component_bridge.hpp'
+      - 'tests/integration/cyclone/src/official_battery_component_module.cpp'
+      - 'tests/integration/cyclone/src/official_battery_component_consumer.cpp'
+      - 'simulator/dds/run_battery_component_bridge.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -69,14 +73,14 @@ jobs:
           cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/battery-live-build" \
             -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/native-battery"
           cmake --build "$RUNNER_TEMP/battery-live-build" --parallel 2 \
-            --target umaa_official_battery_multicell_publisher umaa_official_battery_multicell_consumer umaa_official_battery_multilist_consumer umaa_official_battery_sdk_native_reader_consumer
-      - name: 'Original DDS: three-Cell and two-source List positive/negative checkpoint oracles'
+            --target umaa_official_battery_multicell_publisher umaa_official_battery_multicell_consumer umaa_official_battery_multilist_consumer umaa_official_battery_sdk_native_reader_consumer umaa_official_battery_business_module umaa_official_battery_component_consumer
+      - name: 'Original DDS: two-source Lists into SDK Reader and loaded ABI-v2 Component positive/negative oracles'
         run: |
           ctest --test-dir "$RUNNER_TEMP/battery-live-build" \
-            -R '^official_umaa_battery_(multicell|multilist|sdk_native_reader)_(good|bad_checkpoint|default_qos_rejected)$' \
+            -R '^official_umaa_battery_(multicell|multilist|sdk_native_reader|component_abi)_(good|bad_checkpoint|default_qos_rejected)$' \
             --output-on-failure -V
       - name: Explicit limitations
         if: success()
         run: |
-          echo "OFFICIAL_BATTERY_TWO_SOURCE_LIST_SDK_OWNED_NATIVE_READER_E2E_PASS"
+          echo "OFFICIAL_BATTERY_ABI_V2_BUSINESS_MODULE_ORIGINAL_DDS_E2E_PASS"
           echo "No full Collection/Component QoS, vendor parity or conformance claim"

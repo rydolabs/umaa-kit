@@ -37,6 +37,14 @@ if(UMAA_BUILD_TESTS)
   add_executable(umaa_component_report_sink_test tests/test_component_report_sink.cpp)
   target_link_libraries(umaa_component_report_sink_test PRIVATE UMAA::Core)
   add_test(NAME umaa_component_report_sink_test COMMAND umaa_component_report_sink_test)
+  # Vendor-free host-local Battery ABI projection byte-level negative oracle.
+  # Original TypeSupport and real DDS are covered in separate native CI.
+  add_executable(umaa_official_battery_component_codec_test
+    tests/test_official_battery_component_codec.cpp)
+  target_link_libraries(umaa_official_battery_component_codec_test PRIVATE
+    UMAA::Core ${CMAKE_DL_LIBS})
+  add_test(NAME umaa_official_battery_component_codec_test
+    COMMAND umaa_official_battery_component_codec_test)
   add_executable(umaa_qos_policy_test tests/test_qos_policy.cpp)
   target_link_libraries(umaa_qos_policy_test PRIVATE UMAA::Core)
   add_test(NAME umaa_qos_policy_test COMMAND umaa_qos_policy_test)

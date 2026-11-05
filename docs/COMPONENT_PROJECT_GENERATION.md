@@ -220,3 +220,39 @@ subscription wiring into the module from a reviewed Service Contract,
 exact per-Source GUID + Timestamp semantics, all official QoS, native
 GROUP coherence, Command consumer bindings, consistent full-service
 code generation and official UMAA conformity.
+
+
+## 2026-11-05 — manual official BatteryStatus DDS → ABI-v2 Consumer proof
+
+The **next integration slice** uses a generated **original Cyclone DDS**
+BatteryStatus Report+Cell DataReader through the existing
+`OriginalBatteryStatusReader` and `BatteryStatusSubscription`.
+A new `BatteryStatusComponentBridge` then delivers *complete* per-Source
+snapshots and genuine keyed Report Dispose events into a separately
+loaded **real C ABI-v2 DLL/SO** business Consumer. The library contains
+**zero DDS vendor calls**. The Host authenticates both original native
+instance keys, retains a per-source opaque nonzero host token, checks
+monotonic generations and refuses Source/Parent/List rebinding and
+stale reader epochs. A never-committed invalid checkpoint is never
+sent to business code or represented by a fake Dispose.
+
+This integration uses the **explicitly non-normative**
+`umaa-kit:host-only-battery-stable-v1:NOT-UMAA-CDR` host payload schema.
+It serializes the currently modeled stable Battery Report and ordered
+Cell values into a bounded, versioned, portable byte record solely
+for the local ABI. It is **not** the official DDS CDR, not a reviewed
+UMAA application payload type, and does not authorize a generated
+official Component Runtime. Incomplete-list invalidation is recorded
+by the Host; the existing ABI v2 has no distinct business invalidation
+callback. Accordingly this example's Consumer treats each callback as
+an **immutable event**, not an automatically coherent current-state
+cache. Full live updates/invalidation require a separate reviewed
+ABI contract and test. The automatic official Runtime codegen gate
+remains closed.
+
+The original SHA-pinned publisher and a distinct business DLL/SO run
+in separate processes. Two new CTests demand positive two-Source/Cell
+values + true Dispose delivery and a poisoned second-Source checkpoint
+that never reaches the business Handler; source ownership and
+TypeSupport remain those of the original AUVSI 6.0 files. The tests
+are development-scope, not a formal UMAA conformance assertion.

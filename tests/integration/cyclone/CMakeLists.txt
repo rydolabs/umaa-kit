@@ -224,6 +224,41 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
     PROPERTIES TIMEOUT 55
     PASS_REGULAR_EXPRESSION "SDK_BATTERY_NATIVE_READER_BAD_CHECKPOINT_ISOLATED")
 
+  # Manual host-only ABI-v2 Component binding for genuine original Battery
+  # TypeSupport. This intentionally uses a DIFFERENT, non-normative local
+  # ABI schema and never enables automatic official Service Runtime generation.
+  add_library(umaa_official_battery_business_module MODULE
+    src/official_battery_component_module.cpp)
+  target_compile_features(umaa_official_battery_business_module PRIVATE cxx_std_17)
+  target_include_directories(umaa_official_battery_business_module PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include")
+
+  add_executable(umaa_official_battery_component_consumer
+    src/official_battery_component_consumer.cpp)
+  target_compile_features(umaa_official_battery_component_consumer PRIVATE cxx_std_17)
+  target_include_directories(umaa_official_battery_component_consumer PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../dds-backends/cyclone/include")
+  target_link_libraries(umaa_official_battery_component_consumer PRIVATE
+    umaa_official_type_support ${CMAKE_DL_LIBS})
+
+  foreach(mode IN ITEMS good bad_checkpoint)
+    if(mode STREQUAL "good")
+      set(flag "")
+    else()
+      set(flag "--bad-checkpoint")
+    endif()
+    add_test(NAME "official_umaa_battery_component_abi_${mode}"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_component_bridge.py"
+        "$<TARGET_FILE:umaa_official_battery_multicell_publisher>"
+        "$<TARGET_FILE:umaa_official_battery_component_consumer>"
+        "$<TARGET_FILE:umaa_official_battery_business_module>"
+        ${flag})
+    set_tests_properties("official_umaa_battery_component_abi_${mode}"
+      PROPERTIES TIMEOUT 55)
+  endforeach()
+
   # Actual official Battery SDK Handler/BoundReportProvider, distinct from
   # the prior direct native sample publisher. Independent oracle remains the
   # C-only original-TypeSupport receiver with no SDK linkage.

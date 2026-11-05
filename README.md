@@ -140,11 +140,28 @@ python -m tools.umaa_component_cli contract verify --input build/umaa-contracts.
 python -m tools.umaa_component_cli validate --project engine_demo
 ```
 
-The export retains 53 reviewed service names / 113 Topic mappings and their
-available source references. Two existing EO records have explicitly unknown
-per-service provenance; the generator does not invent it. Standard UMAA
-services can be selected into a source-pinned assembly but cannot yet be
-generated as fully verified native DDS bindings.
+The export retains 53 curated six-ICD service candidates / 113 DDS Topic
+identities and their available source references. These are **not 53 completed
+native service Runtimes**. Two EO entries still have unknown per-service
+provenance, and the generator does not invent it. Official service assemblies
+can be source-checked but cannot yet be generated as approved native DDS
+Component Runtime modules.
+
+For assemblies using a named public Component Definition, the CLI can also
+check the selected Provider/Consumer role against the source-reviewed role
+legend (without approving Component membership, QoS or applicability):
+
+```bash
+python -m tools.umaa_component_cli validate \
+  --project path/to/official_assembly \
+  --reference-component 'Autopilot'
+```
+
+The official AUVSI Component Definitions v1.0 §3 source check covers **91
+published service-role mentions across nine public Component definitions**
+(**51 Provider / 40 Consumer**). An explicit `~` means Consumer and no prefix
+means Provider. This does not imply any specific acquisition Component
+Specification has been selected or that an entire Component is implemented.
 
 **Studio server foundation (available API only):** project-authenticated read-only
 Service Contract discovery and stateless Component Assembly validation now
@@ -193,12 +210,48 @@ Fast DDS interoperate with each other on a mixed-vendor network.
 | **Component DLL/SO and ABI v2** | Multi-service registration, load/unload and fail-closed module lifetime tests |
 | **Independent Simulator + Verifier** | Scoped cross-process tests and separate verification orchestration |
 | **Standalone Cyclone DDS / Fast DDS** | Synthetic real-wire backend tests and same-binary parity |
-| **Official UMAA 6.0 IDL** | 352/352 original IDL files compiled in scoped CI; not 352 service APIs |
-| **Reviewed six-ICD service catalog** | 53 services / 113 Topic identities; **not complete normative runtime or QoS** |
+| **Official UMAA 6.0 IDL** | SHA-pinned official archive (594 IDL source files); compiler-generated genuine TypeSupport is verified in selected Cyclone and Fast DDS tests, **not 594 native service implementations** |
+| **Reviewed six-ICD service catalog** | 53 **candidate** services / 113 Topic identities; **not complete normative runtime or QoS** |
+| **Public Component role evidence** | Original AUVSI §3 role legend + 91 source-checked mentions (51 Provider / 40 Consumer), **not approved service applicability or Component membership** |
+| **Official BatteryStatus Cyclone DDS slice** | SDK-owned typed host List subscription and scoped native Cyclone DDS Reader, real keyed Report/Cell Dispose, independently verified two-source positive/negative wire tests; **not generic official Runtime codegen** |
 | **Sparx EA Studio** | Read-only QEA snapshot importer, GUID diff and draft extension IDL; real customer QEA acceptance pending |
 | **Component Manifest + CLI + generator** | Available dev preview: synthetic Provider module, CMake and generated CTest |
 | **React Flow Component Designer** | **Planned**, not shipped |
-| **Full official service bindings / conformance** | **OPEN** — Key/QoS/roles, wire behavior and independent normative evidence incomplete |
+| **Full official service bindings / conformance** | **OPEN** — full service-specific Key/QoS/operation contracts, Component applicability, native wire lifecycle and independent normative evidence remain incomplete |
+
+### Official BatteryStatus: what the SDK now owns
+
+The source-reviewed EO BatteryStatus **Cyclone DDS** implementation has two
+separate SDK pieces:
+
+- `sdk/include/umaa/official_battery_subscription.hpp` owns the bounded
+  two-Topic Large List host state machine and delivers completed per-source
+  snapshots to a typed `BatteryStatusHandler`. It invalidates incomplete
+  updates and fences stale callbacks with reader epochs.
+- `dds-backends/cyclone/include/umaa/cyclone_official_battery_reader.hpp`
+  owns the narrow original Cyclone DDS Participant/Subscriber/DataReaders,
+  decodes compiler-generated native Report and Cell types, checks effective
+  `TOPIC` + ordered Presentation on its local Subscriber, and resolves
+  genuine instance-keyed DDS Dispose events. Application business callbacks
+  need no DDS calls.
+
+A standalone publisher and business-only consumer exercised two independent
+Battery Sources, four Cell instances, six true keyed Dispose notifications,
+and a deliberately invalid second-list checkpoint. **7/7 original-IDL native
+CTests passed** at [PR #62's exact code snapshot](https://github.com/rydolabs/umaa-kit/actions/runs/41933577012);
+the [Linux/Windows Handler host tests](https://github.com/rydolabs/umaa-kit/actions/runs/41931272014)
+also passed.
+
+This is **a manually source-reviewed integration slice**, not a usable
+all-service native Runtime generator or a published fully normative
+BatteryStatus Component. Official source files and generated native
+TypeSupport are acquired/built in temporary CI workspaces, not committed or
+redistributed in this repository. The full official Runtime code-generation
+gate remains **fail-closed**.
+
+See [Battery native Reader evidence](docs/OFFICIAL_BATTERY_NATIVE_CYCLONE_WIRE.md),
+[Battery List and Handler semantics](docs/OFFICIAL_BATTERY_LARGE_LIST_JOINER.md)
+and [official Runtime acceptance requirements](docs/OFFICIAL_NATIVE_RUNTIME_EVIDENCE_GATE.md).
 
 ### Genuine safety boundaries matter
 
@@ -248,7 +301,8 @@ not a second place to hand-edit official UMAA contracts.
 | Area | Purpose |
 |---|---|
 | [sdk/](sdk/) | Typed SDK, Component ABI v2, Command/Report/Collection runtime and CMake |
-| [dds/](dds/) | Cyclone/Fast DDS integration and scoped actual DDS tests |
+| [dds-backends/](dds-backends/) | Standalone Cyclone/Fast DDS backend plugins and selected vendor-native adapters |
+| [dds/](dds/) | Real DDS integration and source-scoped official wire examples |
 | [studio/](studio/) | QEA importer, versioned model workspace, draft IDL and web foundation |
 | [simulator/](simulator/) | Independent simulator and cross-process assertions |
 | [verifier/](verifier/) | Independent scoped verification CLI/orchestration |
@@ -271,6 +325,23 @@ flowchart LR
 
 Our goal: **use the CLI like a native build tool, or design visually in
 Studio — and receive the very same editable, buildable CMake project.**
+
+**Remaining engineering work:** turn source-reviewed service candidates into
+approved **per-service** Topic/Key/QoS and operation contracts; complete
+the official BatteryStatus Provider/Consumer lifecycle and automated Component
+binding beyond the Cyclone-only manual slice; extend the same pattern to full
+EngineControl Command/Ack/Status/Update/Cancel and further services; then
+verify per-vendor QoS, genuine multiwriter Collection coherency, reconnect
+replay and independent normative conformance. Native Fast DDS ordered
+`TOPIC` Presentation is currently unsupported for the official Battery
+Large Collection requirement. A production release also needs security,
+resource/long-duration fault testing and any applicable acceptance review.
+Mixed Cyclone↔Fast networks and RTI Connext remain **later milestones**
+rather than current-phase release criteria.
+
+The active [milestone boundary](docs/CURRENT_PHASE_SCOPE.md) and
+[delivery gates](docs/DELIVERY_GATES.md) distinguish these obligations from
+the synthetic and narrow official tests already passing.
 
 Track ongoing scope and verified evidence in the
 [implementation issue](https://github.com/rydolabs/umaa-kit/issues/2),

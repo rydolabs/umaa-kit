@@ -211,6 +211,23 @@ class BatteryStatusComponentBridge final : public BatteryStatusHandler {
     if(!found)throw std::invalid_argument(
         "Component lacks exact host-only BatteryStatus Consumer ABI contract");
   }
+  // Explicitly allow a *clean* native DDS Reader recreation. A source is
+  // retired for the lifetime of its Reader epoch, but a completely new
+  // Reader can see that same real Source again. Never discard an unresolved
+  // business snapshot: ABI v2 has no non-Dispose invalidation callback, so
+  // reconnect while a Source is active must be rejected, not called clean.
+  // The caller MUST pass the new native Reader's actual monotonically
+  // increasing epoch; old callbacks then fail closed.
+  void begin_reader_epoch(ReaderEpoch new_epoch) {
+    if(faulted_ || !new_epoch || (epoch_ && new_epoch<=epoch_) ||
+       !sources_.empty() || !invalidated_.empty())
+      throw std::logic_error(
+          "Battery ABI Reader epoch rotation requires fully disposed sources");
+    epoch_=new_epoch;
+    retired_.clear();
+    // next_token_ intentionally remains monotonic across Reader epochs:
+    // an earlier business Source token must never be silently reused.
+  }
   void on_stable_list(const StableList& v,ReaderEpoch epoch) override {
     require_epoch(epoch);
     try{
@@ -231,6 +248,10 @@ class BatteryStatusComponentBridge final : public BatteryStatusHandler {
         throw std::runtime_error("Battery ABI Source binding or generation changed");
       it->second.generation=v.generation;
       invoke(UMAA_COMPONENT_REPORT_ACCEPT,bytes,it->second.token);
+      // Only a successfully delivered *complete* checkpoint restores the
+      // Host's current-known status after a prior partial update. Never
+      // clear the invalidation on a rejected business callback.
+      invalidated_.erase(list);
       ++accepted_;
     }catch(...){faulted_=true;throw;}
   }

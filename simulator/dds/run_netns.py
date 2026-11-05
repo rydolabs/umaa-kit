@@ -252,7 +252,11 @@ def main():
         out, _ = host.communicate(timeout=55)
         print('HOST OUTPUT:\n' + out, flush=True)
         if args.probe_native_reassert and host.returncode == 0:
-            marker = re.search(r'(?m)^OFFICIAL_NETNS_NATIVE_DISPOSE_REASSERTIONS=([0-9]+)
+            marker = re.search(r'(?m)^OFFICIAL_NETNS_NATIVE_DISPOSE_REASSERTIONS=([0-9]+)$', out)
+            if marker is None or int(marker.group(1)) < 1:
+                raise RuntimeError('no genuine native DDS Dispose reassert occurred in probe')
+        if host.returncode != 0:
+            for node, sim in zip(sim_nodes, sims):
                 if sim.poll() is not None:
                     out, _ = sim.communicate()
                     print(node + ' EARLY OUTPUT:\n' + out, flush=True)

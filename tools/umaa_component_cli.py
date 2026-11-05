@@ -153,7 +153,12 @@ def check_assembly(doc, reference_component=None):
     """Pure shared CLI/Studio assembly gate; never creates files or executes code."""
     doc = validate(doc)
     official = [s["id"] for s in doc["services"] if s["id"] not in DEMO]
-    ready = all(s["role"] == "provider" and s["id"] in DEMO for s in doc["services"])
+    # A synthetic Report Consumer is now a buildable development ABI-v2
+    # Handler. Command Consumers and all official bindings remain gated.
+    ready = all(s["id"] in DEMO and
+                (s["role"] == "provider" or
+                 (s["role"] == "consumer" and DEMO[s["id"]][2] == "report"))
+                for s in doc["services"])
     current_pin = None
     if official:
         try:
@@ -231,7 +236,11 @@ def contract_header(services):
     out = [MARK, "#pragma once", '#include "umaa/component.hpp"',
            "#include <cstdint>", "#include <cstring>", "#include <vector>",
            "namespace generated {"]
+    seen_types = set()
     for service in services:
+        if service["id"] in seen_types:
+            continue  # provider + consumer share precisely one Type definition
+        seen_types.add(service["id"])
         short, schema, kind = DEMO[service["id"]]
         out += [f"struct {short} {{",
                 f'  static constexpr const char* id = "{service["id"]}";',
@@ -249,12 +258,29 @@ def contract_header(services):
                 "  static std::vector<std::uint8_t> encode_report(const Report& r) {",
                 "    std::vector<std::uint8_t> b(sizeof(r.level_pct));",
                 "    std::memcpy(b.data(), &r.level_pct, b.size()); return b;",
+                "  }",
+                "  static bool decode_report(const std::uint8_t* p, std::size_t n, Report& r) {",
+                "    if (!p || n != sizeof(r.level_pct)) return false;",
+                "    std::memcpy(&r.level_pct, p, n); return true;",
                 "  }"]
         out += ["};"]
     return "\n".join(out + ["} // namespace generated", ""])
 
 
-def handler_header(name, kind):
+def handler_header(name, kind, role="provider"):
+    if role == "consumer":
+        if kind != "report":
+            raise ProjectError("synthetic Command consumer bindings not yet implemented")
+        return ("#pragma once\n// USER OWNED: never overwritten on regeneration.\n"
+                '#include "service_contracts.hpp"\n#include <cstdint>\n'
+                f"namespace user {{\nclass {name}ConsumerLogic final : "
+                f"public umaa::ReportSink<generated::{name}> {{\npublic:\n"
+                "  // Default fail closed: no synthetic Report is accepted implicitly.\n"
+                f"  umaa::Result on_report(const generated::{name}::Report&, "
+                "std::uint64_t) override { return umaa::Result::Rejected; }\n"
+                "  umaa::Result on_dispose(std::uint64_t) override "
+                "{ return umaa::Result::Rejected; }\n"
+                "};\n}\n")
     base = "CommandHandler" if kind == "command" else "ReportSource"
     methods = (
         f"  umaa::Result execute(const generated::{name}::Command&) override {{ return umaa::Result::Rejected; }}\n"

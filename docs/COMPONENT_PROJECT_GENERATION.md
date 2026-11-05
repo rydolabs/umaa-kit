@@ -256,3 +256,30 @@ values + true Dispose delivery and a poisoned second-Source checkpoint
 that never reaches the business Handler; source ownership and
 TypeSupport remain those of the original AUVSI 6.0 files. The tests
 are development-scope, not a formal UMAA conformance assertion.
+
+
+### Narrow Battery Host-ABI state and Reader epoch contract
+
+The manually integrated BatteryStatus Host bridge now makes
+`current_known(listID)` **false** on a partial update and **true again**
+only after a later complete checkpoint has been accepted by the actual
+business Component. A rejected or throwing Handler faults the bridge
+instead; an incomplete update is **not** delivered as a fully current
+List or translated into a fake DDS Dispose.
+
+After the original Reader has delivered *genuine* keyed Report Dispose
+for **every active Source**, the Host may explicitly recreate it and
+then call `bridge.begin_reader_epoch(reader.epoch())` before dispatching
+new callbacks. This resets Reader-scoped Source tombstones and permits
+the same original Source GUID to appear in the new epoch with a
+**fresh, never-reused opaque business token**. A non-increasing epoch,
+undisposed Source, invalidated active List or old-epoch callback is
+rejected. The Host must stop rather than silently replay an incomplete
+stream after packet loss or network partition; recovering such a session
+needs an additional reviewed module invalidation/reconciliation protocol.
+
+A dedicated cross-platform vendor-free CTest
+`umaa_official_battery_component_epoch_test` builds and loads a real
+ABI-v2 DLL/SO with only business Handler code to exercise this boundary.
+It is **not** network partition recovery, official QoS approval, or a
+general official DDS-to-Component generator.

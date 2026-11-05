@@ -1,11 +1,13 @@
 import unittest
 import xml.etree.ElementTree as ET
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 from run_netns import (
     NODES, NETEM_PROFILES, DISPOSE_RECEIPT, cyclone_config, command_for_node,
-    tc_command, parse_netem_drops, confirmed_dispose_receipts, spawn
+    tc_command, parse_netem_drops, confirmed_dispose_receipts, spawn, stop
 )
 
 
@@ -75,6 +77,31 @@ class NetnsConfigurationTests(unittest.TestCase):
             self.assertEqual(options['env']['UMAA_NETEM_RECEIPT_FILE'],
                              '/unique/session/umaa_ci_sim2.receipt')
             self.assertNotIn('UMAA_NETEM_RECEIPT_DIR', options['env'])
+
+    def test_cleanup_after_communicate_closed_pipe_preserves_original_failure(self):
+        # Reproduce the observed failure path: a native DDS Writer exits
+        # nonzero after missing a real Dispose receipt; its stdout was
+        # already consumed and closed by the supervising code.
+        with subprocess.Popen(
+            [sys.executable, '-c', 'import sys; sys.exit(4)'],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            start_new_session=True,
+        ) as proc:
+            proc.communicate(timeout=5)
+            self.assertEqual(proc.returncode, 4)
+            proc.stdout.close()
+            stop(proc)  # must not raise ValueError or overwrite rc=4
+            self.assertEqual(proc.returncode, 4)
+
+    def test_cleanup_reaps_unfinished_process_without_fabricated_success(self):
+        with subprocess.Popen(
+            [sys.executable, '-c', 'import time; time.sleep(30)'],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            start_new_session=True,
+        ) as proc:
+            stop(proc)
+            self.assertIsNotNone(proc.returncode)
+            self.assertNotEqual(proc.returncode, 0)
 
     def test_uses_netns_exec(self):
         self.assertEqual(command_for_node('umaa_ci_pub', '/bin/true'),

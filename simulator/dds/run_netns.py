@@ -165,9 +165,23 @@ def clear_netem(nodes):
 
 
 def stop(proc):
+    """Reap a namespace actor even after an earlier communicate() timed out.
+
+    The first communicate() may have already closed stdout; a second call
+    then raises ValueError and masks the *real* missing DDS Dispose failure.
+    Do not turn a missing event into success, and bound process cleanup.
+    """
     if proc.poll() is None:
         os.killpg(proc.pid, signal.SIGKILL)
-    proc.communicate()
+    if proc.stdout is not None and proc.stdout.closed:
+        proc.wait(timeout=5)
+        return
+    try:
+        proc.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        if proc.poll() is None:
+            os.killpg(proc.pid, signal.SIGKILL)
+        proc.wait(timeout=5)
 
 
 def main():

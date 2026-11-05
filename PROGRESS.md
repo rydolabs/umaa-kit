@@ -742,3 +742,9 @@ and rejects this flag on clean or Engine UPDATE scenarios. No EngineControl
 sender/receiver, normative role or QoS is changed. Exact new-head CI must
 pass before merging; the first failed workflow is retained as negative
 diagnostic evidence.
+
+## 2026-11-05 — netns subprocess cleanup must not mask missing native DDS Dispose
+
+- Latest merged-main network namespace workflow [41944916113](https://github.com/rydolabs/umaa-kit/actions/runs/41944916113) **FAILED** after two successful impaired original Battery runs. The third run reported `official module/transport error: independent application Dispose observation not confirmed` and independent `OFFICIAL_SIM: incomplete 2/3`. This is an **unresolved real DDS delivery/lifecycle issue**, not an acceptable PASS.
+- The harness then raised a *second*, unrelated `ValueError: I/O operation on closed file` in `stop()` while re-calling `communicate()` on an already-closed stream, obscuring the original failure. Fix cleanup to use bounded `wait()` for closed streams and bounded `communicate()` otherwise; add real child-process negative regressions for both paths.
+- This change is **diagnostic hardening only**. It does not alter Cyclone DDS QoS, lengthen timeouts, synthesize Dispose, suppress the independent oracle, or establish reconnection correctness. The impaired test must remain red if a genuine DDS Dispose is absent.

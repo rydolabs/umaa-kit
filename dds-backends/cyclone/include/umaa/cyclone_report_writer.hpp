@@ -5,6 +5,8 @@
 #include <dds/dds.h>
 #include "umaa/report_transport.hpp"
 #include <cstdint>
+#include <chrono>
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -18,14 +20,20 @@ class ReportWriter final : public ReportTransport<Value> {
   ReportWriter(std::string source, dds_entity_t participant, dds_entity_t topic,
                const dds_qos_t* qos, Mapper mapper, int expected_readers = 0,
                int discovery_attempts = 200,
-               std::uint32_t retire_grace_ms = 0)
+               std::uint32_t retire_grace_ms = 0,
+               std::function<bool()> observed_dispose = {},
+               std::uint32_t observation_timeout_ms = 0)
       : source_(std::move(source)), participant_(participant), topic_(topic),
         qos_(qos), mapper_(std::move(mapper)), expected_readers_(expected_readers),
         discovery_attempts_(discovery_attempts),
-        retire_grace_ms_(retire_grace_ms) {
+        retire_grace_ms_(retire_grace_ms),
+        observed_dispose_(std::move(observed_dispose)),
+        observation_timeout_ms_(observation_timeout_ms) {
     if (source_.empty() || participant_ <= 0 || topic_ <= 0 || !qos_ ||
         expected_readers_ < 0 || discovery_attempts_ <= 0 ||
-        retire_grace_ms_ > 5000)
+        retire_grace_ms_ > 5000 ||
+        (static_cast<bool>(observed_dispose_) != (observation_timeout_ms_ != 0)) ||
+        observation_timeout_ms_ > 30000)
       throw std::invalid_argument("Report Writer requires explicit source, entities and QoS");
   }
   ReportWriter(const ReportWriter&) = delete;
@@ -82,6 +90,24 @@ class ReportWriter final : public ReportTransport<Value> {
       // This is NOT a normative UMAA DDS QoS policy or fabricated app ACK.
       if (retire_grace_ms_)
         dds_sleepfor(DDS_MSECS(retire_grace_ms_));
+      if (observed_dispose_) {
+        // Optional *external* application-observation gate. In the Linux
+        // netns fault harness, independent receiver processes signal ONLY
+        // after seeing the real keyed DDS Dispose. Middleware ACK is not
+        // sufficient to retire this writer while the receiver can still
+        // be repairing late samples. This hook is not a UMAA protocol ACK
+        // or a normative service QoS and must be explicitly configured.
+        const auto deadline = std::chrono::steady_clock::now() +
+            std::chrono::milliseconds(observation_timeout_ms_);
+        bool confirmed = false;
+        do {
+          if (observed_dispose_()) { confirmed = true; break; }
+          dds_sleepfor(DDS_MSECS(25));
+        } while (std::chrono::steady_clock::now() < deadline);
+        if (!confirmed)
+          throw std::runtime_error(
+              "independent application Dispose observation not confirmed");
+      }
       check(dds_delete(writer_), "delete Report writer");
       writer_ = 0;
       state_ = State::Stopped;
@@ -107,6 +133,8 @@ class ReportWriter final : public ReportTransport<Value> {
   int expected_readers_;
   int discovery_attempts_;
   std::uint32_t retire_grace_ms_{0};
+  std::function<bool()> observed_dispose_;
+  std::uint32_t observation_timeout_ms_{0};
   dds_entity_t writer_{0};
   State state_{State::Idle};
 };

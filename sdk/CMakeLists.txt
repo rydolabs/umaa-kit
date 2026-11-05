@@ -45,6 +45,18 @@ if(UMAA_BUILD_TESTS)
     UMAA::Core ${CMAKE_DL_LIBS})
   add_test(NAME umaa_official_battery_component_codec_test
     COMMAND umaa_official_battery_component_codec_test)
+  # Real ABI-v2 dynamically loaded business module: no DDS vendor APIs.
+  # A fully disposed Reader epoch may be rotated explicitly, but incomplete
+  # Host state and stale callbacks must fail closed.
+  add_library(umaa_battery_epoch_component MODULE tests/modules/battery_component_epoch.cpp)
+  target_link_libraries(umaa_battery_epoch_component PRIVATE UMAA::Core)
+  add_executable(umaa_official_battery_component_epoch_test
+    tests/test_official_battery_component_epoch.cpp)
+  target_link_libraries(umaa_official_battery_component_epoch_test PRIVATE
+    UMAA::Core ${CMAKE_DL_LIBS})
+  add_test(NAME umaa_official_battery_component_epoch_test
+    COMMAND umaa_official_battery_component_epoch_test
+      "$<TARGET_FILE:umaa_battery_epoch_component>")
   add_executable(umaa_qos_policy_test tests/test_qos_policy.cpp)
   target_link_libraries(umaa_qos_policy_test PRIVATE UMAA::Core)
   add_test(NAME umaa_qos_policy_test COMMAND umaa_qos_policy_test)

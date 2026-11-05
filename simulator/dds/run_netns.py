@@ -177,11 +177,17 @@ def main():
     parser.add_argument('module')
     parser.add_argument('--subscribers', type=int, choices=(1, 2), default=1)
     parser.add_argument('--update', action='store_true')
+    parser.add_argument('--require-observed-dispose', action='store_true',
+                        help='only for original Battery Report: require independent DDS Dispose receipts')
     parser.add_argument('--profile', choices=('clean', *NETEM_PROFILES), default='clean',
                         help='network impairment; outage-recover blocks DDS discovery then heals')
     args = parser.parse_args()
     if args.update and args.subscribers != 1:
         parser.error('update requires one EngineControl simulator')
+    if args.require_observed_dispose and args.profile == 'clean':
+        parser.error('Dispose observation proof requires an impaired DDS profile')
+    if args.require_observed_dispose and args.update:
+        parser.error('Battery Report Dispose observation cannot check Engine UPDATE')
     sims = []
     host = None
     sim_nodes = ['umaa_ci_sim1'] + (['umaa_ci_sim2'] if args.subscribers == 2 else [])
@@ -191,7 +197,7 @@ def main():
     # Each fault-injection run, including the three degraded repetitions,
     # has a fresh private receipt directory so no earlier PASS can be reused.
     receipt_dir = tempfile.TemporaryDirectory(prefix='umaa-dds-receipts-') \
-        if args.profile != 'clean' else None
+        if args.require_observed_dispose else None
     try:
         if args.profile != 'clean':
             # Even rootless unit tests can check the exact command composition.

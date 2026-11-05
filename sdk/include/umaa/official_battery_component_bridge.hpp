@@ -107,6 +107,23 @@ struct BatteryStatusHostPreview {
         v.report.cellsListMetadata.size<0 ||
         v.ordered.size()!=static_cast<std::size_t>(v.report.cellsListMetadata.size))
       throw std::invalid_argument("invalid Battery host snapshot for ABI");
+    // The Host must never emit an ABI snapshot that its own decoder
+    // would reject. Reject malformed List topology before dispatching
+    // any business callback (the module cannot roll that callback back).
+    if(static_cast<std::int32_t>(v.report.state)<0 ||
+       static_cast<std::int32_t>(v.report.state)>2)
+      throw std::invalid_argument("invalid Battery state for ABI");
+    std::set<Guid> seen;
+    for(std::size_t i=0;i<v.ordered.size();++i) {
+      const auto& e=v.ordered[i];
+      if(e.elementID==Guid{} || !seen.insert(e.elementID).second ||
+         (i==0 && e.elementID!=v.report.cellsListMetadata.startingElementID) ||
+         (i>0 && v.ordered[i-1].nextElementID!=e.elementID) ||
+         (i+1==v.ordered.size() && e.nextElementID) ||
+         (i+1<v.ordered.size() &&
+          (!e.nextElementID || *e.nextElementID==Guid{})))
+        throw std::invalid_argument("invalid Battery List topology for ABI");
+    }
     preview_detail::Writer w;
     w.u8('U');w.u8('B');w.u8('H');w.u8(1);
     const auto& r=v.report;

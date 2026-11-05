@@ -191,6 +191,12 @@ jobs:
           for iteration in 1 2 3 4 5 6 7 8; do
             sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_simulator build/netns-dds/libumaa_dds_battery_module.so --subscribers 2 --profile degraded --require-observed-dispose | tee "build/netns-evidence/netem-official-report-degraded-${iteration}.log"
           done
+          # Deterministic native lifecycle probe: independent C reader
+          # discards its first actually received DDS DISPOSED notification;
+          # only a SECOND genuine native Dispose on the same Writer can
+          # establish the fresh independent receipt. The publisher must
+          # report at least one true reassert, not merely elapsed time.
+          sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_battery_publisher build/netns-dds/umaa_official_battery_simulator build/netns-dds/libumaa_dds_battery_module.so --subscribers 1 --profile degraded --require-observed-dispose --probe-native-reassert | tee build/netns-evidence/netem-original-native-dispose-reassert-probe.log
           sudo python3 simulator/dds/run_netns.py build/netns-dds/umaa_official_engine_host build/netns-dds/umaa_official_engine_simulator build/netns-dds/libumaa_dds_engine_module.so --profile degraded | tee build/netns-evidence/netem-official-command-degraded.log
       - name: DDS discovery blackout and automatic recovery (Linux)
         shell: bash

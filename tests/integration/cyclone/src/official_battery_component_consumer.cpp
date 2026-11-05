@@ -22,6 +22,8 @@ int main(int argc,char** argv){
   try {
     umaa::ComponentModule module(argv[1]);
     b::BatteryStatusComponentBridge handler(module);
+    if(handler.current_known(guid(0x11)) || handler.current_known(guid(0x12)))
+      throw std::runtime_error("unknown Battery List incorrectly marked current");
     c::OriginalBatteryStatusReader reader(handler,DDS_DOMAIN_DEFAULT,2,16);
     const auto first_epoch=reader.epoch();
     for(int tick=0;tick<1400;++tick){
@@ -41,8 +43,10 @@ int main(int argc,char** argv){
        handler.disposed()!=(bad?1u:2u))
       throw std::runtime_error("ABI-v2 business Component rejected original source proof");
     if(reader.active_lists()!=0 || reader.latest(guid(0x11)) ||
-       reader.latest(guid(0x12)))
-      throw std::runtime_error("original source Dispose retained stale Reader List");
+       reader.latest(guid(0x12)) ||
+       handler.current_known(guid(0x11)) ||
+       handler.current_known(guid(0x12)))
+      throw std::runtime_error("original source Dispose retained stale Reader/ABI List");
     reader.restart();
     if(reader.epoch()==first_epoch || reader.active_lists()!=0)
       throw std::runtime_error("native Reader was not fenced after restart");

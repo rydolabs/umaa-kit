@@ -43,6 +43,18 @@ int main(void) {
   }
   dds_delete(participant);
   if(phase!=3){fprintf(stderr,"OFFICIAL_SIM: incomplete %d/3\n",phase);return 6;}
+  // Netns-only independent application observation: never emit evidence
+  // after just two Report values or on DDS NO_WRITERS instead of Dispose.
+  const char* receipt=getenv("UMAA_NETEM_RECEIPT_FILE");
+  if(receipt && *receipt){
+    FILE* out=fopen(receipt,"wb");
+    if(!out){perror("DDS Dispose receipt open");return 7;}
+    const int written=fputs("NATIVE_BATTERY_REPORT_DISPOSE_OBSERVED\n",out);
+    if(written<0 || fflush(out)!=0 || fclose(out)!=0){
+      fprintf(stderr,"OFFICIAL_SIM: DDS Dispose receipt write failed\n");
+      return 7;
+    }
+  }
   puts("OFFICIAL_SIM: PASS real DDS with AUVSI UMAA 6.0 BatteryReportType");
   return 0;
 }

@@ -154,6 +154,7 @@ int main() {
     writer.dispose("src",3);
     writer.unregister_source("src");
     assert(std::count(calls.begin(),calls.end(),"dispose") == 2);
+    assert(writer.native_dispose_reassertions() == 1u);
     assert(writer.state() == Writer::State::Stopped);
   }
   calls.clear();

@@ -33,7 +33,8 @@ UMAA claims still require source-document and wire evidence.
 | Demo::EO::BatteryStatus | Verified ABI v2 synthetic int32 fixture | **Allowed Provider module** |
 | UMAA::… reviewed catalog identities | Reviewed literal service/Topic mappings; official QoS/runtime not yet proven | **Reject until reviewed native binding exists** |
 | Unknown service | Not in catalog | **Reject** |
-| Consumer in Component DLL/SO | Some host Consumer APIs exist, module-side Consumer binding unverified | **Reject** |
+| Synthetic Demo::EO::BatteryStatus Consumer in DLL/SO | ABI-v2 inbound Report/Dispose Handler + protected user files; native Linux/Windows generated module CTest | **Allowed development fixture only** |
+| Command Consumer and official Service Consumer | Native DDS Source/Key/QoS/Reader binding or Command client protocol unreviewed | **Reject** |
 | User extension IDL | Studio has limited extension-only draft generator | **Not yet accepted** |
 
 This distinction prevents a generated CMake project from pretending that a
@@ -168,3 +169,54 @@ The current CLI/JSON Schema layer has no extra runtime dependency; if a
 third-party editor uses the JSON Schema independently, it still must
 invoke the Python contract and assembly gate for catalog provenance,
 cross-record Topic ownership and normative safety restrictions.
+
+
+## 2026-11-05 — bidirectional synthetic Report Consumer in one DLL/SO
+
+The development CLI can now compose a **single** C++ ABI-v2 native
+Component from different synthetic Provider/Consumer Service roles,
+including the *same* `Demo::EO::BatteryStatus` in both roles. One
+bidirectional Service produces **one** ABI descriptor with the union
+of its Report Provider + Consumer action bits, not duplicate
+registrations. The two business Handler classes remain independent
+and user-owned.
+
+```sh
+python -m tools.umaa_component_cli new component mixed_demo
+python -m tools.umaa_component_cli service add Demo::EO::EngineControl --role provider --project mixed_demo
+python -m tools.umaa_component_cli service add Demo::EO::BatteryStatus --role consumer --project mixed_demo
+python -m tools.umaa_component_cli generate --project mixed_demo
+# Build/test using the installed SDK prefix from the earlier example.
+python -m tools.umaa_component_cli build --project mixed_demo --sdk-prefix build/sdk-cli-install
+python -m tools.umaa_component_cli test --project mixed_demo
+```
+
+The module exports additional **host-local ABI-v2** calls
+`UMAA_COMPONENT_REPORT_ACCEPT` (action 5, kind bit 8) and
+`UMAA_COMPONENT_REPORT_DISPOSE` (action 6, kind bit 16).
+Both require an **explicit nonzero opaque source token** in the existing
+`session_id` field. Report input must decode into the selected synthetic
+type; Dispose accepts no data bytes. These are **not DDS Topics, UMAA
+Report Ack protocol, normative Source GUIDs, or a complete vendor
+Consumer Reader**. The external Host remains responsible for genuine
+DDS source/key/ordered QoS validation and converting native Dispose
+before it can forward any callback. Unknown/invalid payloads fail
+closed. Generated Consumer Handler defaults return `Rejected`
+on Report and Dispose; no hardware, data or component success is
+manufactured.
+
+No C ABI structs or `UMAA_COMPONENT_ABI_VERSION` were changed:
+existing v2 Provider modules keep working. The new registration
+merges Provider and Consumer action sets only for an identical
+Service ID **and identical schema**; conflicting schemas or repeated
+roles are fatal. The same generated module ABI loader/stop gate
+drains both roles before unloading. The generated CTest exercises
+real DLL/SO loading and malformed/rejected inbound callbacks; the
+new standalone C++17 CTest also exercises an accepting user Handler
+and exception fencing.
+
+**Still OPEN:** genuine DDS-backed synthetic/official Consumer
+subscription wiring into the module from a reviewed Service Contract,
+exact per-Source GUID + Timestamp semantics, all official QoS, native
+GROUP coherence, Command consumer bindings, consistent full-service
+code generation and official UMAA conformity.

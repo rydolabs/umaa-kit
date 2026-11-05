@@ -3,6 +3,7 @@
 // This is NOT DDS CDR, a UMAA official schema, generated service Runtime,
 // selected Component profile, native GROUP coherence or formal conformance.
 #pragma once
+#include "umaa/component.hpp"
 #include "umaa/component_module.hpp"
 #include "umaa/official_battery_subscription.hpp"
 
@@ -227,9 +228,12 @@ class BatteryStatusComponentBridge final : public BatteryStatusHandler {
     require_epoch(epoch);
     try {
       auto it=sources_.find(source.id);
-      if(it==sources_.end()||it->second.parent!=source.parentID||
-         it->second.list!=list)
-        throw std::runtime_error("unbound or spoofed native Battery Dispose");
+      // The upstream Subscription has already verified actual original
+      // Report keys. A source whose checkpoint was *never* committed to
+      // the business ABI must not receive a fabricated business Dispose.
+      if(it==sources_.end())return;
+      if(it->second.parent!=source.parentID || it->second.list!=list)
+        throw std::runtime_error("mismatched native Battery Dispose binding");
       invoke(UMAA_COMPONENT_REPORT_DISPOSE,{},it->second.token);
       sources_.erase(it);
       retired_.insert(source.id);

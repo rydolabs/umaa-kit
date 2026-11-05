@@ -724,3 +724,21 @@ the complete PR verified.
   No official QoS profile, GROUP coherence, Fast DDS ordered TOPIC,
   mixed-vendor operation, automatic reconnect replay or formal
   conformance is claimed.
+
+
+### Netns negative CI correction (same 2026-11-05 branch)
+
+The first [netns run 41942073180](https://github.com/rydolabs/umaa-kit/actions/runs/41942073180)
+confirmed **three separate real 1%-loss Battery tests**, each with actual
+20/80/Dispose at BOTH original C readers and exact receipt markers:
+`DDS_NETEM_INDEPENDENT_DISPOSE_RECEIPTS_PASS` appeared three times.
+Its next EngineControl degradation test then failed **in the harness**
+because the receipt gate was initially enabled for all impaired services;
+the original Engine Command/Ack/Status/Dispose oracle itself had passed.
+The fixed harness now enables the observation check only with explicit
+`--require-observed-dispose`, applied to the four native Battery impaired
+workflow commands (two C reader scenarios and two SDK reader scenarios),
+and rejects this flag on clean or Engine UPDATE scenarios. No EngineControl
+sender/receiver, normative role or QoS is changed. Exact new-head CI must
+pass before merging; the first failed workflow is retained as negative
+diagnostic evidence.

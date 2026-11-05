@@ -245,7 +245,10 @@ class BatteryStatusComponentBridge final : public BatteryStatusHandler {
   std::size_t disposed() const noexcept{return disposed_;}
   std::size_t active_sources() const noexcept{return sources_.size();}
   bool current_known(const Guid& list) const noexcept {
-    return !faulted_ && !invalidated_.count(list);
+    if(faulted_ || invalidated_.count(list))return false;
+    for(const auto& source:sources_)
+      if(source.second.list==list)return true;
+    return false;  // never treat an unknown/retired List as current
   }
   bool faulted() const noexcept{return faulted_;}
  private:

@@ -87,8 +87,13 @@ def confirmed_dispose_receipts(directory, nodes):
 
 
 def spawn(node, executable, *arguments, readers=1, recovery=False,
-          impaired=False, receipt_dir=None):
+          impaired=False, receipt_dir=None, suppress_first_native_dispose=False):
     env = dict(os.environ)
+    env.pop('UMAA_NETEM_SUPPRESS_FIRST_NATIVE_DISPOSE', None)
+    if suppress_first_native_dispose:
+        if node == 'umaa_ci_pub' or not receipt_dir:
+            raise ValueError('native Dispose probe requires independent receipt-gated reader')
+        env['UMAA_NETEM_SUPPRESS_FIRST_NATIVE_DISPOSE'] = '1'
     env['CYCLONEDDS_URI'] = cyclone_config(node)
     env['UMAA_EXPECT_READERS'] = str(readers)
     if recovery:
@@ -193,6 +198,8 @@ def main():
     parser.add_argument('--update', action='store_true')
     parser.add_argument('--require-observed-dispose', action='store_true',
                         help='only for original Battery Report: require independent DDS Dispose receipts')
+    parser.add_argument('--probe-native-reassert', action='store_true',
+                        help='test-only: withhold FIRST genuinely observed Dispose and require another')
     parser.add_argument('--profile', choices=('clean', *NETEM_PROFILES), default='clean',
                         help='network impairment; outage-recover blocks DDS discovery then heals')
     args = parser.parse_args()
@@ -202,6 +209,10 @@ def main():
         parser.error('Dispose observation proof requires an impaired DDS profile')
     if args.require_observed_dispose and args.update:
         parser.error('Battery Report Dispose observation cannot check Engine UPDATE')
+    if args.probe_native_reassert and (
+            args.profile != 'degraded' or not args.require_observed_dispose
+            or args.subscribers != 1 or args.update):
+        parser.error('native Dispose reassert probe requires one impaired Battery reader and strict receipt')
     sims = []
     host = None
     sim_nodes = ['umaa_ci_sim1'] + (['umaa_ci_sim2'] if args.subscribers == 2 else [])
@@ -221,7 +232,8 @@ def main():
             sims.append(spawn(node, args.simulator, *(['--update'] if args.update else []),
                               recovery=args.profile == 'outage-recover',
                               impaired=args.profile != 'clean',
-                              receipt_dir=receipt_dir.name if receipt_dir else None))
+                              receipt_dir=receipt_dir.name if receipt_dir else None,
+                              suppress_first_native_dispose=args.probe_native_reassert))
         time.sleep(0.8)
         host = spawn('umaa_ci_pub', args.host, args.module, readers=args.subscribers,
                      recovery=args.profile == 'outage-recover',

@@ -17,6 +17,13 @@ int main(void) {
   dds_delete_qos(q);
   if(reader<0)return 2;
   int phase=0;
+  // Test-only fault injection: do not count the FIRST genuinely received
+  // native DDS Dispose. A second actual DISPOSED sample is required before
+  // this independent process writes the receipt. This NEVER fakes data or
+  // invents a DDS lifecycle signal; normal readers ignore the opt-in flag.
+  const int suppress_first_dispose =
+      getenv("UMAA_NETEM_SUPPRESS_FIRST_NATIVE_DISPOSE") != NULL;
+  int suppressed_disposes = 0;
   // Loss-impaired network-namespace tests require extra time for the actual
   // keyed DDS Dispose. Keep exact 20/80/Dispose validation; do not skip it.
   const int attempts = getenv("UMAA_NETEM_RECOVERY") ? 1600 :
@@ -37,7 +44,13 @@ int main(void) {
       ++phase;
     } else if(info[0].instance_state==DDS_IST_NOT_ALIVE_DISPOSED){
       if(phase!=2)return 5;
-      puts("OFFICIAL_SIM: DDS dispose observed");++phase;
+      if(suppress_first_dispose && !suppressed_disposes){
+        ++suppressed_disposes;
+        puts("OFFICIAL_SIM: TEST_IGNORED_FIRST_NATIVE_DISPOSE");
+        fflush(stdout);
+      } else {
+        puts("OFFICIAL_SIM: DDS dispose observed");++phase;
+      }
     }
     dds_sample_free(&data,&UMAA_EO_BatteryStatus_BatteryReportType_desc,DDS_FREE_CONTENTS);
   }

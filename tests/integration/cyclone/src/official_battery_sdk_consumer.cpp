@@ -7,6 +7,7 @@
 #include "umaa/report_transport.hpp"
 #include "umaa/cyclone_report_reader.hpp"
 #include <cstdio>
+#include <fstream>
 #include <cstdlib>
 #include <exception>
 #include <memory>

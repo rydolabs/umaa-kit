@@ -439,6 +439,8 @@ def main(argv=None):
     sysactions = syscmd.add_subparsers(dest="system_action", required=True)
     sysvalidate = sysactions.add_parser("validate")
     sysvalidate.add_argument("--input", required=True, type=Path)
+    sysplan = sysactions.add_parser("plan", help="derive read-only logical DDS endpoint preview")
+    sysplan.add_argument("--input", required=True, type=Path)
     ct = commands.add_parser("contract", help="inspect/export reviewed partial Service Contracts")
     ct_actions = ct.add_subparsers(dest="contract_action", required=True)
     export = ct_actions.add_parser("export")
@@ -486,8 +488,13 @@ def main(argv=None):
             print(json.dumps(check_project(args.project, args.reference_component),
                              sort_keys=True, indent=2))
         elif args.cmd == "system":
-            from tools.umaa_system_model import validate_file
-            print(json.dumps(validate_file(args.input), sort_keys=True, indent=2))
+            if args.system_action == "validate":
+                from tools.umaa_system_model import validate_file
+                report = validate_file(args.input)
+            else:
+                from tools.umaa_system_planner import plan_file
+                report = plan_file(args.input)
+            print(json.dumps(report, sort_keys=True, indent=2))
         elif args.cmd == "contract":
             if args.contract_action == "export":
                 snapshot = contracts.create_snapshot()

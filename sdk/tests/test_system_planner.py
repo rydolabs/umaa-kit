@@ -84,7 +84,7 @@ class CompositionPlannerTest(unittest.TestCase):
         for flag in ("ddsDeploymentReady", "officialRuntimeClaim",
                      "officialConformanceClaim"):
             self.assertFalse(preview[flag])
-        self.assertFalse(preview["ddSNamesKeysAndMandatoryQosResolved"])
+        self.assertFalse(preview["ddsNamesKeysAndMandatoryQosResolved"])
 
     def test_backend_selection_changes_preview_only(self):
         self.model["deployment"] = {"backend": "fastdds", "domainId": 17}

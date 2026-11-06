@@ -443,6 +443,10 @@ def main(argv=None):
     sysplan.add_argument("--input", required=True, type=Path)
     sysdeploy = sysactions.add_parser("deployment-check", help="fail closed on missing original native DDS evidence")
     sysdeploy.add_argument("--input", required=True, type=Path)
+    sysdeploy.add_argument("--original-idl-zip", type=Path,
+                           help="original, SHA-pinned AUVSI 6.0 IDL ZIP (optional)")
+    sysdeploy.add_argument("--original-eo-icd", type=Path,
+                           help="original, SHA-pinned EO ICD 6.0 PDF (optional)")
     ct = commands.add_parser("contract", help="inspect/export reviewed partial Service Contracts")
     ct_actions = ct.add_subparsers(dest="contract_action", required=True)
     export = ct_actions.add_parser("export")
@@ -498,7 +502,9 @@ def main(argv=None):
                 report = plan_file(args.input)
             else:
                 from tools.umaa_dds_deployment import assess_file
-                report = assess_file(args.input)
+                report = assess_file(args.input,
+                    official_idl_zip=args.original_idl_zip,
+                    official_eo_icd=args.original_eo_icd)
             print(json.dumps(report, sort_keys=True, indent=2))
             if args.system_action == "deployment-check":
                 return 3

@@ -15,6 +15,7 @@ from pathlib import Path
 import sys
 
 from tools import umaa_service_contracts as contracts
+from tools import umaa_original_evidence as original
 from tools import umaa_system_model as common
 from tools import umaa_system_planner as planner
 
@@ -28,13 +29,18 @@ def _missing(code: str, subject: str, detail: str) -> dict:
             "detail": detail}
 
 
-def assess(model: dict, root: Path) -> dict:
+def assess(model: dict, root: Path, *, official_idl_zip: Path | None = None,
+           official_eo_icd: Path | None = None) -> dict:
     """Validate pinned inputs, then return deterministic, non-executable gaps.
 
     No files, native DDS entities or executable configuration are generated.
     Call the existing Planner as the sole topology/role/digest validator.
     """
     preview = planner.plan(model, root)
+    if (official_idl_zip is None) != (official_eo_icd is None):
+        raise common.SystemModelError("original IDL ZIP and EO ICD PDF must be supplied together")
+    evidence = (original.verify_originals(official_idl_zip, official_eo_icd)
+                if official_idl_zip is not None else None)
     catalog, catalog_sha = contracts._read_catalog()
     if (preview["source"]["catalogPinned"] and
             preview["source"]["catalogSha256"] != catalog_sha):
@@ -72,11 +78,20 @@ def assess(model: dict, root: Path) -> dict:
                     "Demo roles do not authorize official native DDS deployment")],
             })
             continue
-        operations = [
-            {"name": name, "topicRef": None, "flow": None,
-             "status": "UNRESOLVED_ORIGINAL_OPERATION_TOPIC_FLOW"}
-            for name in sorted(row["operations"])
-        ]
+        bindings = evidence if evidence is not None and service == original.SERVICE else None
+        by_operation = ({x["name"]: x for x in bindings["operations"]}
+                        if bindings else {})
+        by_topic = ({x["topicId"]: x for x in bindings["topics"]}
+                    if bindings else {})
+        operations = [{
+            "name": name,
+            "topicRef": by_operation[name]["topicId"] if bindings else None,
+            "flow": by_operation[name]["action"] if bindings else None,
+            "actorRole": by_operation[name]["actor"] if bindings else None,
+            "icdPage": by_operation[name]["icdPage"] if bindings else None,
+            "status": ("SOURCE_PINNED_NOT_RUNTIME_APPROVED" if bindings else
+                       "UNRESOLVED_ORIGINAL_OPERATION_TOPIC_FLOW"),
+        } for name in sorted(row["operations"])]
         missing = [
             _missing("OPERATION_TOPIC_FLOW", service,
                      "Original ICD Operation-to-Topic/Flow binding is not approved"),
@@ -91,6 +106,10 @@ def assess(model: dict, root: Path) -> dict:
             _missing("INDEPENDENT_VENDOR_WIRE_EVIDENCE", service,
                      "Exact-build native Writer/Reader tests required before emitting endpoints"),
         ]
+        if bindings:
+            missing = [x for x in missing if x["code"] not in {
+                "OPERATION_TOPIC_FLOW", "ORIGINAL_TYPES_AND_INSTANCE_KEYS",
+                "OFFICIAL_DDS_TOPIC_NAMES"}]
         if row.get("collection_topics"):
             missing.append(_missing(
                 "COLLECTION_ENDPOINT_OWNERSHIP", service,
@@ -104,10 +123,14 @@ def assess(model: dict, root: Path) -> dict:
                 "topicId": e["topicId"], "idlType": e["idlType"],
                 "writerComponent": e["writerComponent"],
                 "readerComponent": e["readerComponent"],
-                "ddsTopicName": None, "keyFields": None,
+                "ddsTopicName": by_topic[e["topicId"]]["ddsTopicName"] if bindings else None,
+                "keyFields": list(by_topic[e["topicId"]]["keyFields"]) if bindings else None,
                 "writerQosProfile": None, "readerQosProfile": None,
-                "status": "SOURCE_BINDING_REQUIRED"
+                "status": ("PINNED_LITERAL_SOURCE_VERIFIED_NOT_DEPLOYABLE" if bindings else
+                           "SOURCE_BINDING_REQUIRED")
             } for e in endpoints],
+            "sourceRecord": ("catalog/umaa6-eo-anchorcontrol-source-bindings-v1.json"
+                             if bindings else None),
             "catalogClaims": {
                 "officialIdlVerified": row["official_idl_verified"],
                 "ddsQosVerified": row["dds_qos_verified"],
@@ -116,7 +139,10 @@ def assess(model: dict, root: Path) -> dict:
             "missingEvidence": missing,
         })
 
-    blockers = list(preview["blockers"])
+    blockers = [x for x in preview["blockers"]
+                if not (evidence is not None and
+                        x["service"] == original.SERVICE and
+                        x["code"] == "TOPIC_NAME_KEY_AND_OPERATION_MAPPING_UNRESOLVED")]
     if not preview["connections"]:
         blockers.append({
             "code": "NO_EXPLICIT_SERVICE_CONNECTIONS",
@@ -130,6 +156,15 @@ def assess(model: dict, root: Path) -> dict:
         allow_nan=False).encode("utf-8")).hexdigest()
     return {
         "kind": KIND, "schemaVersion": VERSION, "status": BLOCKED,
+        "sourceVerification": ({
+            "status": "PINNED_ORIGINAL_BYTES_VERIFIED_LIMITED_SCOPE",
+            "service": original.SERVICE,
+            "icdSha256": original.ICD_SHA,
+            "idlArchiveSha256": original.ZIP_SHA,
+            "semantics": "reviewed clause mapping; not QoS or runtime conformance",
+        } if evidence is not None else {
+            "status": "ORIGINAL_BYTES_NOT_PROVIDED", "service": None,
+        }),
         "source": {"intentCanonicalSha256": digest,
                    "catalogSha256": catalog_sha,
                    "catalogVersion": catalog["catalog_version"]},
@@ -150,9 +185,12 @@ def assess(model: dict, root: Path) -> dict:
     }
 
 
-def assess_file(path: Path) -> dict:
+def assess_file(path: Path, *, official_idl_zip: Path | None = None,
+                official_eo_icd: Path | None = None) -> dict:
     doc, _ = common._json_file(path, limit=512 * 1024)
-    return assess(doc, path.resolve().parent)
+    return assess(doc, path.resolve().parent,
+                  official_idl_zip=official_idl_zip,
+                  official_eo_icd=official_eo_icd)
 
 
 def main(argv=None):
@@ -160,11 +198,15 @@ def main(argv=None):
         description="Check missing original DDS evidence; never emit native endpoints")
     parser.add_argument("command", choices=["check"])
     parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--original-idl-zip", type=Path)
+    parser.add_argument("--original-eo-icd", type=Path)
     args = parser.parse_args(argv)
     try:
-        report = assess_file(args.input)
-    except (common.SystemModelError, contracts.ContractError, OSError,
-            ValueError) as exc:
+        report = assess_file(args.input,
+                             official_idl_zip=args.original_idl_zip,
+                             official_eo_icd=args.original_eo_icd)
+    except (common.SystemModelError, contracts.ContractError,
+            original.EvidenceError, OSError, ValueError) as exc:
         print("UMAA DEPLOYMENT ADMISSION ERROR: " + str(exc), file=sys.stderr)
         return 2
     print(json.dumps(report, sort_keys=True, indent=2))

@@ -805,3 +805,22 @@ diagnostic evidence.
 - Next: source-approved explicit Operation/Topic/Type/Key/QoS bindings with
   exact original provenance plus native vendor construction/independent tests.
 
+## 2026-11-06 — EO AnchorControl original source-recheck bindings (PR #74 follow-up)
+
+- Source review: AUVSI EO ICD v6.0 SHA-256
+  47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453,
+  §6.1 pp. 50–51. Original UMAA 6.0 IDL ZIP SHA-256
+  15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08.
+- Reviewed the three literal AnchorControl DDS Topic constant values and
+  exact @key annotations. Command has source/sessionID/destination; Ack
+  and Status have source/sessionID. Five operations map to three Topics:
+  reports / set write; query subscribes to Ack; cancel disposes Command.
+- Added independently callable exact-source verifier with no original source
+  redistribution; optional dual source paths on both deployment check CLIs.
+- Even after source recheck, QoS/vendor profiles, native lifecycle completeness,
+  actual official runtime, independent exact-build wire evidence and UMAA
+  conformance remain BLOCKED. Catalog flags unchanged; PR remains Draft.
+- CI without supplied ZIP/PDF validates schema, negative gates, projections
+  and backward-compatible no-evidence output only. Exact original files are
+  manually byte-checked for this scoped evidence and must NOT be committed.
+

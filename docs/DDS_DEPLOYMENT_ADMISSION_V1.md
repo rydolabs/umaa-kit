@@ -54,3 +54,49 @@ accepted evidence into vendor-specific DDS endpoint construction. This
 network interoperability and RTI Connext remain future-only phase work.
 
 Regression: python -m unittest discover -s sdk/tests -p test_dds_deployment_admission.py -v
+
+
+## Exact-source AnchorControl milestone (2026-11-06)
+
+One original-source review record was derived from AUVSI EO ICD v6.0,
+pages 50–51 (service §6.1.1), and original UMAA 6.0 IDL ZIP. The record
+contains ONLY derived Topic names, key member names, operation/transport
+intentions, source page numbers and SHA-256 digests; no original PDF or
+IDL bytes are published in this repository.
+
+Record: catalog/umaa6-eo-anchorcontrol-source-bindings-v1.json.
+Verifier: tools.umaa_original_evidence.verify_originals(idl_archive, eo_icd_pdf).
+
+Example:
+
+    python -m tools.umaa_component_cli system deployment-check \
+      --input path/to/umaa.intent.json \
+      --original-idl-zip /private/umaa-6.0-idl-with-exp-services.zip \
+      --original-eo-icd /private/UMAA-SPEC-EOICD-v6.0.pdf
+
+The two source paths MUST be supplied together. The exact original
+ZIP/PDF SHA-256 values are required. The verifier reads only the three
+pinned AnchorControl IDL files (one per Writer/Reader Topic), validates
+their individual digests, extracts their literal Topic constant and
+@key fields, and compares them with the reviewed Catalog and the source
+record. It also checks the exact original EO PDF SHA; Operation/Topic
+assignments and the "query -> subscribe, cancel -> dispose" mapping are
+manually reviewed assertions anchored to EO ICD §6.1, pages 50–51,
+NOT results of generic PDF semantic parsing.
+
+If the originals are not supplied, all fields retain the original
+unresolved/null outcome and deployment remains blocked. When they are
+supplied and verified, the report exposes exactly the 3 Topic names and
+key arrays plus 5 Operation/topic/transport intentions. This removes
+ONLY the corresponding per-Service source identity/mapping gaps.
+Mandatory effective QoS, complete Command/Dispose lifecycle, runtime
+bindings, independent wire tests, production Studio integration and UMAA
+conformance are still unverified and must remain BLOCKED. A previous
+synthetic DDS test is not evidence for all official requirements.
+
+Compliance note: respect the AUVSI IDL Terms of Use. Keep source PDF,
+ZIP, and full IDL file bodies external to public Git history. Never
+copy them into the project to make CI green. In existing CI without
+the private source files, only schema/review/deny regressions run;
+no CI test can claim to have reverified the original bytes.
+

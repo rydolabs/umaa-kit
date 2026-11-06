@@ -117,6 +117,28 @@ class DeploymentAdmissionTest(unittest.TestCase):
                             right["source"]["intentCanonicalSha256"])
         self.assertEqual(right, deployment.assess(copy.deepcopy(self.model), self.root))
 
+    def test_reversed_bidirectional_service_links_do_not_cross_contaminate_topics(self):
+        # Both Component Manifests declare both roles for this one Service.
+        # A->B and B->A must not each include the other's three Topics.
+        for index, (name, role) in enumerate(
+                (("command", "provider"), ("actuator", "consumer"))):
+            component.add(self.root / name, ANCHOR, role)
+            path = self.root / name / component.MANIFEST
+            self.model["components"][index]["sha256"] = hashlib.sha256(
+                path.read_bytes()).hexdigest()
+        self.model["connections"].append({
+            "service": ANCHOR, "consumer": "actuator",
+            "provider": "command"})
+        report = deployment.assess(self.model, self.root)
+        self.assertEqual(report["logicalEndpointCount"], 6)
+        self.assertEqual(len(report["serviceChecks"]), 2)
+        for check in report["serviceChecks"]:
+            self.assertEqual(len(check["logicalTopics"]), 3)
+            self.assertEqual(sum(t["writerComponent"] == check["consumer"]
+                                 for t in check["logicalTopics"]), 1)
+            self.assertEqual(sum(t["writerComponent"] == check["provider"]
+                                 for t in check["logicalTopics"]), 2)
+
     def test_no_files_written_by_in_memory_admission(self):
         before = sorted(p.relative_to(self.root).as_posix()
                         for p in self.root.rglob("*"))

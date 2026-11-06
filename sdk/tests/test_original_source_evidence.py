@@ -6,6 +6,7 @@ import unittest
 from unittest import mock
 
 from tools import umaa_original_evidence as originals
+from tools import umaa_eo_original_evidence as eo_original
 from tools import umaa_dds_deployment as deployment
 from tools import umaa_system_planner as planner
 from tools import umaa_service_contracts as contracts
@@ -101,7 +102,8 @@ class OriginalEvidenceTest(unittest.TestCase):
             # Mock only the independently verified source boundary. The mocked
             # path tests projection, NOT acceptance of a synthetic original.
             with mock.patch.object(originals, "verify_originals",
-                                   return_value=originals.load_record()):
+                                   return_value=originals.load_record()), mock.patch.object(
+                                       eo_original, "verify_originals", return_value={}):
                 report = deployment.assess(
                     model, root, official_eo_icd=pdf, official_idl_zip=pdf)
             self.assertEqual(report["sourceVerification"]["status"],

@@ -893,3 +893,11 @@ diagnostic evidence.
   effective per-Component QoS, full Command/Collection Host dispatcher
   and release conformance are still OPEN.
 
+## 2026-11-06 — generated Host E2E Windows build-config recovery
+
+- Windows CI was Debug but the new generated Host E2E installed Release,
+  causing a missing `Release/umaa_component_host.exe` file. Fixed
+  CTest to pass `$<CONFIG>` to the test and install the actual SDK
+  build configuration. No runtime fallback or assertion weakening.
+- Re-run exact-head Linux/Windows E2E and required vendor CI.
+

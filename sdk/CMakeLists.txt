@@ -331,6 +331,7 @@ if(UMAA_BUILD_TESTS AND UMAA_BUILD_MODULE_DEMO)
       "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_generated_component_host.py"
       "$<TARGET_FILE:umaa_component_host>"
       "$<TARGET_FILE:umaa_mock_dds_backend>"
-      "${CMAKE_CURRENT_BINARY_DIR}")
+      "${CMAKE_CURRENT_BINARY_DIR}"
+      "$<CONFIG>")
   set_tests_properties(umaa_generated_component_host_v1_e2e PROPERTIES TIMEOUT 240)
 endif()

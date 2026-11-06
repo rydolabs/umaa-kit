@@ -33,14 +33,21 @@ def locate_module(project, name):
 
 
 def main():
-    if len(sys.argv) != 4:
-        raise RuntimeError("expected built Host, backend fixture and SDK build directory")
-    host, backend, sdk_build = map(lambda x: Path(x).resolve(), sys.argv[1:])
+    if len(sys.argv) != 5:
+        raise RuntimeError("expected Host, backend, SDK build dir and CTest build configuration")
+    host, backend, sdk_build = map(lambda x: Path(x).resolve(), sys.argv[1:4])
+    configuration = sys.argv[4]
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         prefix = root / "sdk-installed"
-        run(["cmake", "--install", sdk_build, "--config", "Release",
-             "--prefix", prefix])
+        # CTest can build MSVC in Debug while the generated project is
+        # separately compiled in Release. Install the *already built*
+        # SDK artifacts, not an imaginary hard-coded Release executable.
+        install = ["cmake", "--install", sdk_build]
+        if configuration:
+            install.extend(["--config", configuration])
+        install.extend(["--prefix", prefix])
+        run(install)
         project = root / "generated"
         cli.new("hostgenerated", project)
         cli.add(project, "Demo::EO::BatteryStatus", "provider")

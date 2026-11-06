@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rydolabs/umaa-kit/blob/main/schemas/system-assembly-v1.schema.json",
+  "title": "UMAA Kit System Assembly v1 — declarative, non-deployable model",
+  "description": "System composition of digest-pinned Component Manifests, source-checked Service identities, DDS domains and topic-direction QoS declarations. A structurally valid model is NOT an official DDS deployment or approved QoS.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "1"
+    },
+    "system": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,62}$"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "catalogPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "reviewed-icd-catalog"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "kind",
+        "sha256"
+      ]
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,62}$"
+          },
+          "manifest": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 320,
+            "pattern": "^[A-Za-z0-9_./-]+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "domainId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 230
+          }
+        },
+        "required": [
+          "id",
+          "manifest",
+          "sha256",
+          "domainId"
+        ]
+      }
+    },
+    "dds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "domains": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 230
+              },
+              "backend": {
+                "enum": [
+                  "cyclone",
+                  "fastdds"
+                ]
+              },
+              "qosProfiles": {
+                "type": "object",
+                "maxProperties": 64,
+                "propertyNames": {
+                  "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                },
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "reliability": {
+                      "enum": [
+                        "best_effort",
+                        "reliable"
+                      ]
+                    },
+                    "durability": {
+                      "enum": [
+                        "volatile",
+                        "transient_local"
+                      ]
+                    },
+                    "history": {
+                      "enum": [
+                        "keep_last",
+                        "keep_all"
+                      ]
+                    },
+                    "depth": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4096
+                    },
+                    "presentation": {
+                      "enum": [
+                        "instance",
+                        "topic",
+                        "group"
+                      ]
+                    },
+                    "orderedAccess": {
+                      "type": "boolean"
+                    },
+                    "coherentAccess": {
+                      "type": "boolean"
+                    },
+                    "partition": {
+                      "type": "string",
+                      "maxLength": 255
+                    }
+                  },
+                  "required": [
+                    "reliability",
+                    "durability",
+                    "history",
+                    "depth",
+                    "presentation",
+                    "orderedAccess",
+                    "coherentAccess",
+                    "partition"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "backend",
+              "qosProfiles"
+            ]
+          }
+        }
+      },
+      "required": [
+        "domains"
+      ]
+    },
+    "connections": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "service": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]*(::[A-Za-z][A-Za-z0-9_]*){2,5}$"
+          },
+          "consumer": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,62}$"
+          },
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,62}$"
+          },
+          "domainId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 230
+          },
+          "channels": {
+            "type": "array",
+            "maxItems": 128,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "topicId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "writerProfile": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                },
+                "readerProfile": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                }
+              },
+              "required": [
+                "topicId",
+                "writerProfile",
+                "readerProfile"
+              ]
+            }
+          }
+        },
+        "required": [
+          "service",
+          "consumer",
+          "provider",
+          "domainId",
+          "channels"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "system",
+    "components",
+    "dds",
+    "connections"
+  ]
+}

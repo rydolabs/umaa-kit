@@ -44,13 +44,22 @@ def assess(model: dict, root: Path) -> dict:
     for link in sorted(preview["connections"],
                        key=lambda x: (x["service"], x["consumer"], x["provider"])):
         service = link["service"]
-        pair = {link["consumer"], link["provider"]}
+        row = records.get(service)
+        # In two Components with both roles, A->B and B->A links may
+        # coexist. Bind each endpoint to the exact reviewed topic *side*
+        # and source link, not an unordered Component pair.
+        directions = set()
+        if row is not None:
+            directions.update((t["name"], link["consumer"], link["provider"])
+                              for t in row["consumer_topics"])
+            directions.update((t["name"], link["provider"], link["consumer"])
+                              for t in row["provider_topics"])
         endpoints = sorted(
             (e for e in preview["endpoints"]
              if e["service"] == service and
-             {e["writerComponent"], e["readerComponent"]} == pair),
+             (e["topicId"], e["writerComponent"],
+              e["readerComponent"]) in directions),
             key=lambda e: e["topicId"])
-        row = records.get(service)
         if row is None:
             # Only synthetic Demo:: roles can reach this path: planner.plan
             # rejects unrecognized official services and invalid roles.

@@ -939,3 +939,13 @@ diagnostic evidence.
 - Full mandatory QoS/official Component roles, native Generic Host,
   cross-vendor runtime and UMAA conformance remain OPEN.
 
+
+## 2026-11-07 — native Consumer Host Dispose drain regression fix
+
+- Original live on-wire CI showed that two Report disposes can arrive
+  while two separate Collection Element disposes remain unread.
+  The initial Host exited with only 2/4 Element Dispose events observed.
+- Added independent --until-element-disposes threshold and fail-closed
+  bounded shutdown; the original positive/negative tests continue to
+  require all 4 genuine Element disposes, never weakened.
+

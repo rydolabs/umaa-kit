@@ -22,6 +22,7 @@ struct Config {
   std::string module;
   dds_domainid_t domain{DDS_DOMAIN_DEFAULT};
   std::uint32_t until_report_disposes{};
+  std::uint32_t until_element_disposes{};
   std::uint32_t timeout_ms{};
 };
 
@@ -41,9 +42,11 @@ Config arguments(int argc,char** argv) {
   if(argc<3 || argc%2!=1)
     throw std::invalid_argument(
       "usage: host --module FILE [--domain-id 0..230] "
-      "[--until-report-disposes 1..128] [--timeout-ms 1..600000]");
+      "[--until-report-disposes 1..128] [--until-element-disposes 1..4096] "
+      "[--timeout-ms 1..600000]");
   Config cfg;
-  bool seen_module=false,seen_domain=false,seen_until=false,seen_timeout=false;
+  bool seen_module=false,seen_domain=false,seen_until=false;
+  bool seen_elements=false,seen_timeout=false;
   for(int i=1;i<argc;i+=2) {
     const std::string key=argv[i], val=argv[i+1] ? argv[i+1] : "";
     if(key=="--module" && !seen_module) {
@@ -56,6 +59,11 @@ Config arguments(int argc,char** argv) {
       if(!cfg.until_report_disposes)
         throw std::invalid_argument("Report Dispose threshold must be positive");
       seen_until=true;
+    } else if(key=="--until-element-disposes" && !seen_elements) {
+      cfg.until_element_disposes=decimal(val,4096,"Element Dispose threshold");
+      if(!cfg.until_element_disposes)
+        throw std::invalid_argument("Element Dispose threshold must be positive");
+      seen_elements=true;
     } else if(key=="--timeout-ms" && !seen_timeout) {
       cfg.timeout_ms=decimal(val,600000,"timeout");
       if(!cfg.timeout_ms)
@@ -65,7 +73,7 @@ Config arguments(int argc,char** argv) {
   }
   if(!seen_module || cfg.module.empty())
     throw std::invalid_argument("Component DLL/SO is required");
-  if(seen_until && !seen_timeout)
+  if((seen_until || seen_elements) && !seen_timeout)
     throw std::invalid_argument("Dispose threshold requires bounded timeout");
   return cfg;
 }
@@ -88,8 +96,13 @@ int main(int argc,char** argv) {
     while(!interrupted) {
       const bool got=reader.poll_once();
       const auto& statistics=reader.stats();
-      if(config.until_report_disposes &&
-         statistics.report_disposes>=config.until_report_disposes &&
+      // Report and Collection Element are distinct keyed DDS Topics.
+      // Report Dispose alone does NOT prove all Element tombstones arrived.
+      if((config.until_report_disposes || config.until_element_disposes) &&
+         (!config.until_report_disposes ||
+          statistics.report_disposes>=config.until_report_disposes) &&
+         (!config.until_element_disposes ||
+          statistics.element_disposes>=config.until_element_disposes) &&
          reader.active_lists()==0 && business.active_sources()==0) break;
       if(config.timeout_ms &&
          std::chrono::steady_clock::now()-start>=
@@ -102,7 +115,9 @@ int main(int argc,char** argv) {
     if(business.faulted() || business.active_sources()!=0 ||
        reader.active_lists()!=0 || business.accepted()!=business.disposed() ||
        (config.until_report_disposes &&
-        statistics.report_disposes<config.until_report_disposes))
+        statistics.report_disposes<config.until_report_disposes) ||
+       (config.until_element_disposes &&
+        statistics.element_disposes<config.until_element_disposes))
       throw std::runtime_error("Battery Consumer Host has unresolved active state");
     reader.close();
     if(!module.stop())

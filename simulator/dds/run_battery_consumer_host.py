@@ -16,6 +16,8 @@ def invalid_cli(host, module):
         ["--module",module,"--domain-id","231"],
         ["--module",module,"--timeout-ms","0"],
         ["--module",module,"--until-report-disposes","2"],
+        ["--module",module,"--until-element-disposes","4"],
+        ["--module",module,"--until-element-disposes","0","--timeout-ms","1000"],
         ["--module",module,"--module",module],
         ["--module",module,"--unknown","value"],
         ["--module","missing-battery-business-module-xyz"],
@@ -36,6 +38,7 @@ def main():
     host_process=subprocess.Popen([
         host,"--module",module,
         "--until-report-disposes","2",
+        "--until-element-disposes","4",
         "--timeout-ms","18000",
     ],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,env=os.environ.copy())
     try:

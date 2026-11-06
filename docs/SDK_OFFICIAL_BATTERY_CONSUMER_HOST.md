@@ -58,10 +58,12 @@ For deterministic supervised testing, use:
 
     umaa_official_battery_consumer_host \
       --module /path/to/component.so \
-      --until-report-disposes 2 --timeout-ms 18000
+      --until-report-disposes 2       --until-element-disposes 4       --timeout-ms 18000
 
-This requires a finite deadline, actual DDS Report Dispose events and
-zero active lists/sources. Success prints READY and STOPPED with actual
+This requires a finite deadline, actual DDS Report AND Collection Element
+Dispose events on their respective keyed Topics, and zero active lists/
+sources. Report Dispose does not prove that later Element tombstones
+were observed. Success prints READY and STOPPED with actual
 accepted, disposed, nativeReportDisposes and nativeElementDisposes counts.
 Invalid numeric options, duplicate flags, missing modules, missing
 genuine Dispose or rejected business callbacks fail nonzero.

@@ -923,3 +923,19 @@ diagnostic evidence.
   installed-SDK CMake build/smoke coverage under a **mocked original-byte
   verifier boundary**. Independent original bytes are not bundled in CI.
 
+
+## 2026-11-07 — BatteryStatus original DDS native Consumer Host
+
+- Added an optional executable for source-generated original Cyclone
+  BatteryStatus Report/Element Reader -> SDK Host Bridge -> arbitrary
+  exact-ABI-v2 business-only Consumer DLL/SO, instead of a fixed test
+  application in the business module itself.
+- Strict Service/schema/Consumer-role checks, domain/time-bound source
+  operation, actual native DDS and business Dispose statistics, and
+  failure on uncommitted/active sources at shutdown.
+- A SHA-verified original IDL ephemeral CI builds actual TypeSupport
+  and tests native two-source positive/poisoned checkpoint delivery
+  to a separately compiled business module. No original bytes committed.
+- Full mandatory QoS/official Component roles, native Generic Host,
+  cross-vendor runtime and UMAA conformance remain OPEN.
+

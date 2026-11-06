@@ -435,6 +435,10 @@ def main(argv=None):
     validate_cmd.add_argument(
         "--reference-component",
         help="validate source-backed public Component roles only; not QoS or conformance")
+    syscmd = commands.add_parser("system", help="validate multi-Component System topology (no deployment)")
+    sysactions = syscmd.add_subparsers(dest="system_action", required=True)
+    sysvalidate = sysactions.add_parser("validate")
+    sysvalidate.add_argument("--input", required=True, type=Path)
     ct = commands.add_parser("contract", help="inspect/export reviewed partial Service Contracts")
     ct_actions = ct.add_subparsers(dest="contract_action", required=True)
     export = ct_actions.add_parser("export")
@@ -481,6 +485,9 @@ def main(argv=None):
         elif args.cmd == "validate":
             print(json.dumps(check_project(args.project, args.reference_component),
                              sort_keys=True, indent=2))
+        elif args.cmd == "system":
+            from tools.umaa_system_model import validate_file
+            print(json.dumps(validate_file(args.input), sort_keys=True, indent=2))
         elif args.cmd == "contract":
             if args.contract_action == "export":
                 snapshot = contracts.create_snapshot()

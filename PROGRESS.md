@@ -785,3 +785,23 @@ diagnostic evidence.
   TypeSupport, native DDS Consumer reader ownership, full
   per-Component QoS, source GUID attestation or UMAA conformance
   claim; no original AUVSI source files committed.
+
+## 2026-11-06 — native DDS Deployment admission: structured source-gap gate (candidate)
+
+- Based on merged main 6330b997f94e97e3321f978641a1230cc641265b (PR #73).
+- Added a deterministic read-only Deployment admission report derived strictly
+  from the pinned minimal System Intent and existing Planner. It reports
+  individual original Operation-to-Topic/Flow, native Key/TypeSupport,
+  DDS Topic name, mandatory writer/reader QoS, lifecycle and independent
+  vendor wire-evidence obligations. Nothing is inferred from service naming.
+- Both CLI entrypoints return JSON plus **exit code 3** for blocked native
+  deployment, rather than making a valid topology appear executable.
+  Symlinks, stale Catalog/Manifest SHAs, invalid links, and injected
+  user QoS/endpoint fields retain the existing strict validator failures.
+- New SDK unit and subprocess CLI regressions. No real DDS entities, official
+  runtime code generation, production Studio wiring or certification.
+  CI and native regression results must be checked on the exact branch HEAD;
+  this entry alone is NOT a successful test claim.
+- Next: source-approved explicit Operation/Topic/Type/Key/QoS bindings with
+  exact original provenance plus native vendor construction/independent tests.
+

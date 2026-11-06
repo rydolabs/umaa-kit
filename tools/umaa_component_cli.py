@@ -441,6 +441,8 @@ def main(argv=None):
     sysvalidate.add_argument("--input", required=True, type=Path)
     sysplan = sysactions.add_parser("plan", help="derive read-only logical DDS endpoint preview")
     sysplan.add_argument("--input", required=True, type=Path)
+    sysdeploy = sysactions.add_parser("deployment-check", help="fail closed on missing original native DDS evidence")
+    sysdeploy.add_argument("--input", required=True, type=Path)
     ct = commands.add_parser("contract", help="inspect/export reviewed partial Service Contracts")
     ct_actions = ct.add_subparsers(dest="contract_action", required=True)
     export = ct_actions.add_parser("export")
@@ -491,10 +493,15 @@ def main(argv=None):
             if args.system_action == "validate":
                 from tools.umaa_system_model import validate_file
                 report = validate_file(args.input)
-            else:
+            elif args.system_action == "plan":
                 from tools.umaa_system_planner import plan_file
                 report = plan_file(args.input)
+            else:
+                from tools.umaa_dds_deployment import assess_file
+                report = assess_file(args.input)
             print(json.dumps(report, sort_keys=True, indent=2))
+            if args.system_action == "deployment-check":
+                return 3
         elif args.cmd == "contract":
             if args.contract_action == "export":
                 snapshot = contracts.create_snapshot()

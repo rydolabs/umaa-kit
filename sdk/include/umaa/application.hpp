@@ -252,6 +252,8 @@ public:
   Application():host_(std::make_shared<internal::ComponentRuntime>()){}
   static Application from_config(const std::string& config_path) {
     auto config=internal::RuntimeConfig::read(config_path);
+    if(!config.report_publishers.empty())
+      throw std::invalid_argument("scheduled Report publishers require umaa_component_host");
     Application app;
     app.use_backend(config.backend,config.domain_id);
     app.host_->set_qos_profiles(config.qos_profiles);

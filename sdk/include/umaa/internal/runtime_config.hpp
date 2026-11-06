@@ -17,9 +17,18 @@
 #include <vector>
 namespace umaa::internal {
 struct RuntimeConfig {
+  struct ReportPublisherConfig {
+    std::string service_id;
+    std::string topic_name;
+    std::string schema_id;
+    std::string qos_profile;
+    std::string instance_key;
+    uint32_t interval_ms{};
+  };
   std::string backend;
   uint32_t domain_id{};
   std::vector<std::string> modules;
+  std::vector<ReportPublisherConfig> report_publishers;
   std::unordered_map<std::string, umaa::qos::Policy> qos_profiles;
   static std::string trim(std::string s) {
     auto keep=[](unsigned char c){return !std::isspace(c);};
@@ -42,10 +51,16 @@ struct RuntimeConfig {
     std::ifstream in(filename);
     if(!in)throw std::runtime_error("cannot open UMAA runtime configuration");
     const auto root=std::filesystem::absolute(filename).parent_path();
-    enum class Section { None, Middleware, Modules, QoS } section=Section::None;
+    enum class Section { None, Middleware, Modules, QoS, ReportPublishers } section=Section::None;
     std::string selected_qos;
     std::unordered_set<std::string> qos_fields;
     bool qos_section_seen=false;
+    bool publisher_section_seen=false;
+    std::unordered_set<std::string> publisher_fields;
+    auto complete_publisher=[&] {
+      if(!publisher_fields.empty() && publisher_fields.size()!=6)
+        throw std::invalid_argument("incomplete Report publisher binding");
+    };
     bool backend_set=false,domain_set=false;
     std::unordered_set<std::string> modules_seen;
     RuntimeConfig cfg;
@@ -56,12 +71,67 @@ struct RuntimeConfig {
         throw std::invalid_argument("UMAA configuration size limit exceeded");
       if(!line.empty()&&line.back()=='\r')line.pop_back();
       if(trim(line).empty()||trim(line)[0]=='#')continue;
+      if(line=="middleware:" || line=="modules:" || line=="qos_profiles:" ||
+         line=="report_publishers:"){
+        if(section==Section::ReportPublishers)complete_publisher();
+      }
       if(line=="middleware:"){section=Section::Middleware;continue;}
       if(line=="modules:"){section=Section::Modules;continue;}
+      if(line=="report_publishers:"){
+        if(publisher_section_seen)
+          throw std::invalid_argument("duplicate Report publisher section");
+        publisher_section_seen=true;
+        section=Section::ReportPublishers;
+        continue;
+      }
       if(line=="qos_profiles:"){
         if(qos_section_seen)throw std::invalid_argument("duplicate QoS profiles section");
         qos_section_seen=true;
         section=Section::QoS;continue;
+      }
+      if(section==Section::ReportPublishers){
+        // Fixed small YAML subset: one 2-space "- service: ...", followed
+        // by five 4-space settings. No implicit Topic or QoS guesses.
+        if(line.rfind("  - ",0)==0) {
+          complete_publisher();
+          if(cfg.report_publishers.size()>=32)
+            throw std::invalid_argument("too many Report publishers");
+          cfg.report_publishers.emplace_back();
+          publisher_fields.clear();
+          if(line.rfind("  - service:",0)!=0)
+            throw std::invalid_argument("Report publisher must start with service");
+          cfg.report_publishers.back().service_id=value(line.substr(12));
+          publisher_fields.insert("service");
+          continue;
+        }
+        if(line.rfind("    ",0)!=0 || line.rfind("     ",0)==0 ||
+           cfg.report_publishers.empty())
+          throw std::invalid_argument("invalid Report publisher indentation");
+        const auto item=line.substr(4);
+        const auto colon=item.find(':');
+        if(colon==std::string::npos)
+          throw std::invalid_argument("invalid Report publisher setting");
+        const auto key=trim(item.substr(0,colon)), v=value(item.substr(colon+1));
+        if(!publisher_fields.insert(key).second)
+          throw std::invalid_argument("duplicate Report publisher setting");
+        auto& pub=cfg.report_publishers.back();
+        if(key=="topic")pub.topic_name=v;
+        else if(key=="schema")pub.schema_id=v;
+        else if(key=="qos")pub.qos_profile=v;
+        else if(key=="key")pub.instance_key=v;
+        else if(key=="interval_ms"){
+          uint32_t n=0;
+          for(unsigned char ch:v){
+            if(!std::isdigit(ch) || n>3600000u/10)
+              throw std::invalid_argument("invalid Report interval");
+            n=n*10+static_cast<uint32_t>(ch-'0');
+            if(n>3600000u)
+              throw std::invalid_argument("Report interval exceeds one hour");
+          }
+          if(n==0)throw std::invalid_argument("Report interval must be positive");
+          pub.interval_ms=n;
+        }else throw std::invalid_argument("unknown Report publisher field");
+        continue;
       }
       if(section==Section::QoS){
         if(line.rfind("  ",0)==0 && line.rfind("   ",0)!=0){
@@ -151,6 +221,7 @@ struct RuntimeConfig {
       }else throw std::invalid_argument("configuration entry outside a section");
     }
     if(!in.eof()&&in.fail())throw std::runtime_error("configuration read failed");
+    if(section==Section::ReportPublishers)complete_publisher();
     if(!backend_set||!domain_set)throw std::invalid_argument("DDS backend and domain_id required");
     for(const auto& entry:cfg.qos_profiles)umaa::qos::validate(entry.second);
     return cfg;

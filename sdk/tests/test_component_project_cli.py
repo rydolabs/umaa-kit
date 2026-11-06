@@ -5,8 +5,11 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 from tools import umaa_component_cli as cli
+from tools import umaa_battery_preview_component_codegen as battery_preview
+from tools import umaa_eo_original_evidence as eo_original
 
 
 class ComponentCliTest(unittest.TestCase):
@@ -138,6 +141,54 @@ class ComponentCliTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.project / "generated/component_entry.cpp").exists())
 
+
+    def test_host_config_from_generated_component_is_user_owned_and_strict(self):
+        self.create()
+        cli.generate(self.project)
+        module = self.root / "libengine.so"
+        backend = self.root / "libtest-dds.so"
+        module.write_bytes(b"mock executable module path (not loaded here)")
+        backend.write_bytes(b"mock plugin path (not loaded here)")
+        config = self.root / "host.yml"
+        output = cli.generate_host_config(
+            self.project, backend, module, config, 91, "vehicle-a", 25)
+        self.assertEqual(output, config)
+        text = config.read_text(encoding="utf-8")
+        self.assertIn("  backend: ", text)
+        self.assertIn("  domain_id: 91", text)
+        self.assertIn("Demo::EO::BatteryStatus", text)
+        self.assertIn("    topic: demo/BatteryStatus", text)
+        self.assertIn("    interval_ms: 25", text)
+        self.assertIn(module.resolve().as_posix(), text)
+        before = config.read_bytes()
+        cli.generate(self.project)
+        self.assertEqual(config.read_bytes(), before)
+        with self.assertRaisesRegex(cli.ProjectError, "no overwrite"):
+            cli.generate_host_config(
+                self.project, backend, module, config, 91, "vehicle-a", 25)
+        for key, domain, interval in [
+            ("", 91, 25), ("bad key", 91, 25), ("valid", -1, 25),
+            ("valid", 231, 25), ("valid", 91, 0),
+            ("valid", 91, 3600001),
+        ]:
+            with self.subTest(key=key, domain=domain, interval=interval):
+                with self.assertRaises(cli.ProjectError):
+                    cli.generate_host_config(
+                        self.project, backend, module, self.root / "invalid.yml",
+                        domain, key, interval)
+        with self.assertRaisesRegex(cli.ProjectError, "ordinary file"):
+            cli.generate_host_config(
+                self.project, self.root / "missing", module,
+                self.root / "bad.yml", 91, "vehicle-a", 25)
+        other = self.root / "consumer-only"
+        cli.new("consumeronly", other)
+        cli.add(other, "Demo::EO::BatteryStatus", "consumer")
+        cli.generate(other)
+        with self.assertRaisesRegex(cli.ProjectError, "requires Demo Battery provider"):
+            cli.generate_host_config(
+                other, backend, module, self.root / "bad.yml", 91,
+                "vehicle-a", 25)
+
     @unittest.skipUnless(shutil.which("cmake") and shutil.which("ctest"),
                          "CMake and CTest are needed for an actual native module smoke")
     def test_installed_sdk_generated_module_build_and_load(self):
@@ -175,6 +226,34 @@ class ComponentCliTest(unittest.TestCase):
         cli.generate(both)
         cli.run_cmake(both, prefix)
         cli.run_test(both)
+
+
+        # Explicit official Battery Consumer host-preview MODULE can be built
+        # from source-pinned reviewed metadata and original-byte verification.
+        # CI does NOT have the original source bytes: mock ONLY that upstream
+        # boundary to verify native C++ generation, ABI and CTest behavior.
+        preview = self.root / "battery-preview"
+        cli.new("batterypreview", preview)
+        cli.add(preview, eo_original.BATTERY, "consumer")
+        original = eo_original.load_record(eo_original.BATTERY)
+        with mock.patch.object(
+                battery_preview.evidence, "verify_originals",
+                return_value={eo_original.BATTERY: original}):
+            battery_preview.generate(
+                preview, self.root / "external.zip", self.root / "external.pdf")
+        cli.run_cmake(preview, prefix)
+        cli.run_test(preview)
+        # User owns the business result. Even after switching from Rejected
+        # to Completed, generated ABI smoke must validate protocol framing
+        # without dictating the user's actual business policy.
+        handler = preview / "src/handlers/battery_status_consumer.hpp"
+        text = handler.read_text()
+        self.assertEqual(text.count("::umaa::Result::Rejected;"), 2)
+        handler.write_text(text.replace(
+            "::umaa::Result::Rejected;", "::umaa::Result::Completed;"))
+        cli.run_cmake(preview, prefix)
+        cli.run_test(preview)
+
 
 
 if __name__ == "__main__":

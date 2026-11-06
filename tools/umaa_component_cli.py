@@ -402,6 +402,68 @@ def generate(project):
                "The official UMAA 6.0 wire contract is NOT generated.\n")
 
 
+
+def generate_host_config(project: Path, backend: Path, module: Path, output: Path,
+                         domain_id: int, instance_key: str,
+                         interval_ms: int) -> Path:
+    """Create a strict, runnable Host config for the synthetic Report demo.
+
+    Deliberately not a normative UMAA ServiceBinding exporter. The caller
+    supplies the already-built DLL/SO and installed DDS plugin paths.
+    """
+    manifest = validate(read(project), nonempty=True)
+    roles = {(item["id"], item["role"]) for item in manifest["services"]}
+    if ("Demo::EO::BatteryStatus", "provider") not in roles:
+        raise ProjectError("Host Report requires Demo Battery provider in Component")
+    if any(service not in DEMO for service, _ in roles):
+        raise ProjectError("official Service Runtime is not source-approved")
+    if not (project / "CMakeLists.txt").is_file():
+        raise ProjectError("generate/build the Component before Host configuration")
+    if type(domain_id) is not int or not 0 <= domain_id <= 230:
+        raise ProjectError("DDS domain must be in range 0..230")
+    if type(interval_ms) is not int or not 1 <= interval_ms <= 3600000:
+        raise ProjectError("Report interval must be 1..3600000 ms")
+    if not isinstance(instance_key, str) or not re.fullmatch(
+            r"[A-Za-z0-9_.:-]{1,128}", instance_key):
+        raise ProjectError("invalid Report instance key")
+
+    def native_file(path: Path, kind: str) -> str:
+        if path.is_symlink() or not path.is_file():
+            raise ProjectError(kind + " must be an existing ordinary file")
+        name = path.resolve().as_posix()
+        if '"' in name or "\n" in name or "\r" in name:
+            raise ProjectError(kind + " path cannot be safely represented")
+        return name
+
+    backend_path = native_file(backend, "DDS backend plugin")
+    module_path = native_file(module, "Component module")
+    if module.suffix.lower() not in (".so", ".dll", ".dylib"):
+        raise ProjectError("Component module must be a DLL or SO")
+    content = (
+        'middleware:\n'
+        f'  backend: "{backend_path}"\n'
+        f'  domain_id: {domain_id}\n'
+        'modules:\n'
+        f'  - "{module_path}"\n'
+        'report_publishers:\n'
+        '  - service: Demo::EO::BatteryStatus\n'
+        '    topic: demo/BatteryStatus\n'
+        '    schema: demo:battery-v1\n'
+        '    qos: demo-reliable\n'
+        f'    key: {instance_key}\n'
+        f'    interval_ms: {interval_ms}\n'
+    )
+    # Config is user-owned. Re-running codegen must not silently overwrite it.
+    if output.is_symlink():
+        raise ProjectError("refusing symlink Host configuration")
+    try:
+        with output.open("x", encoding="utf-8") as destination:
+            destination.write(content)
+    except FileExistsError as exc:
+        raise ProjectError("Host configuration already exists (no overwrite)") from exc
+    return output
+
+
 def run_cmake(project, prefix):
     if not prefix.is_dir() or not (project / "CMakeLists.txt").is_file():
         raise ProjectError("installed SDK prefix or generated CMake project missing")
@@ -441,6 +503,12 @@ def main(argv=None):
     sysvalidate.add_argument("--input", required=True, type=Path)
     sysplan = sysactions.add_parser("plan", help="derive read-only logical DDS endpoint preview")
     sysplan.add_argument("--input", required=True, type=Path)
+    sysdeploy = sysactions.add_parser("deployment-check", help="fail closed on missing original native DDS evidence")
+    sysdeploy.add_argument("--input", required=True, type=Path)
+    sysdeploy.add_argument("--original-idl-zip", type=Path,
+                           help="original, SHA-pinned AUVSI 6.0 IDL ZIP (optional)")
+    sysdeploy.add_argument("--original-eo-icd", type=Path,
+                           help="original, SHA-pinned EO ICD 6.0 PDF (optional)")
     ct = commands.add_parser("contract", help="inspect/export reviewed partial Service Contracts")
     ct_actions = ct.add_subparsers(dest="contract_action", required=True)
     export = ct_actions.add_parser("export")
@@ -467,6 +535,19 @@ def main(argv=None):
     g.add_argument("--runtime-key", help="int32 Report native Key member")
     g.add_argument("--runtime-value", help="int32 Report native data member")
     g.add_argument("--runtime-schema", help="explicit Report schema identity")
+    g.add_argument("--battery-host-preview", action="store_true",
+                   help="explicit official BatteryStatus Consumer host-only DLL/SO; requires originals")
+    h = commands.add_parser("host-config",
+                            help="generate strict synthetic Report Host configuration")
+    h.add_argument("--project", required=True, type=Path)
+    h.add_argument("--module", required=True, type=Path,
+                   help="built generated Component DLL/SO")
+    h.add_argument("--backend", required=True, type=Path,
+                   help="native DDS ABI plugin library")
+    h.add_argument("--output", required=True, type=Path)
+    h.add_argument("--domain-id", type=int, default=0)
+    h.add_argument("--instance-key", required=True)
+    h.add_argument("--interval-ms", type=int, default=100)
     b = commands.add_parser("build")
     b.add_argument("--project", type=Path, default=Path("."))
     b.add_argument("--sdk-prefix", required=True, type=Path)
@@ -491,10 +572,17 @@ def main(argv=None):
             if args.system_action == "validate":
                 from tools.umaa_system_model import validate_file
                 report = validate_file(args.input)
-            else:
+            elif args.system_action == "plan":
                 from tools.umaa_system_planner import plan_file
                 report = plan_file(args.input)
+            else:
+                from tools.umaa_dds_deployment import assess_file
+                report = assess_file(args.input,
+                    official_idl_zip=args.original_idl_zip,
+                    official_eo_icd=args.original_eo_icd)
             print(json.dumps(report, sort_keys=True, indent=2))
+            if args.system_action == "deployment-check":
+                return 3
         elif args.cmd == "contract":
             if args.contract_action == "export":
                 snapshot = contracts.create_snapshot()
@@ -504,7 +592,17 @@ def main(argv=None):
                 snapshot = contracts.read_snapshot(args.input)
                 print(json.dumps(contracts.validate_snapshot(snapshot), sort_keys=True))
         elif args.cmd == "generate":
-            if args.idl_root or args.idl_binding or args.backend or args.idl_archive or args.runtime_report or args.runtime_key or args.runtime_value or args.runtime_schema:
+            if args.battery_host_preview:
+                if (args.yaml or args.idl or args.idl_root or args.idl_binding or
+                        args.backend or args.runtime_report or args.runtime_key or
+                        args.runtime_value or args.runtime_schema or args.fixture):
+                    raise ProjectError("Battery host preview cannot combine with other generators")
+                if not args.idl_archive or not args.original_icd:
+                    raise ProjectError("Battery host preview requires --idl-archive and --original-icd")
+                from tools.umaa_battery_preview_component_codegen import generate as generate_preview
+                print(json.dumps(generate_preview(
+                    args.project, args.idl_archive, args.original_icd), sort_keys=True))
+            elif args.idl_root or args.idl_binding or args.backend or args.idl_archive or args.runtime_report or args.runtime_key or args.runtime_value or args.runtime_schema:
                 if not args.yaml or not args.idl_root or not args.idl_binding or args.idl:
                     raise ProjectError("native ICD codegen requires --yaml, --idl-root and explicit --idl-binding; no --idl")
                 from tools.umaa_icd_component_codegen import generate_native as native_project
@@ -534,6 +632,11 @@ def main(argv=None):
                      sort_keys=True))
             else:
                 generate(args.project)
+        elif args.cmd == "host-config":
+            path = generate_host_config(
+                args.project, args.backend, args.module, args.output,
+                args.domain_id, args.instance_key, args.interval_ms)
+            print(json.dumps({"hostConfig": str(path)}, sort_keys=True))
         elif args.cmd == "build":
             run_cmake(args.project, args.sdk_prefix)
         elif args.cmd == "test":

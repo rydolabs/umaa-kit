@@ -111,3 +111,10 @@ existing C++ Component CTests. The production DDS deployment planner still
 requires verified Operation/Topic/Type/Key/QoS bindings, native
 Endpoint construction, controlled override precedence, completeness
 checks, deployment provenance, and actual vendor wire tests.
+
+## Native deployment admission follow-up
+
+A separate fail-closed [Deployment admission v1](DDS_DEPLOYMENT_ADMISSION_V1.md)
+reports exact missing source obligations without converting this design
+preview to runnable DDS. `system deployment-check --input` returns exit 3
+when original native binding evidence is missing.

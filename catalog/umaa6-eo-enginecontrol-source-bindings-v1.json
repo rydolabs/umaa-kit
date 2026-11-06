@@ -1,0 +1,101 @@
+{
+  "kind": "umaa-source-pinned-service-bindings",
+  "schemaVersion": "1",
+  "scope": "EO EngineControl literal source mapping; not approved native deployment",
+  "service": "UMAA::EO::EngineControl",
+  "sources": {
+    "icd": {
+      "document": "UMAA-SPEC-EOICD",
+      "version": "6.0",
+      "sha256": "47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453",
+      "pages": [
+        55,
+        56
+      ]
+    },
+    "idlArchive": {
+      "version": "6.0",
+      "sha256": "15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08"
+    }
+  },
+  "topics": [
+    {
+      "topicId": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+      "idlType": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+      "ddsTopicName": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+      "idlPath": "UMAA/EO/EngineControl/EngineCommandAckReportType.idl",
+      "idlSha256": "6a38a6b0074f88dac5059ea1af1204366dc43b6948575bbeb0b6bdda6b7e723b",
+      "keyFields": [
+        "source",
+        "sessionID"
+      ],
+      "writerRole": "provider",
+      "icdPage": 56
+    },
+    {
+      "topicId": "UMAA::EO::EngineControl::EngineCommandStatusType",
+      "idlType": "UMAA::EO::EngineControl::EngineCommandStatusType",
+      "ddsTopicName": "UMAA::EO::EngineControl::EngineCommandStatusType",
+      "idlPath": "UMAA/EO/EngineControl/EngineCommandStatusType.idl",
+      "idlSha256": "bd70cf804985ae172e51635722597b99217ac65eca0be36222b02707f4a5e83f",
+      "keyFields": [
+        "source",
+        "sessionID"
+      ],
+      "writerRole": "provider",
+      "icdPage": 56
+    },
+    {
+      "topicId": "UMAA::EO::EngineControl::EngineCommandType",
+      "idlType": "UMAA::EO::EngineControl::EngineCommandType",
+      "ddsTopicName": "UMAA::EO::EngineControl::EngineCommandType",
+      "idlPath": "UMAA/EO/EngineControl/EngineCommandType.idl",
+      "idlSha256": "399177418274f7492f4493d6e154492bce9b4e24083ed3f19e91b79ab4d9a119",
+      "keyFields": [
+        "source",
+        "sessionID",
+        "destination"
+      ],
+      "writerRole": "consumer",
+      "icdPage": 56
+    }
+  ],
+  "operations": [
+    {
+      "name": "setEngine",
+      "topicId": "UMAA::EO::EngineControl::EngineCommandType",
+      "action": "write",
+      "actor": "consumer",
+      "icdPage": 56
+    },
+    {
+      "name": "queryEngineCommandAck",
+      "topicId": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+      "action": "subscribe",
+      "actor": "consumer",
+      "icdPage": 55
+    },
+    {
+      "name": "cancelEngineCommand",
+      "topicId": "UMAA::EO::EngineControl::EngineCommandType",
+      "action": "dispose",
+      "actor": "consumer",
+      "icdPage": 55
+    },
+    {
+      "name": "reportEngineCommandStatus",
+      "topicId": "UMAA::EO::EngineControl::EngineCommandStatusType",
+      "action": "write",
+      "actor": "provider",
+      "icdPage": 56
+    },
+    {
+      "name": "reportEngineCommandAck",
+      "topicId": "UMAA::EO::EngineControl::EngineCommandAckReportType",
+      "action": "write",
+      "actor": "provider",
+      "icdPage": 56
+    }
+  ],
+  "collectionTopics": []
+}

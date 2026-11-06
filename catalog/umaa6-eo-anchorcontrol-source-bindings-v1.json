@@ -1,0 +1,100 @@
+{
+  "kind": "umaa-source-pinned-service-bindings",
+  "schemaVersion": "1",
+  "scope": "EO AnchorControl literal source mapping; not approved native deployment",
+  "service": "UMAA::EO::AnchorControl",
+  "sources": {
+    "icd": {
+      "document": "UMAA-SPEC-EOICD",
+      "version": "6.0",
+      "sha256": "47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453",
+      "pages": [
+        50,
+        51
+      ]
+    },
+    "idlArchive": {
+      "version": "6.0",
+      "sha256": "15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08"
+    }
+  },
+  "topics": [
+    {
+      "topicId": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+      "idlType": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+      "ddsTopicName": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+      "idlPath": "UMAA/EO/AnchorControl/AnchorCommandAckReportType.idl",
+      "idlSha256": "828ee7973f0901c37f5e3fa9953f6af26a860f72e9f67168ca9632bc2a2f39e9",
+      "keyFields": [
+        "source",
+        "sessionID"
+      ],
+      "writerRole": "provider",
+      "icdPage": 50
+    },
+    {
+      "topicId": "UMAA::EO::AnchorControl::AnchorCommandStatusType",
+      "idlType": "UMAA::EO::AnchorControl::AnchorCommandStatusType",
+      "ddsTopicName": "UMAA::EO::AnchorControl::AnchorCommandStatusType",
+      "idlPath": "UMAA/EO/AnchorControl/AnchorCommandStatusType.idl",
+      "idlSha256": "55444ab08774be86169d243a76362f81833a21ec4e78352404e81ee4538d3b2a",
+      "keyFields": [
+        "source",
+        "sessionID"
+      ],
+      "writerRole": "provider",
+      "icdPage": 51
+    },
+    {
+      "topicId": "UMAA::EO::AnchorControl::AnchorCommandType",
+      "idlType": "UMAA::EO::AnchorControl::AnchorCommandType",
+      "ddsTopicName": "UMAA::EO::AnchorControl::AnchorCommandType",
+      "idlPath": "UMAA/EO/AnchorControl/AnchorCommandType.idl",
+      "idlSha256": "2bb1a684c2872da59f3eb6d28dfd8e5f80f06c5a2bab50b5cd93495531d0acfc",
+      "keyFields": [
+        "source",
+        "sessionID",
+        "destination"
+      ],
+      "writerRole": "consumer",
+      "icdPage": 51
+    }
+  ],
+  "operations": [
+    {
+      "name": "reportAnchorCommandAck",
+      "topicId": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+      "action": "write",
+      "actor": "provider",
+      "icdPage": 50
+    },
+    {
+      "name": "reportAnchorCommandStatus",
+      "topicId": "UMAA::EO::AnchorControl::AnchorCommandStatusType",
+      "action": "write",
+      "actor": "provider",
+      "icdPage": 51
+    },
+    {
+      "name": "setAnchor",
+      "topicId": "UMAA::EO::AnchorControl::AnchorCommandType",
+      "action": "write",
+      "actor": "consumer",
+      "icdPage": 51
+    },
+    {
+      "name": "queryAnchorCommandAck",
+      "topicId": "UMAA::EO::AnchorControl::AnchorCommandAckReportType",
+      "action": "subscribe",
+      "actor": "consumer",
+      "icdPage": 50
+    },
+    {
+      "name": "cancelAnchorCommand",
+      "topicId": "UMAA::EO::AnchorControl::AnchorCommandType",
+      "action": "dispose",
+      "actor": "consumer",
+      "icdPage": 50
+    }
+  ]
+}

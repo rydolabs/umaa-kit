@@ -785,3 +785,141 @@ diagnostic evidence.
   TypeSupport, native DDS Consumer reader ownership, full
   per-Component QoS, source GUID attestation or UMAA conformance
   claim; no original AUVSI source files committed.
+
+## 2026-11-06 — native DDS Deployment admission: structured source-gap gate (candidate)
+
+- Based on merged main 6330b997f94e97e3321f978641a1230cc641265b (PR #73).
+- Added a deterministic read-only Deployment admission report derived strictly
+  from the pinned minimal System Intent and existing Planner. It reports
+  individual original Operation-to-Topic/Flow, native Key/TypeSupport,
+  DDS Topic name, mandatory writer/reader QoS, lifecycle and independent
+  vendor wire-evidence obligations. Nothing is inferred from service naming.
+- Both CLI entrypoints return JSON plus **exit code 3** for blocked native
+  deployment, rather than making a valid topology appear executable.
+  Symlinks, stale Catalog/Manifest SHAs, invalid links, and injected
+  user QoS/endpoint fields retain the existing strict validator failures.
+- New SDK unit and subprocess CLI regressions. No real DDS entities, official
+  runtime code generation, production Studio wiring or certification.
+  CI and native regression results must be checked on the exact branch HEAD;
+  this entry alone is NOT a successful test claim.
+- Next: source-approved explicit Operation/Topic/Type/Key/QoS bindings with
+  exact original provenance plus native vendor construction/independent tests.
+
+## 2026-11-06 — EO AnchorControl original source-recheck bindings (PR #74 follow-up)
+
+- Source review: AUVSI EO ICD v6.0 SHA-256
+  47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453,
+  §6.1 pp. 50–51. Original UMAA 6.0 IDL ZIP SHA-256
+  15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08.
+- Reviewed the three literal AnchorControl DDS Topic constant values and
+  exact @key annotations. Command has source/sessionID/destination; Ack
+  and Status have source/sessionID. Five operations map to three Topics:
+  reports / set write; query subscribes to Ack; cancel disposes Command.
+- Added independently callable exact-source verifier with no original source
+  redistribution; optional dual source paths on both deployment check CLIs.
+- Even after source recheck, QoS/vendor profiles, native lifecycle completeness,
+  actual official runtime, independent exact-build wire evidence and UMAA
+  conformance remain BLOCKED. Catalog flags unchanged; PR remains Draft.
+- CI without supplied ZIP/PDF validates schema, negative gates, projections
+  and backward-compatible no-evidence output only. Exact original files are
+  manually byte-checked for this scoped evidence and must NOT be committed.
+
+
+## 2026-11-06 — EO BatteryStatus and EngineControl original evidence expansion
+
+- Continued PR #74 from AnchorControl-only source admission. Verified
+  original EO ICD 6.0 §6.1.5 pp54–55 and §6.1.6 pp55–56, and original
+  UMAA IDL ZIP source digests for BatteryReport and the three Engine
+  Command/Ack/Status IDL types.
+- BatteryStatus has a **second Collection Element DDS Topic** in the same
+  BatteryReportType.idl, with listID/elementID keys, separate from the
+  Report's source key. EO §3.8.1 p14 requires Topic-scope ordered
+  PRESENTATION for Collection element publishers/subscribers; this
+  partial source rule is not a whole approved effective QoS profile.
+- Added exact reviewed source records and a separate source verifier for
+  these two Services; optional source-gated admission now projects
+  selected Service topics and operations without changing existing
+  Planner, native component lifecycle, or compilation.
+- No original PDF, ZIP, IDL bodies or vendor source are committed. Real
+  DDS runtime/effective QoS, Collection coherence/ownership and
+  complete official conformance remain BLOCKED and require
+  independently checked native tests.
+- Added targeted tests and CI checkpoints. Exact-head workflow results
+  must be examined before changing Draft/merge status.
+
+
+## 2026-11-06 — runnable Component Host process, synthetic Report integration
+
+- Re-centered development priority on SDK product end-to-end:
+  Component Manifest/Service → generated user Handler + CMake DLL/SO →
+  Host module load → DDS backend and lifecycle, not evidence reports alone.
+- Introduced installable \`umaa_component_host\` executable on top of the
+  existing ABI v2 Component Loader and shared \`UMAA::Runtime\`.
+- Strict \`report_publishers:\` configuration gives explicit Service,
+  Topic, Schema, QoS name, instance key and sampling interval. Host opens
+  persistent Report Writer, invokes business Handler periodically, propagates
+  async errors and shuts down via Dispose/ACK/close, keeping unsafe
+  completion statuses visible.
+- Generated business Handler defaults remain fail-safe; host currently
+  admits only known synthetic Demo Battery binding and fails closed for
+  \`UMAA::\` identifiers and guessed wire mappings.
+- New CTest executes the real process with a real DLL/SO and mock backend,
+  including negative cases. Mock backend is in-process only; official
+  per-Service runtime/native QoS and independent vendor proof remain OPEN.
+- Check exact-head Linux, Windows and DDS vendor CI before merge.
+
+## 2026-11-06 — generated Component Host configuration CLI
+
+- Added \`host-config\` subcommand on Component CLI, consuming checked
+  Manifest roles and actual built DLL/SO and backend plugin file paths.
+  Produces complete strict Host YAML, with validated Domain, instance key
+  and publish interval, only for the approved synthetic Battery Provider.
+- Config is user-owned: cannot be silently overwritten, missing/bogus
+  module paths or official Service identities are rejected.
+- Added Python negative and regeneration tests.
+- Source-backed native UMAA ServiceBinding and complete Host operations
+  remain OPEN; verify exact-head SDK and vendor CI before merging.
+
+
+## 2026-11-06 — generated business DLL/SO to executable Host E2E
+
+- Added CTest `umaa_generated_component_host_v1_e2e` to build the
+  **actual Component CLI output** against an installed SDK and launch
+  it through the standalone Host process using an SDK test backend.
+- The default unimplemented Report Handler must fail nonzero.
+  Changing only user-owned `read()` then rebuilding must yield Host
+  READY→STOPPED; regeneration must not overwrite the business edit.
+- Mock DDS endpoint is not real wire. Official Service TypeSupport,
+  effective per-Component QoS, full Command/Collection Host dispatcher
+  and release conformance are still OPEN.
+
+## 2026-11-06 — generated Host E2E Windows build-config recovery
+
+- Windows CI was Debug but the new generated Host E2E installed Release,
+  causing a missing `Release/umaa_component_host.exe` file. Fixed
+  CTest to pass `$<CONFIG>` to the test and install the actual SDK
+  build configuration. No runtime fallback or assertion weakening.
+- Re-run exact-head Linux/Windows E2E and required vendor CI.
+
+
+## 2026-11-07 — official BatteryStatus Consumer SDK module generation
+
+- Added an explicit `generate --battery-host-preview` path requiring
+  BOTH exact EO ICD v6.0 PDF and original 594-file IDL ZIP. Source
+  bytes are checked first by the existing independently pinned verifier.
+- User-selected Component Manifest must contain exactly one
+  `UMAA::EO::BatteryStatus` Consumer with a current reviewed Catalog
+  SHA; non-consumer roles and unreviewed extra Services are blocked.
+- Generator writes C++17 source-pinned ServiceBinding (Report and
+  Collection Element Topic names/keys, two Operation intentions, minimum
+  element ordered TOPIC Presentation), ABI-v2 `Component::consume`
+  entrypoint, user-owned `on_report/on_dispose` Handler and CMake DLL/SO
+  plus negative ABI smoke CTest.
+- Host payload type explicitly remains `BatteryStatusHostPreview`,
+  NOT original DDS CDR and NOT standalone Host official auto-binding.
+  Full normative QoS/Component roles/native production runtime remain
+  OPEN and compiler metadata holds `nativeDdsRuntimeApproved=false`.
+- Added unit tamper/role/source/overwrite tests and Linux/Windows
+  installed-SDK CMake build/smoke coverage under a **mocked original-byte
+  verifier boundary**. Independent original bytes are not bundled in CI.
+

@@ -868,3 +868,15 @@ diagnostic evidence.
   per-Service runtime/native QoS and independent vendor proof remain OPEN.
 - Check exact-head Linux, Windows and DDS vendor CI before merge.
 
+## 2026-11-06 — generated Component Host configuration CLI
+
+- Added \`host-config\` subcommand on Component CLI, consuming checked
+  Manifest roles and actual built DLL/SO and backend plugin file paths.
+  Produces complete strict Host YAML, with validated Domain, instance key
+  and publish interval, only for the approved synthetic Battery Provider.
+- Config is user-owned: cannot be silently overwritten, missing/bogus
+  module paths or official Service identities are rejected.
+- Added Python negative and regeneration tests.
+- Source-backed native UMAA ServiceBinding and complete Host operations
+  remain OPEN; verify exact-head SDK and vendor CI before merging.
+

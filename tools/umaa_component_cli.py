@@ -402,6 +402,68 @@ def generate(project):
                "The official UMAA 6.0 wire contract is NOT generated.\n")
 
 
+
+def generate_host_config(project: Path, backend: Path, module: Path, output: Path,
+                         domain_id: int, instance_key: str,
+                         interval_ms: int) -> Path:
+    """Create a strict, runnable Host config for the synthetic Report demo.
+
+    Deliberately not a normative UMAA ServiceBinding exporter. The caller
+    supplies the already-built DLL/SO and installed DDS plugin paths.
+    """
+    manifest = validate(read(project), nonempty=True)
+    roles = {(item["id"], item["role"]) for item in manifest["services"]}
+    if ("Demo::EO::BatteryStatus", "provider") not in roles:
+        raise ProjectError("Host Report requires Demo Battery provider in Component")
+    if any(service not in DEMO for service, _ in roles):
+        raise ProjectError("official Service Runtime is not source-approved")
+    if not (project / "CMakeLists.txt").is_file():
+        raise ProjectError("generate/build the Component before Host configuration")
+    if type(domain_id) is not int or not 0 <= domain_id <= 230:
+        raise ProjectError("DDS domain must be in range 0..230")
+    if type(interval_ms) is not int or not 1 <= interval_ms <= 3600000:
+        raise ProjectError("Report interval must be 1..3600000 ms")
+    if not isinstance(instance_key, str) or not re.fullmatch(
+            r"[A-Za-z0-9_.:-]{1,128}", instance_key):
+        raise ProjectError("invalid Report instance key")
+
+    def native_file(path: Path, kind: str) -> str:
+        if path.is_symlink() or not path.is_file():
+            raise ProjectError(kind + " must be an existing ordinary file")
+        name = path.resolve().as_posix()
+        if '"' in name or "\n" in name or "\r" in name:
+            raise ProjectError(kind + " path cannot be safely represented")
+        return name
+
+    backend_path = native_file(backend, "DDS backend plugin")
+    module_path = native_file(module, "Component module")
+    if module.suffix.lower() not in (".so", ".dll", ".dylib"):
+        raise ProjectError("Component module must be a DLL or SO")
+    content = (
+        'middleware:\n'
+        f'  backend: "{backend_path}"\n'
+        f'  domain_id: {domain_id}\n'
+        'modules:\n'
+        f'  - "{module_path}"\n'
+        'report_publishers:\n'
+        '  - service: Demo::EO::BatteryStatus\n'
+        '    topic: demo/BatteryStatus\n'
+        '    schema: demo:battery-v1\n'
+        '    qos: demo-reliable\n'
+        f'    key: {instance_key}\n'
+        f'    interval_ms: {interval_ms}\n'
+    )
+    # Config is user-owned. Re-running codegen must not silently overwrite it.
+    if output.is_symlink():
+        raise ProjectError("refusing symlink Host configuration")
+    try:
+        with output.open("x", encoding="utf-8") as destination:
+            destination.write(content)
+    except FileExistsError as exc:
+        raise ProjectError("Host configuration already exists (no overwrite)") from exc
+    return output
+
+
 def run_cmake(project, prefix):
     if not prefix.is_dir() or not (project / "CMakeLists.txt").is_file():
         raise ProjectError("installed SDK prefix or generated CMake project missing")
@@ -473,6 +535,17 @@ def main(argv=None):
     g.add_argument("--runtime-key", help="int32 Report native Key member")
     g.add_argument("--runtime-value", help="int32 Report native data member")
     g.add_argument("--runtime-schema", help="explicit Report schema identity")
+    h = commands.add_parser("host-config",
+                            help="generate strict synthetic Report Host configuration")
+    h.add_argument("--project", required=True, type=Path)
+    h.add_argument("--module", required=True, type=Path,
+                   help="built generated Component DLL/SO")
+    h.add_argument("--backend", required=True, type=Path,
+                   help="native DDS ABI plugin library")
+    h.add_argument("--output", required=True, type=Path)
+    h.add_argument("--domain-id", type=int, default=0)
+    h.add_argument("--instance-key", required=True)
+    h.add_argument("--interval-ms", type=int, default=100)
     b = commands.add_parser("build")
     b.add_argument("--project", type=Path, default=Path("."))
     b.add_argument("--sdk-prefix", required=True, type=Path)
@@ -547,6 +620,11 @@ def main(argv=None):
                      sort_keys=True))
             else:
                 generate(args.project)
+        elif args.cmd == "host-config":
+            path = generate_host_config(
+                args.project, args.backend, args.module, args.output,
+                args.domain_id, args.instance_key, args.interval_ms)
+            print(json.dumps({"hostConfig": str(path)}, sort_keys=True))
         elif args.cmd == "build":
             run_cmake(args.project, args.sdk_prefix)
         elif args.cmd == "test":

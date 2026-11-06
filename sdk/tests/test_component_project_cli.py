@@ -138,6 +138,54 @@ class ComponentCliTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.project / "generated/component_entry.cpp").exists())
 
+
+    def test_host_config_from_generated_component_is_user_owned_and_strict(self):
+        self.create()
+        cli.generate(self.project)
+        module = self.root / "libengine.so"
+        backend = self.root / "libtest-dds.so"
+        module.write_bytes(b"mock executable module path (not loaded here)")
+        backend.write_bytes(b"mock plugin path (not loaded here)")
+        config = self.root / "host.yml"
+        output = cli.generate_host_config(
+            self.project, backend, module, config, 91, "vehicle-a", 25)
+        self.assertEqual(output, config)
+        text = config.read_text(encoding="utf-8")
+        self.assertIn("  backend: ", text)
+        self.assertIn("  domain_id: 91", text)
+        self.assertIn("Demo::EO::BatteryStatus", text)
+        self.assertIn("    topic: demo/BatteryStatus", text)
+        self.assertIn("    interval_ms: 25", text)
+        self.assertIn(module.resolve().as_posix(), text)
+        before = config.read_bytes()
+        cli.generate(self.project)
+        self.assertEqual(config.read_bytes(), before)
+        with self.assertRaisesRegex(cli.ProjectError, "no overwrite"):
+            cli.generate_host_config(
+                self.project, backend, module, config, 91, "vehicle-a", 25)
+        for key, domain, interval in [
+            ("", 91, 25), ("bad key", 91, 25), ("valid", -1, 25),
+            ("valid", 231, 25), ("valid", 91, 0),
+            ("valid", 91, 3600001),
+        ]:
+            with self.subTest(key=key, domain=domain, interval=interval):
+                with self.assertRaises(cli.ProjectError):
+                    cli.generate_host_config(
+                        self.project, backend, module, self.root / "invalid.yml",
+                        domain, key, interval)
+        with self.assertRaisesRegex(cli.ProjectError, "ordinary file"):
+            cli.generate_host_config(
+                self.project, self.root / "missing", module,
+                self.root / "bad.yml", 91, "vehicle-a", 25)
+        other = self.root / "consumer-only"
+        cli.new("consumeronly", other)
+        cli.add(other, "Demo::EO::BatteryStatus", "consumer")
+        cli.generate(other)
+        with self.assertRaisesRegex(cli.ProjectError, "requires Demo Battery provider"):
+            cli.generate_host_config(
+                other, backend, module, self.root / "bad.yml", 91,
+                "vehicle-a", 25)
+
     @unittest.skipUnless(shutil.which("cmake") and shutil.which("ctest"),
                          "CMake and CTest are needed for an actual native module smoke")
     def test_installed_sdk_generated_module_build_and_load(self):

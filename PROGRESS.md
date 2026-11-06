@@ -847,3 +847,24 @@ diagnostic evidence.
 - Added targeted tests and CI checkpoints. Exact-head workflow results
   must be examined before changing Draft/merge status.
 
+
+## 2026-11-06 — runnable Component Host process, synthetic Report integration
+
+- Re-centered development priority on SDK product end-to-end:
+  Component Manifest/Service → generated user Handler + CMake DLL/SO →
+  Host module load → DDS backend and lifecycle, not evidence reports alone.
+- Introduced installable \`umaa_component_host\` executable on top of the
+  existing ABI v2 Component Loader and shared \`UMAA::Runtime\`.
+- Strict \`report_publishers:\` configuration gives explicit Service,
+  Topic, Schema, QoS name, instance key and sampling interval. Host opens
+  persistent Report Writer, invokes business Handler periodically, propagates
+  async errors and shuts down via Dispose/ACK/close, keeping unsafe
+  completion statuses visible.
+- Generated business Handler defaults remain fail-safe; host currently
+  admits only known synthetic Demo Battery binding and fails closed for
+  \`UMAA::\` identifiers and guessed wire mappings.
+- New CTest executes the real process with a real DLL/SO and mock backend,
+  including negative cases. Mock backend is in-process only; official
+  per-Service runtime/native QoS and independent vendor proof remain OPEN.
+- Check exact-head Linux, Windows and DDS vendor CI before merge.
+

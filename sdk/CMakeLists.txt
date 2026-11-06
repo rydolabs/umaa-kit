@@ -202,6 +202,13 @@ target_compile_definitions(umaa_sdk_runtime PRIVATE UMAA_RUNTIME_BUILD)
 find_package(Threads REQUIRED)
 target_link_libraries(umaa_sdk_runtime PUBLIC UMAA::Core PRIVATE ${CMAKE_DL_LIBS} Threads::Threads)
 target_compile_features(umaa_sdk_runtime PUBLIC cxx_std_17)
+# Installable SDK-owned Host process for the explicit synthetic Report
+# runtime path. Official per-service DDS bindings are not generated here.
+add_executable(umaa_component_host tools/umaa_component_host.cpp)
+target_link_libraries(umaa_component_host PRIVATE UMAA::Runtime)
+target_compile_features(umaa_component_host PRIVATE cxx_std_17)
+install(TARGETS umaa_component_host RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 install(TARGETS umaa_sdk_runtime EXPORT UMAASDKTargets
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -300,4 +307,16 @@ if(UMAA_BUILD_TESTS)
     "${CMAKE_CURRENT_SOURCE_DIR}/tests")
   target_link_libraries(umaa_specialization_packet_test PRIVATE UMAA::Core)
   add_test(NAME umaa_specialization_packet_test COMMAND umaa_specialization_packet_test)
+endif()
+
+# Executable Host process smoke with native dynamically-loaded Component and
+# mock DDS Backend. Does not establish actual DDS wire interoperability.
+if(UMAA_BUILD_TESTS AND UMAA_BUILD_MODULE_DEMO)
+  add_test(NAME umaa_component_host_v1_smoke
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_component_host_cli.py"
+      "$<TARGET_FILE:umaa_component_host>"
+      "$<TARGET_FILE:umaa_demo_vehicle_v2>"
+      "$<TARGET_FILE:umaa_mock_dds_backend>")
+  set_tests_properties(umaa_component_host_v1_smoke PROPERTIES TIMEOUT 40)
 endif()

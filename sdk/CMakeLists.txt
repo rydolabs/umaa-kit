@@ -320,3 +320,17 @@ if(UMAA_BUILD_TESTS AND UMAA_BUILD_MODULE_DEMO)
       "$<TARGET_FILE:umaa_mock_dds_backend>")
   set_tests_properties(umaa_component_host_v1_smoke PROPERTIES TIMEOUT 40)
 endif()
+
+
+# End-to-end generator contract: create Component, compile genuine CMake
+# DLL/SO, reject unimplemented Handler, change only business read(), then
+# load same generated module in the executable Host process.
+if(UMAA_BUILD_TESTS AND UMAA_BUILD_MODULE_DEMO)
+  add_test(NAME umaa_generated_component_host_v1_e2e
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_generated_component_host.py"
+      "$<TARGET_FILE:umaa_component_host>"
+      "$<TARGET_FILE:umaa_mock_dds_backend>"
+      "${CMAKE_CURRENT_BINARY_DIR}")
+  set_tests_properties(umaa_generated_component_host_v1_e2e PROPERTIES TIMEOUT 240)
+endif()

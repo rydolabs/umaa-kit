@@ -98,3 +98,17 @@ paths, enforces bounded Domain/interval/key, and uses exclusive file
 creation. An existing user-owned host.yml is never overwritten.
 No caller-provided schema or fake official QoS values are accepted.
 
+
+## Generated Component → executable Host E2E
+
+The `umaa_generated_component_host_v1_e2e` CTest now constructs a fresh
+Component using the actual CLI, compiles its generated CMake DLL/SO against
+the installed SDK, and loads that DLL/SO in the executable SDK Host.
+
+First, the generated default `read()` Handler must fail closed. Then the
+test edits *only* the user-owned business Handler to return a Report, verifies
+that code regeneration preserves the edit, recompiles, and runs the identical
+Host path successfully. No user-written DDS APIs, native TypeSupport,
+CMake configuration or Module ABI plumbing is required for this synthetic
+slice. The test backend is an **in-process mock**, not normative DDS wire.
+

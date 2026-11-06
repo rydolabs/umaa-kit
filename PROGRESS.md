@@ -880,3 +880,16 @@ diagnostic evidence.
 - Source-backed native UMAA ServiceBinding and complete Host operations
   remain OPEN; verify exact-head SDK and vendor CI before merging.
 
+
+## 2026-11-06 — generated business DLL/SO to executable Host E2E
+
+- Added CTest `umaa_generated_component_host_v1_e2e` to build the
+  **actual Component CLI output** against an installed SDK and launch
+  it through the standalone Host process using an SDK test backend.
+- The default unimplemented Report Handler must fail nonzero.
+  Changing only user-owned `read()` then rebuilding must yield Host
+  READY→STOPPED; regeneration must not overwrite the business edit.
+- Mock DDS endpoint is not real wire. Official Service TypeSupport,
+  effective per-Component QoS, full Command/Collection Host dispatcher
+  and release conformance are still OPEN.
+

@@ -901,3 +901,25 @@ diagnostic evidence.
   build configuration. No runtime fallback or assertion weakening.
 - Re-run exact-head Linux/Windows E2E and required vendor CI.
 
+
+## 2026-11-07 — official BatteryStatus Consumer SDK module generation
+
+- Added an explicit `generate --battery-host-preview` path requiring
+  BOTH exact EO ICD v6.0 PDF and original 594-file IDL ZIP. Source
+  bytes are checked first by the existing independently pinned verifier.
+- User-selected Component Manifest must contain exactly one
+  `UMAA::EO::BatteryStatus` Consumer with a current reviewed Catalog
+  SHA; non-consumer roles and unreviewed extra Services are blocked.
+- Generator writes C++17 source-pinned ServiceBinding (Report and
+  Collection Element Topic names/keys, two Operation intentions, minimum
+  element ordered TOPIC Presentation), ABI-v2 `Component::consume`
+  entrypoint, user-owned `on_report/on_dispose` Handler and CMake DLL/SO
+  plus negative ABI smoke CTest.
+- Host payload type explicitly remains `BatteryStatusHostPreview`,
+  NOT original DDS CDR and NOT standalone Host official auto-binding.
+  Full normative QoS/Component roles/native production runtime remain
+  OPEN and compiler metadata holds `nativeDdsRuntimeApproved=false`.
+- Added unit tamper/role/source/overwrite tests and Linux/Windows
+  installed-SDK CMake build/smoke coverage under a **mocked original-byte
+  verifier boundary**. Independent original bytes are not bundled in CI.
+

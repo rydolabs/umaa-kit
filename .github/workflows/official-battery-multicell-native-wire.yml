@@ -80,14 +80,7 @@ jobs:
       - name: 'Original DDS: two-source Lists into SDK Reader and loaded ABI-v2 Component positive/negative oracles'
         run: |
           ctest --test-dir "$RUNNER_TEMP/battery-live-build" \
-            -R '^official_umaa_battery_(multicell|multilist|sdk_native_reader|component_abi|native_consumer_host)_(good|bad_checkpoint|default_qos_rejected) \
-            --output-on-failure -V
-      - name: Explicit limitations
-        if: success()
-        run: |
-          echo "OFFICIAL_BATTERY_ABI_V2_BUSINESS_MODULE_ORIGINAL_DDS_E2E_PASS"
-          echo "No full Collection/Component QoS, vendor parity or conformance claim"
- \
+            -R '^official_umaa_battery_(multicell|multilist|sdk_native_reader|component_abi|native_consumer_host)_(good|bad_checkpoint|default_qos_rejected)$' \
             --output-on-failure -V
       - name: Explicit limitations
         if: success()

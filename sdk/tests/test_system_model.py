@@ -100,9 +100,8 @@ class SystemModelTest(unittest.TestCase):
         self.assertFalse(report["componentCodegenReady"])
 
     def test_synthetic_report_model_is_design_not_deployment(self):
-        self.temp.cleanup()
-        self.temp = tempfile.TemporaryDirectory()
-        self.root = Path(self.temp.name)
+        self.root = self.root / "demo"
+        self.root.mkdir()
         self.model = self.make_model(BATTERY)
         report = system.validate(self.model, self.root)
         self.assertTrue(report["componentCodegenReady"])
@@ -112,7 +111,6 @@ class SystemModelTest(unittest.TestCase):
     def test_missing_or_extra_catalog_channels_rejected(self):
         self.model["connections"][0]["channels"].pop()
         self.bad("every catalog Topic")
-        self.model = self.make_model(ANCHOR) if False else self.model
         self.model["connections"][0]["channels"].append({
             "topicId": "UMAA::EO::AnchorControl::InventedType",
             "writerProfile": "nominal", "readerProfile": "nominal"})
@@ -125,8 +123,10 @@ class SystemModelTest(unittest.TestCase):
 
     def test_roles_reversed_or_unknown_service_rejected(self):
         self.model["connections"][0]["consumer"] = "anchor_provider"
+        self.model["connections"][0]["provider"] = "anchor_consumer"
         self.bad("matching Provider/Consumer")
         self.model["connections"][0]["consumer"] = "anchor_consumer"
+        self.model["connections"][0]["provider"] = "anchor_provider"
         self.model["connections"][0]["service"] = "UMAA::EO::NotPublished"
         self.bad("matching Provider/Consumer")
 
@@ -174,6 +174,7 @@ class SystemModelTest(unittest.TestCase):
         self.model["components"][0]["manifest"] = "/tmp/umaa.component.json"
         self.bad("unsafe Component Manifest path")
         self.model["components"][0]["manifest"] = "anchor_consumer/umaa.component.json"
+        self.model["components"][0]["sha256"] = self.model["components"][1]["sha256"]
         self.bad("same Component Manifest referenced twice")
 
     def test_duplicate_component_connection_and_unknown_fields_rejected(self):

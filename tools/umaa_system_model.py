@@ -169,6 +169,13 @@ def validate(doc, model_dir: Path) -> dict:
     members = doc["components"]
     if not isinstance(members, list) or not 1 <= len(members) <= 64:
         raise SystemModelError("expected 1..64 Components")
+    # Reject duplicate manifest references *before* checking per-entry
+    # Component identity, so an alias cannot conceal topology duplication.
+    if all(isinstance(m, dict) and isinstance(m.get("manifest"), str)
+           for m in members):
+        references = [m["manifest"] for m in members]
+        if len(set(references)) != len(references):
+            raise SystemModelError("same Component Manifest referenced twice")
     components = {}
     paths = set()
     official_used = set()

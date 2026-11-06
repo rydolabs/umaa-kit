@@ -70,7 +70,8 @@ def _json_file(path: Path, *, limit: int):
 
 
 def _manifest_file(root: Path, rel: str):
-    if not isinstance(rel, str) or not PATH.fullmatch(rel):
+    if (not isinstance(rel, str) or not PATH.fullmatch(rel) or
+            rel.startswith("/")):
         raise SystemModelError("unsafe Component Manifest path")
     parts = rel.split("/")
     if any(p in {"", ".", ".."} for p in parts) or parts[-1] != "umaa.component.json":
@@ -105,8 +106,13 @@ def _qos(profile, where):
     if (profile["orderedAccess"] or profile["coherentAccess"]) and profile["presentation"] == "instance":
         raise SystemModelError(where + ": ordered/coherent requires TOPIC or GROUP")
     partition = profile["partition"]
-    if not isinstance(partition, str) or len(partition.encode("utf-8")) > 255 or (
-            "\0" in partition or "\r" in partition or "\n" in partition):
+    if not isinstance(partition, str):
+        raise SystemModelError(where + ": invalid partition")
+    try:
+        encoded = partition.encode("utf-8")
+    except UnicodeError as exc:
+        raise SystemModelError(where + ": invalid Unicode partition") from exc
+    if len(encoded) > 255 or any(c in partition for c in ("\0", "\r", "\n")):
         raise SystemModelError(where + ": invalid partition")
     return profile
 
@@ -150,7 +156,7 @@ def validate(doc, model_dir: Path) -> dict:
         key = _int(domain["id"], "domain.id", 0, 230)
         if key in domains:
             raise SystemModelError("duplicate DDS domain")
-        if domain["backend"] not in ALLOWED_BACKENDS:
+        if not isinstance(domain["backend"], str) or domain["backend"] not in ALLOWED_BACKENDS:
             raise SystemModelError("unsupported DDS backend (no RTI/mixed-network proof)")
         profiles = domain["qosProfiles"]
         if not isinstance(profiles, dict) or len(profiles) > 64:

@@ -535,6 +535,8 @@ def main(argv=None):
     g.add_argument("--runtime-key", help="int32 Report native Key member")
     g.add_argument("--runtime-value", help="int32 Report native data member")
     g.add_argument("--runtime-schema", help="explicit Report schema identity")
+    g.add_argument("--battery-host-preview", action="store_true",
+                   help="explicit official BatteryStatus Consumer host-only DLL/SO; requires originals")
     h = commands.add_parser("host-config",
                             help="generate strict synthetic Report Host configuration")
     h.add_argument("--project", required=True, type=Path)
@@ -590,7 +592,17 @@ def main(argv=None):
                 snapshot = contracts.read_snapshot(args.input)
                 print(json.dumps(contracts.validate_snapshot(snapshot), sort_keys=True))
         elif args.cmd == "generate":
-            if args.idl_root or args.idl_binding or args.backend or args.idl_archive or args.runtime_report or args.runtime_key or args.runtime_value or args.runtime_schema:
+            if args.battery_host_preview:
+                if (args.yaml or args.idl or args.idl_root or args.idl_binding or
+                        args.backend or args.runtime_report or args.runtime_key or
+                        args.runtime_value or args.runtime_schema or args.fixture):
+                    raise ProjectError("Battery host preview cannot combine with other generators")
+                if not args.idl_archive or not args.original_icd:
+                    raise ProjectError("Battery host preview requires --idl-archive and --original-icd")
+                from tools.umaa_battery_preview_component_codegen import generate as generate_preview
+                print(json.dumps(generate_preview(
+                    args.project, args.idl_archive, args.original_icd), sort_keys=True))
+            elif args.idl_root or args.idl_binding or args.backend or args.idl_archive or args.runtime_report or args.runtime_key or args.runtime_value or args.runtime_schema:
                 if not args.yaml or not args.idl_root or not args.idl_binding or args.idl:
                     raise ProjectError("native ICD codegen requires --yaml, --idl-root and explicit --idl-binding; no --idl")
                 from tools.umaa_icd_component_codegen import generate_native as native_project

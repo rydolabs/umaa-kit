@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rydolabs/umaa-kit/blob/main/schemas/system-composition-intent-v1.schema.json",
+  "title": "UMAA System Composition Intent v1 (Studio/CLI common minimal input)",
+  "description": "Only Component Service roles, explicit Provider-to-Consumer links and deployment-level backend/domain choice. Automatic outputs are design previews; no guessed official DDS Topic names, keys or QoS, and never a runnable deployment.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "umaa-system-composition-intent"
+    },
+    "schemaVersion": {
+      "const": "1"
+    },
+    "system": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,62}$"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "catalogPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "reviewed-icd-catalog"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "kind",
+        "sha256"
+      ]
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": {
+          "enum": [
+            "cyclone",
+            "fastdds"
+          ]
+        },
+        "domainId": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 230
+        }
+      },
+      "required": [
+        "backend",
+        "domainId"
+      ]
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,62}$"
+          },
+          "manifest": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 320,
+            "pattern": "^[A-Za-z0-9_./-]+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "id",
+          "manifest",
+          "sha256"
+        ]
+      }
+    },
+    "connections": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "service": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]*(::[A-Za-z][A-Za-z0-9_]*){2,5}$"
+          },
+          "consumer": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,62}$"
+          },
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,62}$"
+          }
+        },
+        "required": [
+          "service",
+          "consumer",
+          "provider"
+        ]
+      }
+    }
+  },
+  "required": [
+    "kind",
+    "schemaVersion",
+    "system",
+    "deployment",
+    "components",
+    "connections"
+  ]
+}

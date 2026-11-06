@@ -824,3 +824,26 @@ diagnostic evidence.
   and backward-compatible no-evidence output only. Exact original files are
   manually byte-checked for this scoped evidence and must NOT be committed.
 
+
+## 2026-11-06 — EO BatteryStatus and EngineControl original evidence expansion
+
+- Continued PR #74 from AnchorControl-only source admission. Verified
+  original EO ICD 6.0 §6.1.5 pp54–55 and §6.1.6 pp55–56, and original
+  UMAA IDL ZIP source digests for BatteryReport and the three Engine
+  Command/Ack/Status IDL types.
+- BatteryStatus has a **second Collection Element DDS Topic** in the same
+  BatteryReportType.idl, with listID/elementID keys, separate from the
+  Report's source key. EO §3.8.1 p14 requires Topic-scope ordered
+  PRESENTATION for Collection element publishers/subscribers; this
+  partial source rule is not a whole approved effective QoS profile.
+- Added exact reviewed source records and a separate source verifier for
+  these two Services; optional source-gated admission now projects
+  selected Service topics and operations without changing existing
+  Planner, native component lifecycle, or compilation.
+- No original PDF, ZIP, IDL bodies or vendor source are committed. Real
+  DDS runtime/effective QoS, Collection coherence/ownership and
+  complete official conformance remain BLOCKED and require
+  independently checked native tests.
+- Added targeted tests and CI checkpoints. Exact-head workflow results
+  must be examined before changing Draft/merge status.
+

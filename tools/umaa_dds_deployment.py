@@ -16,6 +16,7 @@ import sys
 
 from tools import umaa_service_contracts as contracts
 from tools import umaa_original_evidence as original
+from tools import umaa_eo_original_evidence as eo_original
 from tools import umaa_system_model as common
 from tools import umaa_system_planner as planner
 
@@ -39,8 +40,16 @@ def assess(model: dict, root: Path, *, official_idl_zip: Path | None = None,
     preview = planner.plan(model, root)
     if (official_idl_zip is None) != (official_eo_icd is None):
         raise common.SystemModelError("original IDL ZIP and EO ICD PDF must be supplied together")
-    evidence = (original.verify_originals(official_idl_zip, official_eo_icd)
-                if official_idl_zip is not None else None)
+    evidence = {}
+    if official_idl_zip is not None:
+        # Source bytes must match *both* pinned originals before any
+        # Service receives reviewed literal Topic/Key/Operation data.
+        selected = {x["service"] for x in preview["connections"]}
+        evidence.update(eo_original.verify_originals(
+            official_idl_zip, official_eo_icd, selected))
+        if original.SERVICE in selected:
+            evidence[original.SERVICE] = original.verify_originals(
+                official_idl_zip, official_eo_icd)
     catalog, catalog_sha = contracts._read_catalog()
     if (preview["source"]["catalogPinned"] and
             preview["source"]["catalogSha256"] != catalog_sha):
@@ -78,7 +87,7 @@ def assess(model: dict, root: Path, *, official_idl_zip: Path | None = None,
                     "Demo roles do not authorize official native DDS deployment")],
             })
             continue
-        bindings = evidence if evidence is not None and service == original.SERVICE else None
+        bindings = evidence.get(service)
         by_operation = ({x["name"]: x for x in bindings["operations"]}
                         if bindings else {})
         by_topic = ({x["topicId"]: x for x in bindings["topics"]}
@@ -129,8 +138,19 @@ def assess(model: dict, root: Path, *, official_idl_zip: Path | None = None,
                 "status": ("PINNED_LITERAL_SOURCE_VERIFIED_NOT_DEPLOYABLE" if bindings else
                            "SOURCE_BINDING_REQUIRED")
             } for e in endpoints],
-            "sourceRecord": ("catalog/umaa6-eo-anchorcontrol-source-bindings-v1.json"
-                             if bindings else None),
+            "sourceRecord": (
+                "catalog/umaa6-eo-" + service.split("::")[-1].lower()
+                + "-source-bindings-v1.json" if bindings else None),
+            # Collection element identity is source-verified separately
+            # from logical report Topics; no runtime endpoint is inferred.
+            "sourceCollectionTopics": ([{
+                "topicId": t["topicId"], "idlType": t["idlType"],
+                "ddsTopicName": t["ddsTopicName"],
+                "keyFields": list(t["keyFields"]),
+                "status": "SOURCE_PINNED_COLLECTION_NOT_DEPLOYABLE"
+            } for t in bindings.get("collectionTopics", [])] if bindings else []),
+            "partialSourceQosRules": (
+                bindings.get("sourceConstraints", []) if bindings else []),
             "catalogClaims": {
                 "officialIdlVerified": row["official_idl_verified"],
                 "ddsQosVerified": row["dds_qos_verified"],
@@ -140,8 +160,7 @@ def assess(model: dict, root: Path, *, official_idl_zip: Path | None = None,
         })
 
     blockers = [x for x in preview["blockers"]
-                if not (evidence is not None and
-                        x["service"] == original.SERVICE and
+                if not (x["service"] in evidence and
                         x["code"] == "TOPIC_NAME_KEY_AND_OPERATION_MAPPING_UNRESOLVED")]
     if not preview["connections"]:
         blockers.append({
@@ -158,11 +177,11 @@ def assess(model: dict, root: Path, *, official_idl_zip: Path | None = None,
         "kind": KIND, "schemaVersion": VERSION, "status": BLOCKED,
         "sourceVerification": ({
             "status": "PINNED_ORIGINAL_BYTES_VERIFIED_LIMITED_SCOPE",
-            "service": original.SERVICE,
+            "services": sorted(evidence),
             "icdSha256": original.ICD_SHA,
             "idlArchiveSha256": original.ZIP_SHA,
             "semantics": "reviewed clause mapping; not QoS or runtime conformance",
-        } if evidence is not None else {
+        } if official_idl_zip is not None else {
             "status": "ORIGINAL_BYTES_NOT_PROVIDED", "service": None,
         }),
         "source": {"intentCanonicalSha256": digest,

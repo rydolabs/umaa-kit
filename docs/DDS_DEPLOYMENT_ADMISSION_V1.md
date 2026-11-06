@@ -100,3 +100,50 @@ copy them into the project to make CI green. In existing CI without
 the private source files, only schema/review/deny regressions run;
 no CI test can claim to have reverified the original bytes.
 
+
+## Source-pinned BatteryStatus and EngineControl (2026-11-06)
+
+The same exact original EO ICD v6.0 (SHA-256
+\`47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453\`)
+and AUVSI IDL archive (SHA-256
+\`15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08\`)
+are now reviewed for **two additional** EO Services.
+
+- **BatteryStatus** — EO §6.1.5 pp. 54–55. \`reportBattery\`
+  writes \`BatteryReportType\` (IDL Key: \`source\`), and
+  \`queryBattery\` is DDS subscribe to that Topic, *not* a query
+  DataWriter. The Report contains a Large List with a separate DDS
+  \`BatteryReportTypeCellsListElement\` Topic defined in the
+  \`BatteryReportType.idl\` file; element keys: \`listID\`, \`elementID\`.
+  EO §3.8.1 p. 14 mandates Topic-scope PRESENTATION with ordered
+  access for Collection element publishers/subscribers.
+  This *partial source rule* is now recorded, but does **not** constitute
+  a full effective native DDS QoS profile or prove atomic cross-topic
+  Collection handling. The Collection element is reported separately;
+  it is **not** silently added to executable or logical endpoint counts.
+- **EngineControl** — EO §6.1.6 pp. 55–56. Command/Ack/Status
+  Topics have exact original literal names and Key annotations:
+  Command \`source\`, \`sessionID\`, \`destination\`;
+  Ack/Status \`source\`, \`sessionID\`. \`setEngine\` writes,
+  \`queryEngineCommandAck\` subscribes, \`cancelEngineCommand\`
+  disposes, and both reports write. EO §6.1.6.3 further requires
+  explicit cancel to end ongoing Engine command execution.
+
+Bindings are kept as **reviewed derived metadata** only in:
+\`catalog/umaa6-eo-batterystatus-source-bindings-v1.json\` and
+\`catalog/umaa6-eo-enginecontrol-source-bindings-v1.json\`. They are
+independently checked against reviewed Catalog service identities and
+exact source IDL member digests, literal Topic constants and \`@key\`
+annotations by \`tools.umaa_eo_original_evidence\`.
+
+With **both original source files supplied**, the admission CLI now
+populates reviewed Topic/Key/Operation values for selected
+AnchorControl, BatteryStatus and/or EngineControl. Every unselected or
+unreviewed Service remains unresolved. The partial Collection QoS
+rule is surfaced separately and **never** converted to invented
+writer/reader QoS profiles or DDS entity creation.
+
+\`COLLECTION_ENDPOINT_OWNERSHIP\`,
+\`COLLECTION_TOPIC_COVERAGE_INCOMPLETE\`, effective mandatory QoS,
+full lifecycle, vendor wire, and production deployment gates stay
+BLOCKED. No source document or original IDL text is committed.

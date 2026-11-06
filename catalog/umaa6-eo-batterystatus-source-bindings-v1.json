@@ -1,0 +1,76 @@
+{
+  "kind": "umaa-source-pinned-service-bindings",
+  "schemaVersion": "1",
+  "scope": "EO BatteryStatus literal source mapping; not approved native deployment",
+  "service": "UMAA::EO::BatteryStatus",
+  "sources": {
+    "icd": {
+      "document": "UMAA-SPEC-EOICD",
+      "version": "6.0",
+      "sha256": "47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453",
+      "pages": [
+        54,
+        55
+      ]
+    },
+    "idlArchive": {
+      "version": "6.0",
+      "sha256": "15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08"
+    }
+  },
+  "topics": [
+    {
+      "topicId": "UMAA::EO::BatteryStatus::BatteryReportType",
+      "idlType": "UMAA::EO::BatteryStatus::BatteryReportType",
+      "ddsTopicName": "UMAA::EO::BatteryStatus::BatteryReportType",
+      "idlPath": "UMAA/EO/BatteryStatus/BatteryReportType.idl",
+      "idlSha256": "39a2c920cfaba9afc3c15c4c12f5d4470911ab8b7c197c9e27b08284e54b713c",
+      "keyFields": [
+        "source"
+      ],
+      "writerRole": "provider",
+      "icdPage": 55
+    }
+  ],
+  "operations": [
+    {
+      "name": "queryBattery",
+      "topicId": "UMAA::EO::BatteryStatus::BatteryReportType",
+      "action": "subscribe",
+      "actor": "consumer",
+      "icdPage": 54
+    },
+    {
+      "name": "reportBattery",
+      "topicId": "UMAA::EO::BatteryStatus::BatteryReportType",
+      "action": "write",
+      "actor": "provider",
+      "icdPage": 55
+    }
+  ],
+  "collectionTopics": [
+    {
+      "topicId": "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement",
+      "idlType": "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement",
+      "ddsTopicName": "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement",
+      "idlPath": "UMAA/EO/BatteryStatus/BatteryReportType.idl",
+      "idlSha256": "39a2c920cfaba9afc3c15c4c12f5d4470911ab8b7c197c9e27b08284e54b713c",
+      "keyFields": [
+        "listID",
+        "elementID"
+      ],
+      "writerRole": "provider",
+      "icdPage": 55
+    }
+  ],
+  "sourceConstraints": [
+    {
+      "topicId": "UMAA::EO::BatteryStatus::BatteryReportTypeCellsListElement",
+      "rule": "collection-element-presentation",
+      "accessScope": "topic",
+      "orderedAccess": true,
+      "icdPage": 14,
+      "status": "SOURCE_RULE_NOT_COMPLETE_EFFECTIVE_QOS"
+    }
+  ]
+}

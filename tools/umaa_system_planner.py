@@ -50,6 +50,15 @@ def plan(model: dict, root: Path) -> dict:
     requested = model["components"]
     if not isinstance(requested, list) or not 1 <= len(requested) <= 64:
         raise common.SystemModelError("expected 1..64 Component references")
+    # Reject aliases to the same Manifest *before* inspecting individual
+    # component contents, otherwise the wrong SHA or Component name can hide
+    # an unambiguous duplicate reference.
+    normalized_paths = []
+    for item in requested:
+        common._fields(item, ("id", "manifest", "sha256"), where="Component")
+        normalized_paths.append(common._manifest_file(root, item["manifest"]))
+    if len(set(normalized_paths)) != len(normalized_paths):
+        raise common.SystemModelError("duplicate Component Manifest reference")
     components: dict[str, dict] = {}
     file_paths: set[Path] = set()
     used_official: set[str] = set()
@@ -221,7 +230,7 @@ def plan(model: dict, root: Path) -> dict:
         "componentCount": len(components),
         "connectionCount": len(preview_links),
         "topologyReferencesValid": True,
-        "ddSNamesKeysAndMandatoryQosResolved": False,
+        "ddsNamesKeysAndMandatoryQosResolved": False,
         "ddsDeploymentReady": False,
         "officialRuntimeClaim": False,
         "officialConformanceClaim": False,

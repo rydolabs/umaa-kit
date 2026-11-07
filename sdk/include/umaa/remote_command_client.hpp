@@ -3,7 +3,7 @@
 // This is development-scope transport; generated official Service codecs
 // and normative QoS are required before UMAA conformance can be claimed.
 #pragma once
-#include "umaa/dds_backend_loader.hpp"
+#include "umaa/dds_endpoint_context.hpp"
 #include "umaa/remote_command_monitor.hpp"
 #include <chrono>
 #include <cstdint>
@@ -20,20 +20,23 @@ public:
  using Command=typename Service::Command;
  explicit RemoteCommandClient(const std::string& backend,std::uint32_t domain_id,
                               std::string source,std::string destination)
-   :backend_(std::make_shared<DdsBackendPlugin>(backend)),
-    domain_(std::shared_ptr<DdsBackendPlugin::Domain>(
-      backend_->open_domain(domain_id).release())),
+   :RemoteCommandClient(std::make_shared<DdsEndpointContext>(backend,domain_id),
+                        std::move(source),std::move(destination)) {}
+ explicit RemoteCommandClient(std::shared_ptr<DdsEndpointContext> context,
+                              std::string source,std::string destination)
+   :context_(std::move(context)),
+    domain_(context_?context_->domain():nullptr),
     source_(std::move(source)),destination_(std::move(destination)) {
-   if(source_.empty()||destination_.empty())
+   if(!context_||!domain_||source_.empty()||destination_.empty())
      throw std::invalid_argument("Command source and destination are required");
    status_context_={this,false};
    ack_context_={this,true};
    try {
-     status_reader_=domain_->reader(topic(Service::status_topic,Service::status_schema),
+     status_reader_=context_->reader(topic(Service::status_topic,Service::status_schema),
                                     &RemoteCommandClient::receive,&status_context_);
-     ack_reader_=domain_->reader(topic(Service::ack_topic,Service::ack_schema),
+     ack_reader_=context_->reader(topic(Service::ack_topic,Service::ack_schema),
                                  &RemoteCommandClient::receive,&ack_context_);
-     command_writer_=domain_->writer(topic(Service::command_topic,Service::command_schema));
+     command_writer_=context_->writer(topic(Service::command_topic,Service::command_schema));
    }catch(...) {
      domain_->close_writer(command_writer_);
      domain_->close_reader(ack_reader_);
@@ -219,7 +222,7 @@ private:
  void require_active() const {
    if(faulted_)throw std::logic_error("remote Command channel faulted");
  }
- std::shared_ptr<DdsBackendPlugin> backend_;
+ std::shared_ptr<DdsEndpointContext> context_;
  std::shared_ptr<DdsBackendPlugin::Domain> domain_;
  std::string source_,destination_;
  RemoteCommandMonitor monitor_;

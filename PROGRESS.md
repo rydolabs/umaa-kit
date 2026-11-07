@@ -949,3 +949,22 @@ diagnostic evidence.
   bounded shutdown; the original positive/negative tests continue to
   require all 4 genuine Element disposes, never weakened.
 
+
+## 2026-11-07 — shared DDS context for Command paths (candidate)
+
+- New isolated development branch refactors `Application` remote Command
+  Consumer and Provider (including Status/Ack event transport) to use the
+  **same host-owned DDS backend and Domain** as `ComponentRuntime` Report.
+- Added `DdsEndpointContext` with one plugin/Domain lifetime, configuration
+  freezing after first endpoint use, and required V2 extension whenever
+  explicit QoS profiles are provided. Existing standalone Command constructors
+  remain backward-compatible.
+- Added mock-backed regression `umaa_dds_endpoint_context_test` proving
+  same-domain Report/Writer delivery, surviving parent lifetime, late QoS
+  change refusal, missing profile refusal and no V1 QoS downgrade.
+- **OPEN:** Full ServiceBinding-generated official runtime/QoS, the
+  Collection/Split/Specialization shared-context migration, namespace/role-
+  keyed registry, event queue/error propagation, security and conformance.
+- **CI pending:** no PASS is claimed until exact feature SHA and required
+  Linux/Windows plus remote wire suites are inspected. Does not alter
+  Draft PR #76 or merge either change to `main`.

@@ -2,6 +2,7 @@
 #include "umaa/component_module.hpp"
 #include "umaa/component.hpp"
 #include "umaa/dds_backend_loader.hpp"
+#include "umaa/dds_endpoint_context.hpp"
 #include "umaa/generated/umaa6_qos_requirements.hpp"
 #include <stdexcept>
 #include <mutex>
@@ -25,6 +26,7 @@ struct ComponentRuntime::State {
   std::unordered_map<std::string, std::shared_ptr<umaa::ComponentModule>> services;
   std::shared_ptr<umaa::DdsBackendPlugin> backend;
   std::shared_ptr<umaa::DdsBackendPlugin::Domain> domain;
+  std::shared_ptr<umaa::DdsEndpointContext> endpoint_context;
   std::unordered_map<std::string,umaa::qos::Policy> qos_profiles;
 };
 struct ReportSubscription::State {
@@ -149,6 +151,7 @@ std::unique_ptr<ReportSubscription> ComponentRuntime::subscribe_report_fixture(
   }
   // Reject unknown TypeBinding and insufficient QoS by backend->reader().
   // Production generation must also verify Provider/Consumer roles.
+  state_->endpoint_context->note_endpoint_start();
   auto slot=std::make_unique<ReportSubscription::State>(state_->backend,state_->domain);
   const UmaaDdsTopicV1 descriptor{topic_name.c_str(),schema.c_str(),qos_profile.c_str(),
     UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
@@ -219,15 +222,19 @@ bool ComponentRuntime::unload_component(const std::string& module_id){
 }
 void ComponentRuntime::load_backend(const std::string& filename,uint32_t domain_id){
   if(state_->domain)throw std::runtime_error("DDS backend already installed");
-  auto candidate=std::make_shared<umaa::DdsBackendPlugin>(filename);
-  std::shared_ptr<umaa::DdsBackendPlugin::Domain> domain(candidate->open_domain(domain_id));
-  state_->backend=std::move(candidate);
-  state_->domain=std::move(domain);
+  auto context=std::make_shared<umaa::DdsEndpointContext>(filename,domain_id);
+  state_->backend=context->backend();
+  state_->domain=context->domain();
+  state_->endpoint_context=std::move(context);
+}
+std::shared_ptr<umaa::DdsEndpointContext> ComponentRuntime::dds_endpoint_context() const {
+  if(!state_->endpoint_context)throw std::logic_error("load DDS backend first");
+  return state_->endpoint_context;
 }
 void ComponentRuntime::set_qos_profiles(
     const std::unordered_map<std::string,umaa::qos::Policy>& profiles){
-  if(!state_->domain)throw std::logic_error("load DDS backend before QoS profiles");
-  for(const auto& item:profiles)umaa::qos::validate(item.second);
+  if(!state_->endpoint_context)throw std::logic_error("load DDS backend before QoS profiles");
+  state_->endpoint_context->set_qos_profiles(profiles);
   state_->qos_profiles=profiles;
 }
 std::vector<std::string> ComponentRuntime::services()const{
@@ -389,6 +396,7 @@ std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
   const UmaaDdsTopicV1 topic{topic_name.c_str(),schema_id.c_str(),qos_profile.c_str(),
     UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
   const auto normative=umaa::generated::reviewed_qos_requirements(service_id,idl_type);
+  state_->endpoint_context->note_endpoint_start();
   void* writer=nullptr;
   if(state_->qos_profiles.empty()){
     if(normative)throw std::runtime_error("mandatory official QoS requires explicit runtime profile");

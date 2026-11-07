@@ -87,11 +87,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--work", type=Path, required=True)
     args = parser.parse_args(argv)
 
-    sources = (args.idl_zip.resolve(), args.eo_icd.resolve())
-    publisher, host = args.publisher.resolve(), args.host.resolve()
-    for path in (*sources, publisher, host):
+    raw_inputs = (args.idl_zip, args.eo_icd, args.publisher, args.host)
+    for path in raw_inputs:
         if path.is_symlink() or not path.is_file():
             raise RuntimeError("missing or symlinked original input/binary: " + str(path))
+    sources = (args.idl_zip.resolve(), args.eo_icd.resolve())
+    publisher, host = args.publisher.resolve(), args.host.resolve()
     work = args.work.absolute()
     if work.exists() or work.is_symlink():
         raise RuntimeError("generated E2E workspace must be new")

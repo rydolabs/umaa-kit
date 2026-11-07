@@ -17,6 +17,7 @@
 #else
 # define UMAA_RUNTIME_API __attribute__((visibility("default")))
 #endif
+namespace umaa {class DdsEndpointContext;}
 namespace umaa::internal {
 class UMAA_RUNTIME_API ReportSubscription final {
 public:
@@ -66,6 +67,8 @@ public:
   // Module administration must be serialized by the host orchestrator.
   bool unload_component(const std::string& module_id);
   void load_backend(const std::string& filename, uint32_t domain_id);
+  // Shared host-owned DDS session; endpoints retain its lifetime after Application.
+  std::shared_ptr<umaa::DdsEndpointContext> dds_endpoint_context() const;
   // Configure before endpoints; an explicit profile MUST use the QoS extension.
   void set_qos_profiles(const std::unordered_map<std::string,umaa::qos::Policy>& profiles);
   std::vector<std::string> services() const;

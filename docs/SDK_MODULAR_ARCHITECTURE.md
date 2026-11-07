@@ -219,3 +219,19 @@ Acceptance: compile existing Linux/Windows SDK, run all existing remote
 Command/DDS real-wire regression suites, and the new
 `umaa_dds_endpoint_context_test` for shared domain, parent lifetime, QoS
 freeze and V2 rejection. Do not merge before exact-head CI evidence.
+
+
+### Single QoS owner refinement (subsequent code commit)
+
+The `ComponentRuntime::State`'s duplicate `backend`, `domain` and
+`qos_profiles` fields were removed after the first passing CI checkpoint.
+The shared `DdsEndpointContext` is now the **single owner** of backend,
+Domain, and QoS policy state. Both existing Report fixtures and all migrated
+remote Command endpoints open Reader/Writer through the Context's common
+admission methods. A source-reviewed `qos::Requirements` object is passed
+explicitly for Report endpoints and cannot silently use no-profile V1 mode.
+No additional Dispatcher, Runtime wrapper, or endpoint lifecycle adapter
+was introduced; the now-unused `note_endpoint_start` API was deleted.
+
+The earlier 8/8 workflow evidence applies only to the first code revision,
+not automatically to this follow-up. Require a new exact-HEAD CI PASS.

@@ -4,7 +4,7 @@
 #pragma once
 #include "umaa/collection_batch_builder.hpp"
 #include "umaa/collection_frame_codec.hpp"
-#include "umaa/dds_backend_loader.hpp"
+#include "umaa/dds_endpoint_context.hpp"
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -27,12 +27,16 @@ public:
  using Operation=CollectionOperation<Value>;
  DdsCollectionPublisher(const std::string& path,std::uint32_t domain,
                         std::string key,std::size_t maximum=1024)
-  :backend_(std::make_shared<DdsBackendPlugin>(path)),
-   domain_(std::shared_ptr<DdsBackendPlugin::Domain>(
-     backend_->open_domain(domain).release())),
+  :DdsCollectionPublisher(std::make_shared<DdsEndpointContext>(path,domain),
+                          std::move(key),maximum) {}
+ DdsCollectionPublisher(std::shared_ptr<DdsEndpointContext> context,
+                        std::string key,std::size_t maximum=1024)
+  :context_(std::move(context)),
+   domain_(context_?context_->domain():nullptr),
    key_(std::move(key)),builder_(Service::kind,Service::collection_id,maximum) {
+   if(!context_ || !domain_)throw std::invalid_argument("Collection DDS context missing");
    if(key_.empty())throw std::invalid_argument("Collection key missing");
-   writer_=domain_->writer(collection_wire::topic<Service>());
+   writer_=context_->writer(collection_wire::topic<Service>());
  }
  ~DdsCollectionPublisher(){domain_->close_writer(writer_);}
  DdsCollectionPublisher(const DdsCollectionPublisher&)=delete;
@@ -76,7 +80,7 @@ private:
      throw std::runtime_error("ambiguous Collection transaction delivery; no replay");
    }
  }
- std::shared_ptr<DdsBackendPlugin> backend_;
+ std::shared_ptr<DdsEndpointContext> context_;
  std::shared_ptr<DdsBackendPlugin::Domain> domain_;
  std::string key_;
  CollectionBatchBuilder<Value> builder_;
@@ -89,13 +93,17 @@ public:
  using Value=typename Service::Value;
  explicit DdsCollectionConsumer(const std::string& path,std::uint32_t domain,
                                 std::string key,std::size_t maximum=1024)
-  :backend_(std::make_shared<DdsBackendPlugin>(path)),
-   domain_(std::shared_ptr<DdsBackendPlugin::Domain>(
-      backend_->open_domain(domain).release())),
+  :DdsCollectionConsumer(std::make_shared<DdsEndpointContext>(path,domain),
+                         std::move(key),maximum) {}
+ explicit DdsCollectionConsumer(std::shared_ptr<DdsEndpointContext> context,
+                                std::string key,std::size_t maximum=1024)
+  :context_(std::move(context)),
+   domain_(context_?context_->domain():nullptr),
    key_(std::move(key)),assembler_(Service::kind,maximum) {
+   if(!context_ || !domain_)throw std::invalid_argument("Collection DDS context missing");
    if(key_.empty())throw std::invalid_argument("Collection key missing");
-   reader_=domain_->reader(collection_wire::topic<Service>(),
-                           &DdsCollectionConsumer::on_sample,this);
+   reader_=context_->reader(collection_wire::topic<Service>(),
+                            &DdsCollectionConsumer::on_sample,this);
  }
  ~DdsCollectionConsumer(){domain_->close_reader(reader_);}
  DdsCollectionConsumer(const DdsCollectionConsumer&)=delete;
@@ -153,7 +161,7 @@ private:
      self->assembler_.fail_unknown_delivery();
    }
  }
- std::shared_ptr<DdsBackendPlugin> backend_;
+ std::shared_ptr<DdsEndpointContext> context_;
  std::shared_ptr<DdsBackendPlugin::Domain> domain_;
  std::string key_;
  CoherentCollectionReceiver<Value> assembler_;

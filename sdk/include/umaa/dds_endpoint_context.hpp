@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -47,9 +48,11 @@ class DdsEndpointContext final {
     endpoint_started_=true;
   }
 
-  void* writer(const UmaaDdsTopicV1& topic) {
+  void* writer(const UmaaDdsTopicV1& topic,
+               const std::optional<qos::Requirements>& required=std::nullopt) {
     std::lock_guard<std::mutex> lock(mutex_);
     if(profiles_.empty()) {
+      if(required)throw std::runtime_error("mandatory official DDS QoS requires explicit profile");
       auto* result=domain_->writer(topic);
       endpoint_started_=true;
       return result;
@@ -58,15 +61,18 @@ class DdsEndpointContext final {
     if(found==profiles_.end())throw std::runtime_error(
         "missing configured DDS QoS profile for Writer");
     // A configured QoS profile MUST use the V2 extension, never silently V1.
-    auto* result=domain_->writer(topic,found->second);
+    auto* result=domain_->writer(topic,found->second,
+                                 required.value_or(qos::Requirements{}));
     endpoint_started_=true;
     return result;
   }
 
   void* reader(const UmaaDdsTopicV1& topic,
-               UmaaDdsOnSampleV1 callback,void* user) {
+               UmaaDdsOnSampleV1 callback,void* user,
+               const std::optional<qos::Requirements>& required=std::nullopt) {
     std::lock_guard<std::mutex> lock(mutex_);
     if(profiles_.empty()) {
+      if(required)throw std::runtime_error("mandatory official DDS QoS requires explicit profile");
       auto* result=domain_->reader(topic,callback,user);
       endpoint_started_=true;
       return result;
@@ -74,7 +80,8 @@ class DdsEndpointContext final {
     const auto found=profiles_.find(topic.qos_profile ? topic.qos_profile : "");
     if(found==profiles_.end())throw std::runtime_error(
         "missing configured DDS QoS profile for Reader");
-    auto* result=domain_->reader(topic,found->second,callback,user);
+    auto* result=domain_->reader(topic,found->second,callback,user,
+                                 required.value_or(qos::Requirements{}));
     endpoint_started_=true;
     return result;
   }

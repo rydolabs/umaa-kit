@@ -41,13 +41,6 @@ class DdsEndpointContext final {
     profiles_=profiles;
   }
 
-  // Also called by legacy Report paths that directly own a Reader/Writer.
-  // It forbids later profile mutation across every endpoint in this Runtime.
-  void note_endpoint_start() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    endpoint_started_=true;
-  }
-
   void* writer(const UmaaDdsTopicV1& topic,
                const std::optional<qos::Requirements>& required=std::nullopt) {
     std::lock_guard<std::mutex> lock(mutex_);

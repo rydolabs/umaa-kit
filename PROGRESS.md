@@ -974,3 +974,15 @@ diagnostic evidence.
   runtime, full QoS or conformance claim.
 - Draft PR #77 remains unmerged and separate from Battery PR #76. A
   documentation-only checkpoint will receive its own exact-head CI status.
+
+
+### 2026-11-07 — eliminate residual duplicated QoS state
+
+After the initial 8/8 success at `ea5e722`, review found duplicated
+QoS state between `ComponentRuntime::State` and `DdsEndpointContext`.
+Follow-up commits removed the extra backend/Domain/QoS fields in
+`ComponentRuntime::State` and routed **both** Report and Command
+endpoint creation through one Context. Explicitly reviewed QoS requirements
+are blocked without a configured profile; a dead endpoint-start API was
+removed. The previous exact-commit success is retained as historical
+evidence only. **Latest code HEAD needs fresh CI before merge.**

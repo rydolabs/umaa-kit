@@ -965,6 +965,12 @@ diagnostic evidence.
 - **OPEN:** Full ServiceBinding-generated official runtime/QoS, the
   Collection/Split/Specialization shared-context migration, namespace/role-
   keyed registry, event queue/error propagation, security and conformance.
-- **CI pending:** no PASS is claimed until exact feature SHA and required
-  Linux/Windows plus remote wire suites are inspected. Does not alter
-  Draft PR #76 or merge either change to `main`.
+- **Exact code SHA CI PASS:** at `ea5e72250f3d5b573a21b41686a8a70c53df3ae1`,
+  all 8 PR-triggered workflows succeeded, including Linux default (50/50),
+  Windows default (50/50), Linux Clang/UBSan, Cyclone/Fast standalone real
+  wire, parity, Flow, Split Collection and independent Verifier regressions.
+  The new `umaa_dds_endpoint_context_test` passed on Linux and Windows
+  per inspected job logs (SDK workflow run 42354554502). No generic official
+  runtime, full QoS or conformance claim.
+- Draft PR #77 remains unmerged and separate from Battery PR #76. A
+  documentation-only checkpoint will receive its own exact-head CI status.

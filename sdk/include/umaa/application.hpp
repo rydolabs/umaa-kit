@@ -278,7 +278,6 @@ public:
 
   void use_backend(const std::string& path,uint32_t domain){
     host_->load_backend(path,domain);
-    backend_path_=path;domain_id_=domain;
   }
   // Device-independent remote Command client. Binding codecs remain Service-owned.
   // Existing consume<Service>() retains its original host-local semantics.
@@ -286,7 +285,6 @@ public:
   RemoteCommandClient<Service> consume_remote(const std::string& source,
                                               const std::string& destination) const {
     static_assert(Service::is_command,"remote Command consumer requires a Command service");
-    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return RemoteCommandClient<Service>(host_->dds_endpoint_context(),source,destination);
   }
   // Bounded Set/List sample-atomic development transport. No vendor objects
@@ -294,16 +292,14 @@ public:
   template<class Service>
   std::unique_ptr<DdsCollectionPublisher<Service>> publish_collection(
       const std::string& instance_key,std::size_t maximum=1024) const {
-    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return std::make_unique<DdsCollectionPublisher<Service>>(
-       backend_path_,domain_id_,instance_key,maximum);
+       host_->dds_endpoint_context(),instance_key,maximum);
   }
   template<class Service>
   std::unique_ptr<DdsCollectionConsumer<Service>> consume_collection(
       const std::string& instance_key,std::size_t maximum=1024) const {
-    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return std::make_unique<DdsCollectionConsumer<Service>>(
-       backend_path_,domain_id_,instance_key,maximum);
+       host_->dds_endpoint_context(),instance_key,maximum);
   }
   // Two actual DDS topics, with SDK-owned application commit fence.
   // This is NOT native DDS GROUP presentation; only explicit reviewed
@@ -311,16 +307,14 @@ public:
   template<class Service>
   std::unique_ptr<DdsSplitCollectionPublisher<Service>> publish_split_collection(
       const std::string& key,std::size_t maximum=1024) const {
-    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return std::make_unique<DdsSplitCollectionPublisher<Service>>(
-      backend_path_,domain_id_,key,maximum);
+      host_->dds_endpoint_context(),key,maximum);
   }
   template<class Service>
   std::unique_ptr<DdsSplitCollectionConsumer<Service>> consume_split_collection(
       const std::string& key,std::size_t maximum=1024) const {
-    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return std::make_unique<DdsSplitCollectionConsumer<Service>>(
-      backend_path_,domain_id_,key,maximum);
+      host_->dds_endpoint_context(),key,maximum);
   }
   // Typed remote Command provider: SDK owns DDS Request reader and
   // status/ack FSM. Device-specific business code is only provide<Service>().
@@ -329,7 +323,6 @@ public:
       const std::string& source,const std::string& provider,
       std::chrono::milliseconds retirement_delay={}) const {
     static_assert(Service::is_command,"serve_remote requires Command service");
-    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return std::make_unique<DdsCommandRequestServer<Service>>(
         host_->dds_endpoint_context(),host_,source,provider,retirement_delay);
   }
@@ -350,7 +343,6 @@ public:
       const typename Service::Command& command,const std::string& session,
       const std::string& source,const std::string& destination) const {
     static_assert(Service::is_command,"issue_remote requires Command service");
-    if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     auto client=std::make_shared<RemoteCommandClient<Service>>(
       host_->dds_endpoint_context(),source,destination);
     client->send(command,session);
@@ -362,7 +354,5 @@ public:
   }
 private:
   std::shared_ptr<internal::ComponentRuntime> host_;
-  std::string backend_path_;
-  uint32_t domain_id_{0};
 };
 } // namespace umaa

@@ -235,3 +235,37 @@ was introduced; the now-unused `note_endpoint_start` API was deleted.
 
 The earlier 8/8 workflow evidence applies only to the first code revision,
 not automatically to this follow-up. Require a new exact-HEAD CI PASS.
+
+
+## Shared native DDS session for Collection and SplitCollection (2026-11-07)
+
+**Stacked on shared Command/Report Context PR #77.** This change migrates
+`Application::publish_collection/consume_collection` and
+`publish_split_collection/consume_split_collection` onto the same
+host-owned `DdsEndpointContext` already shared by the Command and Report
+endpoints. The old standalone `(backend_path, domain_id, key, cap)`
+constructors delegate to a privately owned Context for source compatibility.
+
+The Context creates and owns a single vendor plugin and Domain for each
+`Application`. All four Collection endpoint classes now take
+`std::shared_ptr<DdsEndpointContext>` and create Readers/Writers through
+`context->reader/writer`, which enforces identical QoS admission as the
+other migrated transports. An explicit profile requires vendor QoS V2,
+and missing profiles are rejected without fallback; configuration freezes
+after the first successful endpoint opening. Endpoint handles keep the
+Context alive even after their parent Application goes out of scope.
+
+A new mock-backed cross-endpoint CTest checks actual same-Domain sample
+delivery, ordered split metadata/element snapshot commit, revisions,
+Dispose, retained resource lifetimes, legacy constructors, null contexts,
+and refusal of both configured-V2-on-V1 and missing-profile combinations.
+Existing genuine Cyclone and Fast DDS Collection/SplitCollection tests
+remain mandatory.
+
+**Scope:** the Collection transport is still the **synthetic** bounded
+single-frame or two-frame application commit-fence model. This does NOT
+supply original UMAA multi-topic native DDS GROUP presentation, normative
+Key/QoS, full TypeSupport or conformance. General
+Specialization and optional process Supervisor remain unchanged. No
+Component ABI or DDS plugin ABI change; no additional public Runtime
+factory/dispatcher was added.

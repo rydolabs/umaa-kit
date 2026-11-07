@@ -25,22 +25,28 @@ public:
       std::shared_ptr<internal::ComponentRuntime> runtime,
       std::string source,std::string provider,
       std::chrono::milliseconds retirement_delay={})
-      :backend_(std::make_shared<DdsBackendPlugin>(backend_path)),
-       domain_(std::shared_ptr<DdsBackendPlugin::Domain>(
-           backend_->open_domain(domain_id).release())),
+      :DdsCommandRequestServer(std::make_shared<DdsEndpointContext>(backend_path,domain_id),
+                                std::move(runtime),std::move(source),std::move(provider),
+                                retirement_delay) {}
+  DdsCommandRequestServer(std::shared_ptr<DdsEndpointContext> context,
+      std::shared_ptr<internal::ComponentRuntime> runtime,
+      std::string source,std::string provider,
+      std::chrono::milliseconds retirement_delay={})
+      :context_(std::move(context)),
+       domain_(context_?context_->domain():nullptr),
        runtime_(std::move(runtime)),source_(std::move(source)),
        provider_id_(std::move(provider)) {
-    if(!runtime_||source_.empty()||provider_id_.empty())
+    if(!context_||!domain_||!runtime_||source_.empty()||provider_id_.empty())
       throw std::invalid_argument("Command server requires runtime and identities");
     const UmaaDdsTopicV1 command{Service::command_topic,Service::command_schema,
       Service::qos_profile,
       UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
-    reader_=domain_->reader(command,&DdsCommandRequestServer::receive,this);
+    reader_=context_->reader(command,&DdsCommandRequestServer::receive,this);
     try {
       // Reader MUST exist before opening response writers: some adapters
       // wait for a remote matched reader before allowing a writer.
       wire_=std::make_unique<DdsCommandEventTransport<Service>>(
-        backend_,domain_,retirement_delay);
+        context_,retirement_delay);
       provider_=std::make_unique<ComponentCommandProvider<Service>>(
         provider_id_,runtime_,*wire_);
     }catch(...){
@@ -196,7 +202,7 @@ private:
   void require_active() const {
     if(faulted())throw std::logic_error("remote Command server quarantined");
   }
-  std::shared_ptr<DdsBackendPlugin> backend_;
+  std::shared_ptr<DdsEndpointContext> context_;
   std::shared_ptr<DdsBackendPlugin::Domain> domain_;
   std::shared_ptr<internal::ComponentRuntime> runtime_;
   std::string source_,provider_id_;

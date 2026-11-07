@@ -1,0 +1,98 @@
+name: Generated Battery Consumer Component to original Cyclone DDS E2E
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/generated-battery-component-native-e2e.yml'
+      - 'tools/umaa_battery_preview_component_codegen.py'
+      - 'tools/umaa_component_cli.py'
+      - 'tools/umaa_eo_original_evidence.py'
+      - 'catalog/umaa6-eo-batterystatus-source-bindings-v1.json'
+      - 'catalog/umaa6-six-icd-reviewed.json'
+      - 'sdk/include/umaa/component.hpp'
+      - 'sdk/include/umaa/official_battery_component_bridge.hpp'
+      - 'sdk/tools/umaa_official_battery_consumer_host.cpp'
+      - 'dds-backends/cyclone/include/umaa/cyclone_official_battery_reader.hpp'
+      - 'tests/integration/cyclone/CMakeLists.txt'
+      - 'tests/integration/cyclone/src/official_battery_multicell_publisher.cpp'
+      - 'tests/fixtures/generated_battery_consumer_handler.hpp'
+      - 'simulator/dds/run_generated_battery_e2e.py'
+      - 'simulator/dds/run_battery_consumer_host.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-verified-generated-battery-native-wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      UMAA_IDL_SHA256: 15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08
+      UMAA_IDL_URL: https://www.auvsi.org/wp-content/uploads/2025/03/umaa-6.0-idl-with-exp-services.zip
+      UMAA_EO_ICD_SHA256: 47e88ecec73e37562ad04f5cf1ee5aef62b4de7f75e5ef993828f6dc8440d453
+      UMAA_EO_ICD_URL: https://www.auvsi.org/wp-content/uploads/2025/03/UMAA-SPEC-EOICD-1.pdf
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Cyclone DDS original native TypeSupport compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cyclonedds-dev
+      - name: Authenticate exact original AUVSI ZIP and EO ICD PDF in Runner temp
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 --max-time 120 \
+            "$UMAA_IDL_URL" -o "$RUNNER_TEMP/original.zip"
+          printf '%s  %s\n' "$UMAA_IDL_SHA256" "$RUNNER_TEMP/original.zip" | sha256sum --check
+          curl --fail --location --silent --show-error --retry 3 --max-time 120 \
+            "$UMAA_EO_ICD_URL" -o "$RUNNER_TEMP/original-eo.pdf"
+          printf '%s  %s\n' "$UMAA_EO_ICD_SHA256" "$RUNNER_TEMP/original-eo.pdf" | sha256sum --check
+      - name: Validate generator unit guards and authentic original Battery declarations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s sdk/tests -p 'test_battery_preview_component_codegen.py' -v
+          python3 -m tools.official_battery_payload_structure \
+            --idl-zip "$RUNNER_TEMP/original.zip"
+      - name: Generate original Cyclone Battery TypeSupport in private workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from tools.official_icd_evidence import inspected_zip
+          temp = Path(os.environ["RUNNER_TEMP"])
+          root = temp / "original-idl"
+          root.mkdir()
+          with inspected_zip(temp / "original.zip") as original:
+              if original.testzip() is not None:
+                  raise RuntimeError("corrupt official IDL")
+              original.extractall(root)
+          PY
+          python3 tools/official_idl_compile.py \
+            --root "$RUNNER_TEMP/original-idl" \
+            --source UMAA/EO/BatteryStatus/BatteryReportType.idl \
+            --out "$RUNNER_TEMP/native-battery"
+      - name: Compile original publisher and native SDK Consumer Host
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/battery-live-build" \
+            -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/native-battery"
+          cmake --build "$RUNNER_TEMP/battery-live-build" --parallel 2 \
+            --target umaa_official_battery_multicell_publisher umaa_official_battery_consumer_host
+      - name: CLI-generated DLL/SO through real original DDS positive/negative and refusal
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m simulator.dds.run_generated_battery_e2e \
+            --idl-zip "$RUNNER_TEMP/original.zip" \
+            --eo-icd "$RUNNER_TEMP/original-eo.pdf" \
+            --publisher "$RUNNER_TEMP/battery-live-build/umaa_official_battery_multicell_publisher" \
+            --host "$RUNNER_TEMP/battery-live-build/umaa_official_battery_consumer_host" \
+            --work "$RUNNER_TEMP/generated-battery"
+      - name: Record scope boundary
+        if: success()
+        run: |
+          echo "SOURCE_VERIFIED_CLI_COMPONENT_TO_NATIVE_CYCLONE_DDS_PASS"
+          echo "Only host-local ABI preview, original Battery wire, not generic official Runtime."
+          echo "Neither original source nor generated private TypeSupport is uploaded."

@@ -6,7 +6,7 @@
 #include "umaa/collection_batch_builder.hpp"
 #include "umaa/collection_frame_codec.hpp"
 #include "umaa/split_collection_joiner.hpp"
-#include "umaa/dds_backend_loader.hpp"
+#include "umaa/dds_endpoint_context.hpp"
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -34,15 +34,19 @@ public:
   using Batch=CoherentCollectionBatch<Value>;
   DdsSplitCollectionPublisher(const std::string& plugin,std::uint32_t domain,
                                std::string key,std::size_t maximum=1024)
-    :backend_(std::make_shared<DdsBackendPlugin>(plugin)),
-     domain_(std::shared_ptr<DdsBackendPlugin::Domain>(
-       backend_->open_domain(domain).release())),
+    :DdsSplitCollectionPublisher(std::make_shared<DdsEndpointContext>(plugin,domain),
+                                 std::move(key),maximum) {}
+  DdsSplitCollectionPublisher(std::shared_ptr<DdsEndpointContext> context,
+                               std::string key,std::size_t maximum=1024)
+    :context_(std::move(context)),
+     domain_(context_?context_->domain():nullptr),
      key_(std::move(key)),
      builder_(Service::kind,Service::collection_id,maximum) {
+    if(!context_ || !domain_)throw std::invalid_argument("missing split Collection DDS context");
     if(key_.empty())throw std::invalid_argument("missing split Collection key");
-    elements_writer_=domain_->writer(split_wire::topic<Service>(Service::elements_topic));
+    elements_writer_=context_->writer(split_wire::topic<Service>(Service::elements_topic));
     try{
-      metadata_writer_=domain_->writer(split_wire::topic<Service>(Service::metadata_topic));
+      metadata_writer_=context_->writer(split_wire::topic<Service>(Service::metadata_topic));
     }catch(...){domain_->close_writer(elements_writer_);elements_writer_=nullptr;throw;}
   }
   DdsSplitCollectionPublisher(const DdsSplitCollectionPublisher&)=delete;
@@ -103,7 +107,7 @@ private:
     send(elements_writer_,elem_bytes);
     send(metadata_writer_,meta_bytes);
   }
-  std::shared_ptr<DdsBackendPlugin> backend_;
+  std::shared_ptr<DdsEndpointContext> context_;
   std::shared_ptr<DdsBackendPlugin::Domain> domain_;
   std::string key_;
   CollectionBatchBuilder<Value> builder_;
@@ -117,16 +121,20 @@ public:
   using Batch=CoherentCollectionBatch<Value>;
   DdsSplitCollectionConsumer(const std::string& plugin,std::uint32_t domain,
                               std::string key,std::size_t maximum=1024)
-    :backend_(std::make_shared<DdsBackendPlugin>(plugin)),
-     domain_(std::shared_ptr<DdsBackendPlugin::Domain>(
-       backend_->open_domain(domain).release())),
+    :DdsSplitCollectionConsumer(std::make_shared<DdsEndpointContext>(plugin,domain),
+                                std::move(key),maximum) {}
+  DdsSplitCollectionConsumer(std::shared_ptr<DdsEndpointContext> context,
+                              std::string key,std::size_t maximum=1024)
+    :context_(std::move(context)),
+     domain_(context_?context_->domain():nullptr),
      key_(std::move(key)),joiner_(maximum) {
+    if(!context_ || !domain_)throw std::invalid_argument("missing split Collection DDS context");
     if(key_.empty())throw std::invalid_argument("missing split Collection key");
     element_ctx_={this,false};metadata_ctx_={this,true};
-    elements_reader_=domain_->reader(split_wire::topic<Service>(Service::elements_topic),
+    elements_reader_=context_->reader(split_wire::topic<Service>(Service::elements_topic),
       &DdsSplitCollectionConsumer::receive,&element_ctx_);
     try {
-      metadata_reader_=domain_->reader(split_wire::topic<Service>(Service::metadata_topic),
+      metadata_reader_=context_->reader(split_wire::topic<Service>(Service::metadata_topic),
         &DdsSplitCollectionConsumer::receive,&metadata_ctx_);
     }catch(...){domain_->close_reader(elements_reader_);elements_reader_=nullptr;throw;}
   }
@@ -178,7 +186,7 @@ private:
     faulted_=true;
     throw std::runtime_error("split Collection DDS reader fault: "+last_error_);
   }
-  std::shared_ptr<DdsBackendPlugin> backend_;
+  std::shared_ptr<DdsEndpointContext> context_;
   std::shared_ptr<DdsBackendPlugin::Domain> domain_;
   std::string key_;
   SplitCollectionJoiner<Service> joiner_;

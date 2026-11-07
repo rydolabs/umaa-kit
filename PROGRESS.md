@@ -1001,9 +1001,20 @@ evidence only. **Latest code HEAD needs fresh CI before merge.**
   validated snapshots/deltas/Dispose, lifetime after Application destruction,
   explicit V2-on-V1 QoS rejection, missing QoS profile rejection, legacy
   independent constructors and null Context rejection.
-- **Verification pending:** exact code SHA Linux/Windows SDK regression and
-  native Cyclone/Fast (especially split Elements/Metadata and List) CI.
-  The merge target is the PR #77 feature branch, **not** `main`.
+- **Verified code SHA:** `556593fac5143778ea56082be44f0067a140924e`
+  has **7/7 successful PR-triggered workflows** including cross-platform SDK,
+  Cyclone/Fast standalone native DDS real-wire, same-binary backend parity,
+  native split Elements/Metadata and independent verifier. SDK workflow
+  `42369809732` reports Linux Debug **51/51** and Windows Debug **51/51**
+  CTests passed. Inspected raw job logs confirm
+  `umaa_shared_collection_context_test` passed on each OS; Clang/UBSan
+  workflow also succeeded.
+- First CI attempt failed solely because the new test target lacked a fixture
+  include directory. This was fixed in `556593f`; earlier failing evidence
+  remains on the PR branch history and is not hidden.
+- This progress-ledger commit changes documentation only and requires its
+  own exact-head CI before merge. The PR target is the PR #77 feature branch,
+  **not** `main`.
 - Next work outside this PR: Specialization shared Context, official
   source-backed ServiceBinding Runtime factory, multi-Component role/instance
   registry and queued Report failure propagation. No new compliance claim.

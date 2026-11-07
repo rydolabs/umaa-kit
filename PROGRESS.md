@@ -986,3 +986,24 @@ endpoint creation through one Context. Explicitly reviewed QoS requirements
 are blocked without a configured profile; a dead endpoint-start API was
 removed. The previous exact-commit success is retained as historical
 evidence only. **Latest code HEAD needs fresh CI before merge.**
+
+
+## 2026-11-07 — Collection / SplitCollection shared Context (stacked candidate)
+
+- Built on PR #77's exact-HEAD 8/8 passing Command/Report Context
+  foundation, without touching `main` or the unrelated official Battery
+  Host PR #76.
+- Both Collection Publisher/Consumer and SplitCollection Publisher/Consumer
+  use the already owned `DdsEndpointContext`. The `Application`
+  no longer stores an extra path/domain copy: the host Context is the
+  single source of truth. Legacy standalone constructors are preserved.
+- Added `umaa_shared_collection_context_test`: one-Domain data delivery,
+  validated snapshots/deltas/Dispose, lifetime after Application destruction,
+  explicit V2-on-V1 QoS rejection, missing QoS profile rejection, legacy
+  independent constructors and null Context rejection.
+- **Verification pending:** exact code SHA Linux/Windows SDK regression and
+  native Cyclone/Fast (especially split Elements/Metadata and List) CI.
+  The merge target is the PR #77 feature branch, **not** `main`.
+- Next work outside this PR: Specialization shared Context, official
+  source-backed ServiceBinding Runtime factory, multi-Component role/instance
+  registry and queued Report failure propagation. No new compliance claim.

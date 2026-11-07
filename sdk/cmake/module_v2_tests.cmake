@@ -95,3 +95,9 @@ add_executable(umaa_collection_publisher_fail_closed_test tests/test_collection_
 target_link_libraries(umaa_collection_publisher_fail_closed_test PRIVATE UMAA::Core ${CMAKE_DL_LIBS})
 add_test(NAME umaa_collection_publisher_fail_closed_test
   COMMAND umaa_collection_publisher_fail_closed_test "$<TARGET_FILE:umaa_mock_dds_backend>")
+
+# Shared Host DDS Domain ownership and explicit QoS V2 fail-closed admission.
+add_executable(umaa_dds_endpoint_context_test tests/test_dds_endpoint_context.cpp)
+target_link_libraries(umaa_dds_endpoint_context_test PRIVATE UMAA::Runtime)
+add_test(NAME umaa_dds_endpoint_context_test
+  COMMAND umaa_dds_endpoint_context_test "$<TARGET_FILE:umaa_mock_dds_backend>")

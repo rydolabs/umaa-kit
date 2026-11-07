@@ -2,6 +2,7 @@
 #include "umaa/component_module.hpp"
 #include "umaa/component.hpp"
 #include "umaa/dds_backend_loader.hpp"
+#include "umaa/dds_endpoint_context.hpp"
 #include "umaa/generated/umaa6_qos_requirements.hpp"
 #include <stdexcept>
 #include <mutex>
@@ -23,9 +24,7 @@ struct ComponentRuntime::State {
   std::unordered_set<std::string> unloading;
   std::vector<std::shared_ptr<umaa::ComponentModule>> modules;
   std::unordered_map<std::string, std::shared_ptr<umaa::ComponentModule>> services;
-  std::shared_ptr<umaa::DdsBackendPlugin> backend;
-  std::shared_ptr<umaa::DdsBackendPlugin::Domain> domain;
-  std::unordered_map<std::string,umaa::qos::Policy> qos_profiles;
+  std::shared_ptr<umaa::DdsEndpointContext> endpoint_context;
 };
 struct ReportSubscription::State {
   std::shared_ptr<umaa::DdsBackendPlugin> backend;
@@ -126,7 +125,7 @@ std::unique_ptr<ReportSubscription> ComponentRuntime::subscribe_report_fixture(
  const std::string& service,const std::string& topic_name,
  const std::string& schema,const std::string& qos_profile,
  const std::string& idl_type){
-  if(!state_->domain)throw std::runtime_error("DDS backend not installed");
+  if(!state_->endpoint_context)throw std::runtime_error("DDS backend not installed");
   if(service.empty())throw std::invalid_argument("Report service ID is required");
   // A Consumer need not load a local Provider device module. The backend's
   // explicitly compiled TypeBinding must authorize Topic, schema and QoS.
@@ -149,20 +148,13 @@ std::unique_ptr<ReportSubscription> ComponentRuntime::subscribe_report_fixture(
   }
   // Reject unknown TypeBinding and insufficient QoS by backend->reader().
   // Production generation must also verify Provider/Consumer roles.
-  auto slot=std::make_unique<ReportSubscription::State>(state_->backend,state_->domain);
+  auto slot=std::make_unique<ReportSubscription::State>(
+      state_->endpoint_context->backend(),state_->endpoint_context->domain());
   const UmaaDdsTopicV1 descriptor{topic_name.c_str(),schema.c_str(),qos_profile.c_str(),
     UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
   const auto normative=umaa::generated::reviewed_qos_requirements(service,idl_type);
-  if(state_->qos_profiles.empty()) {
-    if(normative)throw std::runtime_error("mandatory official QoS requires explicit runtime profile");
-    slot->reader=slot->domain->reader(descriptor,&ReportSubscription::State::receive,slot.get());
-  } else {
-    auto found=state_->qos_profiles.find(qos_profile);
-    if(found==state_->qos_profiles.end())throw std::runtime_error("missing configured DDS QoS profile");
-    slot->reader=slot->domain->reader(descriptor,found->second,
-      &ReportSubscription::State::receive,slot.get(),
-      normative.value_or(umaa::qos::Requirements{}));
-  }
+  slot->reader=state_->endpoint_context->reader(
+      descriptor,&ReportSubscription::State::receive,slot.get(),normative);
   return std::unique_ptr<ReportSubscription>(new ReportSubscription(std::move(slot)));
 }
 ComponentRuntime::ComponentRuntime():state_(std::make_unique<State>()){}
@@ -218,17 +210,17 @@ bool ComponentRuntime::unload_component(const std::string& module_id){
   return stopped;
 }
 void ComponentRuntime::load_backend(const std::string& filename,uint32_t domain_id){
-  if(state_->domain)throw std::runtime_error("DDS backend already installed");
-  auto candidate=std::make_shared<umaa::DdsBackendPlugin>(filename);
-  std::shared_ptr<umaa::DdsBackendPlugin::Domain> domain(candidate->open_domain(domain_id));
-  state_->backend=std::move(candidate);
-  state_->domain=std::move(domain);
+  if(state_->endpoint_context)throw std::runtime_error("DDS backend already installed");
+  state_->endpoint_context=std::make_shared<umaa::DdsEndpointContext>(filename,domain_id);
+}
+std::shared_ptr<umaa::DdsEndpointContext> ComponentRuntime::dds_endpoint_context() const {
+  if(!state_->endpoint_context)throw std::logic_error("load DDS backend first");
+  return state_->endpoint_context;
 }
 void ComponentRuntime::set_qos_profiles(
     const std::unordered_map<std::string,umaa::qos::Policy>& profiles){
-  if(!state_->domain)throw std::logic_error("load DDS backend before QoS profiles");
-  for(const auto& item:profiles)umaa::qos::validate(item.second);
-  state_->qos_profiles=profiles;
+  if(!state_->endpoint_context)throw std::logic_error("load DDS backend before QoS profiles");
+  state_->endpoint_context->set_qos_profiles(profiles);
 }
 std::vector<std::string> ComponentRuntime::services()const{
   std::lock_guard<std::mutex> lock(state_->service_mutex);
@@ -372,7 +364,7 @@ std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
     const std::string& service_id,const std::string& topic_name,
     const std::string& schema_id,const std::string& instance_key,
     const std::string& qos_profile,const std::string& idl_type){
-  if(!state_->domain)throw std::runtime_error("DDS backend not loaded");
+  if(!state_->endpoint_context)throw std::runtime_error("DDS backend not loaded");
   std::shared_ptr<umaa::ComponentModule> module;
   {
     std::lock_guard<std::mutex> lock(state_->service_mutex);
@@ -389,18 +381,10 @@ std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
   const UmaaDdsTopicV1 topic{topic_name.c_str(),schema_id.c_str(),qos_profile.c_str(),
     UMAA_DDS_CAP_RELIABLE|UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
   const auto normative=umaa::generated::reviewed_qos_requirements(service_id,idl_type);
-  void* writer=nullptr;
-  if(state_->qos_profiles.empty()){
-    if(normative)throw std::runtime_error("mandatory official QoS requires explicit runtime profile");
-    writer=state_->domain->writer(topic);
-  }else {
-    const auto found=state_->qos_profiles.find(qos_profile);
-    if(found==state_->qos_profiles.end())throw std::runtime_error("missing configured DDS QoS profile");
-    writer=state_->domain->writer(topic,found->second,
-      normative.value_or(umaa::qos::Requirements{}));
-  }
+  void* writer=state_->endpoint_context->writer(topic,normative);
   return std::unique_ptr<ReportPublisher>(new ReportPublisher(
-    std::make_unique<ReportPublisher::State>(state_->backend,state_->domain,
+    std::make_unique<ReportPublisher::State>(
+      state_->endpoint_context->backend(),state_->endpoint_context->domain(),
       module,writer,service_id,instance_key)));
 }
 void ComponentRuntime::publish_report_fixture(const std::string& service_id,

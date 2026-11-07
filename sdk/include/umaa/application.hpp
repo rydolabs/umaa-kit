@@ -287,7 +287,7 @@ public:
                                               const std::string& destination) const {
     static_assert(Service::is_command,"remote Command consumer requires a Command service");
     if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
-    return RemoteCommandClient<Service>(backend_path_,domain_id_,source,destination);
+    return RemoteCommandClient<Service>(host_->dds_endpoint_context(),source,destination);
   }
   // Bounded Set/List sample-atomic development transport. No vendor objects
   // or manual DDS QoS in application code. NOT native DDS GROUP presentation.
@@ -331,7 +331,7 @@ public:
     static_assert(Service::is_command,"serve_remote requires Command service");
     if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     return std::make_unique<DdsCommandRequestServer<Service>>(
-        backend_path_,domain_id_,host_,source,provider,retirement_delay);
+        host_->dds_endpoint_context(),host_,source,provider,retirement_delay);
   }
   // The SDK owns the Command reader polling thread as well as the FSM.
   template<class Service>
@@ -352,7 +352,7 @@ public:
     static_assert(Service::is_command,"issue_remote requires Command service");
     if(backend_path_.empty())throw std::logic_error("configure DDS backend first");
     auto client=std::make_shared<RemoteCommandClient<Service>>(
-      backend_path_,domain_id_,source,destination);
+      host_->dds_endpoint_context(),source,destination);
     client->send(command,session);
     return RemoteCommandHandle<Service>(std::move(client),session);
   }

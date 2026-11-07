@@ -181,3 +181,57 @@ RTI Adapter validation remains BLOCKED pending licensed SDK/Runner.
 The old milestones above are historical design targets; the
 [implementation ledger](SDK_IMPLEMENTATION_BACKLOG.md) is the current
 acceptance source of truth.
+
+
+## Shared host DDS EndpointContext (2026-11-07 — isolated refactor candidate)
+
+**Goal:** remove duplicate native DDS backend/Domain allocation from the
+`Application` remote **Command** paths without introducing a second Runtime
+or a service/Topic name inference engine.
+
+- `ComponentRuntime::load_backend` creates one `DdsEndpointContext`.
+  Existing Report paths and `Application::consume_remote`,
+  `serve_remote`/`start_remote`, `issue_remote` reuse this exact session.
+  Standalone `RemoteCommandClient` and `DdsCommandRequestServer` constructors
+  remain supported and own a private context for compatibility.
+- `DdsCommandEventTransport` accepts the same context, so the Command Reader,
+  Status Writer and Ack Writer do not silently open a second Domain within
+  the same application. Their existing engine/protocol logic is unchanged.
+- Explicit host QoS profiles are shared and frozen when the first context
+  Reader/Writer or existing Report endpoint opens. When profiles are provided
+  the context requires V2 QoS extension and refuses unknown profiles or
+  unsupported capabilities: **no implicit V1 downgrade**.
+- When no profile is provided, the current legacy V1 development-only fallback
+  remains. It is **NOT** evidence of any official UMAA Service QoS or native
+  TypeSupport. Full original per-Service/Component QoS still needs reviewed
+  source-backed bindings and separate admission.
+- Remote Command handles may outlive `Application`. Shared ownership keeps
+  the plugin mapping and Domain live until their endpoints close. The plugin
+  must be the last native resource released.
+
+**Not included:** Collection/SplitCollection/Specialization constructors
+continue their existing independently owned Domain paths for now. A later
+migration must preserve their strict ACK/dispose/fail-closed tests. There is
+no new public general Runtime API, no breaking V1/V2 C ABI change, and no
+claim of mixed-vendor networking or normative conformance.
+
+Acceptance: compile existing Linux/Windows SDK, run all existing remote
+Command/DDS real-wire regression suites, and the new
+`umaa_dds_endpoint_context_test` for shared domain, parent lifetime, QoS
+freeze and V2 rejection. Do not merge before exact-head CI evidence.
+
+
+### Single QoS owner refinement (subsequent code commit)
+
+The `ComponentRuntime::State`'s duplicate `backend`, `domain` and
+`qos_profiles` fields were removed after the first passing CI checkpoint.
+The shared `DdsEndpointContext` is now the **single owner** of backend,
+Domain, and QoS policy state. Both existing Report fixtures and all migrated
+remote Command endpoints open Reader/Writer through the Context's common
+admission methods. A source-reviewed `qos::Requirements` object is passed
+explicitly for Report endpoints and cannot silently use no-profile V1 mode.
+No additional Dispatcher, Runtime wrapper, or endpoint lifecycle adapter
+was introduced; the now-unused `note_endpoint_start` API was deleted.
+
+The earlier 8/8 workflow evidence applies only to the first code revision,
+not automatically to this follow-up. Require a new exact-HEAD CI PASS.

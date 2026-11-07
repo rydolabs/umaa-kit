@@ -3,7 +3,7 @@
 // No DDS vendor headers, no guessed UMAA QoS, and no automatic replay.
 #pragma once
 #include "umaa/command_transport.hpp"
-#include "umaa/dds_backend_loader.hpp"
+#include "umaa/dds_endpoint_context.hpp"
 #include <atomic>
 #include <chrono>
 #include <thread>
@@ -21,19 +21,23 @@ public:
   DdsCommandEventTransport(std::shared_ptr<DdsBackendPlugin> backend,
                            std::shared_ptr<DdsBackendPlugin::Domain> domain,
                            std::chrono::milliseconds retirement_delay={})
-      :backend_(std::move(backend)),domain_(std::move(domain)),
-       retirement_delay_(retirement_delay) {
+      :DdsCommandEventTransport(std::make_shared<DdsEndpointContext>(
+            std::move(backend),std::move(domain)),retirement_delay) {}
+  explicit DdsCommandEventTransport(std::shared_ptr<DdsEndpointContext> context,
+                           std::chrono::milliseconds retirement_delay={})
+      :retirement_delay_(retirement_delay),context_(std::move(context)),
+       domain_(context_?context_->domain():nullptr) {
     if(retirement_delay_.count()<0 || retirement_delay_>std::chrono::seconds(5))
       throw std::invalid_argument("invalid DDS retirement delay");
-    if(!backend_||!domain_)throw std::invalid_argument("missing command DDS backend");
+    if(!context_||!domain_)throw std::invalid_argument("missing command DDS backend");
     const UmaaDdsTopicV1 status{Service::status_topic,Service::status_schema,
                                 Service::qos_profile,UMAA_DDS_CAP_RELIABLE|
                                 UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
     const UmaaDdsTopicV1 ack{Service::ack_topic,Service::ack_schema,
                              Service::qos_profile,UMAA_DDS_CAP_RELIABLE|
                              UMAA_DDS_CAP_INSTANCE_LIFECYCLE};
-    status_writer_=domain_->writer(status);
-    try{ack_writer_=domain_->writer(ack);}
+    status_writer_=context_->writer(status);
+    try{ack_writer_=context_->writer(ack);}
     catch(...){domain_->close_writer(status_writer_);status_writer_=nullptr;throw;}
   }
   ~DdsCommandEventTransport() override {
@@ -95,7 +99,7 @@ private:
     }
   }
   std::chrono::milliseconds retirement_delay_{};
-  std::shared_ptr<DdsBackendPlugin> backend_;
+  std::shared_ptr<DdsEndpointContext> context_;
   std::shared_ptr<DdsBackendPlugin::Domain> domain_;
   void* status_writer_{};
   void* ack_writer_{};

@@ -949,3 +949,40 @@ diagnostic evidence.
   bounded shutdown; the original positive/negative tests continue to
   require all 4 genuine Element disposes, never weakened.
 
+
+## 2026-11-07 — shared DDS context for Command paths (candidate)
+
+- New isolated development branch refactors `Application` remote Command
+  Consumer and Provider (including Status/Ack event transport) to use the
+  **same host-owned DDS backend and Domain** as `ComponentRuntime` Report.
+- Added `DdsEndpointContext` with one plugin/Domain lifetime, configuration
+  freezing after first endpoint use, and required V2 extension whenever
+  explicit QoS profiles are provided. Existing standalone Command constructors
+  remain backward-compatible.
+- Added mock-backed regression `umaa_dds_endpoint_context_test` proving
+  same-domain Report/Writer delivery, surviving parent lifetime, late QoS
+  change refusal, missing profile refusal and no V1 QoS downgrade.
+- **OPEN:** Full ServiceBinding-generated official runtime/QoS, the
+  Collection/Split/Specialization shared-context migration, namespace/role-
+  keyed registry, event queue/error propagation, security and conformance.
+- **Exact code SHA CI PASS:** at `ea5e72250f3d5b573a21b41686a8a70c53df3ae1`,
+  all 8 PR-triggered workflows succeeded, including Linux default (50/50),
+  Windows default (50/50), Linux Clang/UBSan, Cyclone/Fast standalone real
+  wire, parity, Flow, Split Collection and independent Verifier regressions.
+  The new `umaa_dds_endpoint_context_test` passed on Linux and Windows
+  per inspected job logs (SDK workflow run 42354554502). No generic official
+  runtime, full QoS or conformance claim.
+- Draft PR #77 remains unmerged and separate from Battery PR #76. A
+  documentation-only checkpoint will receive its own exact-head CI status.
+
+
+### 2026-11-07 — eliminate residual duplicated QoS state
+
+After the initial 8/8 success at `ea5e722`, review found duplicated
+QoS state between `ComponentRuntime::State` and `DdsEndpointContext`.
+Follow-up commits removed the extra backend/Domain/QoS fields in
+`ComponentRuntime::State` and routed **both** Report and Command
+endpoint creation through one Context. Explicitly reviewed QoS requirements
+are blocked without a configured profile; a dead endpoint-start API was
+removed. The previous exact-commit success is retained as historical
+evidence only. **Latest code HEAD needs fresh CI before merge.**

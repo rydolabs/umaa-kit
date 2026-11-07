@@ -74,6 +74,19 @@ int main(int argc,char** argv) {
   retained->domain()->close_reader(reader);
   retained->domain()->close_writer(writer);
 
+  // The reviewed requirements gate cannot be satisfied by absent profiles:
+  // even a V1-capable mock endpoint must not be opened as official QoS.
+  umaa::qos::Requirements reviewed;
+  reviewed.require_ordered_access=true;
+  must_fail([&]{
+    auto* w=retained->writer(topic,reviewed);
+    retained->domain()->close_writer(w);
+  });
+  must_fail([&]{
+    auto* r=retained->reader(topic,on_sample,&received,reviewed);
+    retained->domain()->close_reader(r);
+  });
+
   // The old mock DDS plugin has no QoS V2 extension. An explicit profile
   // MUST fail rather than falling back silently to legacy V1 endpoints.
   umaa::DdsEndpointContext explicit_context(argv[1],43);

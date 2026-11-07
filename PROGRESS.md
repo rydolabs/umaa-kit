@@ -949,3 +949,25 @@ diagnostic evidence.
   bounded shutdown; the original positive/negative tests continue to
   require all 4 genuine Element disposes, never weakened.
 
+
+## 2026-11-07 — generated Battery Consumer to original DDS full-path candidate
+
+- New isolated feature branch adds a **source-gated integration harness**:
+  original pinned EO ICD PDF + original IDL ZIP -> Component CLI-created
+  official BatteryStatus Consumer project -> generated user DLL/SO ->
+  independent native Cyclone DDS Reader/Host -> actual publisher and
+  strict business callbacks.
+- Includes default generated Handler **rejection control**, protected
+  user-owned Handler regeneration, actual native ABI smoke, two-source
+  positive and poisoned-checkpoint negative cases. The independent
+  original Report and Collection Element Dispose counts remain mandatory.
+- Reuses existing source verifier, generated Consumer prototype, native
+  Host and independent DDS oracle; no new guessed official QoS or service
+  approvals, no original documents or compiled TypeSupport committed.
+- **Verification pending:** Run the newly added
+  `generated-battery-component-native-e2e.yml` exact feature HEAD and
+  relevant Linux/Windows SDK regressions before merge. No PASS asserted
+  for the new integration until that evidence is inspected.
+- Still open: generic source-approved per-Service runtime binding,
+  complete Component QoS/membership, Command/Collection lifecycle,
+  full independent conformance, RTI and mixed-vendor future scope.

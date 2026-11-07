@@ -22,6 +22,9 @@ on:
       - 'tests/integration/cyclone/src/official_battery_component_module.cpp'
       - 'tests/integration/cyclone/src/official_battery_component_consumer.cpp'
       - 'simulator/dds/run_battery_component_bridge.py'
+      - 'simulator/dds/run_battery_consumer_host.py'
+      - 'sdk/tools/umaa_official_battery_consumer_host.cpp'
+      - 'docs/SDK_OFFICIAL_BATTERY_CONSUMER_HOST.md'
   workflow_dispatch:
 permissions:
   contents: read
@@ -73,11 +76,11 @@ jobs:
           cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/battery-live-build" \
             -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/native-battery"
           cmake --build "$RUNNER_TEMP/battery-live-build" --parallel 2 \
-            --target umaa_official_battery_multicell_publisher umaa_official_battery_multicell_consumer umaa_official_battery_multilist_consumer umaa_official_battery_sdk_native_reader_consumer umaa_official_battery_business_module umaa_official_battery_component_consumer
+            --target umaa_official_battery_multicell_publisher umaa_official_battery_multicell_consumer umaa_official_battery_multilist_consumer umaa_official_battery_sdk_native_reader_consumer umaa_official_battery_business_module umaa_official_battery_component_consumer umaa_official_battery_consumer_host
       - name: 'Original DDS: two-source Lists into SDK Reader and loaded ABI-v2 Component positive/negative oracles'
         run: |
           ctest --test-dir "$RUNNER_TEMP/battery-live-build" \
-            -R '^official_umaa_battery_(multicell|multilist|sdk_native_reader|component_abi)_(good|bad_checkpoint|default_qos_rejected)$' \
+            -R '^official_umaa_battery_(multicell|multilist|sdk_native_reader|component_abi|native_consumer_host)_(good|bad_checkpoint|default_qos_rejected)$' \
             --output-on-failure -V
       - name: Explicit limitations
         if: success()

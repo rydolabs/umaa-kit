@@ -242,6 +242,19 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
   target_link_libraries(umaa_official_battery_component_consumer PRIVATE
     umaa_official_type_support ${CMAKE_DL_LIBS})
 
+  # SDK Host with externally generated original Cyclone Battery TypeSupport.
+  # Only the ordered TOPIC Presentation minimum is source-backed; complete
+  # Component QoS remains unapproved.
+  add_executable(umaa_official_battery_consumer_host
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/tools/umaa_official_battery_consumer_host.cpp")
+  target_compile_features(umaa_official_battery_consumer_host PRIVATE cxx_std_17)
+  target_include_directories(umaa_official_battery_consumer_host PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../dds-backends/cyclone/include")
+  target_link_libraries(umaa_official_battery_consumer_host PRIVATE
+    umaa_official_type_support ${CMAKE_DL_LIBS})
+  install(TARGETS umaa_official_battery_consumer_host RUNTIME DESTINATION bin)
+
   foreach(mode IN ITEMS good bad_checkpoint)
     if(mode STREQUAL "good")
       set(flag "")
@@ -257,6 +270,24 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
         ${flag})
     set_tests_properties("official_umaa_battery_component_abi_${mode}"
       PROPERTIES TIMEOUT 55)
+  endforeach()
+
+  # Genuine Report/Element Topics -> native Reader -> business-only DLL/SO.
+  foreach(mode IN ITEMS good bad_checkpoint)
+    if(mode STREQUAL "good")
+      set(flag "")
+    else()
+      set(flag "--bad-checkpoint")
+    endif()
+    add_test(NAME "official_umaa_battery_native_consumer_host_${mode}"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_consumer_host.py"
+        "$<TARGET_FILE:umaa_official_battery_multicell_publisher>"
+        "$<TARGET_FILE:umaa_official_battery_consumer_host>"
+        "$<TARGET_FILE:umaa_official_battery_business_module>"
+        ${flag})
+    set_tests_properties("official_umaa_battery_native_consumer_host_${mode}"
+      PROPERTIES TIMEOUT 60)
   endforeach()
 
   # Actual official Battery SDK Handler/BoundReportProvider, distinct from

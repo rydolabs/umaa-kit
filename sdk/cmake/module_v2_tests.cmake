@@ -101,3 +101,11 @@ add_executable(umaa_dds_endpoint_context_test tests/test_dds_endpoint_context.cp
 target_link_libraries(umaa_dds_endpoint_context_test PRIVATE UMAA::Runtime)
 add_test(NAME umaa_dds_endpoint_context_test
   COMMAND umaa_dds_endpoint_context_test "$<TARGET_FILE:umaa_mock_dds_backend>")
+
+# Mock backend isolates Domain objects by pointer. This proves the public
+# Application's Collection and split Elements/Metadata endpoints reuse the
+# same actual native session, outlive the parent, and reject V1 QoS downgrade.
+add_executable(umaa_shared_collection_context_test tests/test_shared_collection_context.cpp)
+target_link_libraries(umaa_shared_collection_context_test PRIVATE UMAA::Runtime)
+add_test(NAME umaa_shared_collection_context_test
+  COMMAND umaa_shared_collection_context_test "$<TARGET_FILE:umaa_mock_dds_backend>")

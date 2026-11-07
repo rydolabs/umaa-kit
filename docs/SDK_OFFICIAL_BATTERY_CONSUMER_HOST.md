@@ -90,3 +90,35 @@ The Reader's RELIABLE / KEEP_LAST(16) policies are explicit demo choices;
 full per-Component mandatory QoS, arbitrary Service binding and
 cross-vendor production behavior remain unverified. This executable
 does not supersede the synthetic-only generic umaa_component_host.
+
+
+## Source-gated CLI-generated Component to original DDS E2E (candidate, 2026-11-07)
+
+The independent on-wire module above was a separately authored business fixture.
+The new integration workflow `.github/workflows/generated-battery-component-native-e2e.yml`
+adds a different end-to-end proof with an actual Component created by
+`umaa_component_cli new/service add/generate --battery-host-preview`.
+
+- Fetch and independently SHA-256-verify **both** the original EO ICD 6.0
+  PDF and the original 594-file-with-EXP IDL archive in the ephemeral CI Runner.
+  No source PDF, ZIP, extracted TypeSupport or generated business DLL/SO is
+  committed or uploaded.
+- Generate a pinned BatteryStatus Consumer `service_binding.hpp`,
+  user-owned C++ Handler and ABI-v2 MODULE/CMake from the real inputs; install
+  the SDK and compile that generated MODULE as a real native Linux `.so`.
+- First run the **unchanged default rejecting Handler** against genuine native
+  DDS, and require the Host to fail with a *specific business-event refusal*.
+  Neither a publisher timeout nor a Host crash alone is an acceptable pass.
+- Replace only the **temporary generated project's user-owned Handler** with
+  the reviewed two-source business test fixture. Regenerate and prove that
+  the generator cannot overwrite it; rebuild and run its ABI smoke test.
+- Execute genuine two-source Report/Cell DDS **positive and poisoned-checkpoint
+  negative** runs through the new CLI-generated MODULE using the existing
+  strict independent publisher/Host/supervisor. Both require genuine Report
+  and Element Dispose counts, correct stable snapshots and no fake business
+  Dispose for rejected/uncommitted checkpoints.
+
+**CI status must be checked on the final feature commit before calling this a
+PASS.** Even after green CI, this is source-verified **BatteryStatus-only**
+host-preview integration, not approved effective Component QoS, a generic
+service Runtime, cross-vendor native parity or normative UMAA conformance.

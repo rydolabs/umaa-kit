@@ -1018,3 +1018,31 @@ evidence only. **Latest code HEAD needs fresh CI before merge.**
 - Next work outside this PR: Specialization shared Context, official
   source-backed ServiceBinding Runtime factory, multi-Component role/instance
   registry and queued Report failure propagation. No new compliance claim.
+
+## 2026-11-08 — SDK MVP integration and cross-module roles (Draft #79)
+
+- Baseline `main` remained `f7334283320d`, with 33 earlier open Draft
+  PRs. Published `docs/SDK_MVP_INTEGRATION_PLAN_2026-11-08.md` to prioritize
+  the **one generic original-source Host and executable approved ServiceBinding**
+  instead of adding service-specific demo paths. Existing PR #77 → #78 is
+  the shared DDS Context dependency; PR #76 is separate original Battery E2E.
+- `ComponentRuntime` now privately indexes a logical Service by its
+  ABI v2 action-bearing module registrations rather than just one DLL/SO.
+  Disjoint Provider and Consumer modules can coexist with the **same schema**;
+  duplicate module ID, conflicting schema, and overlapping role are denied
+  before new registry entries become visible. Dispatch selects the exact
+  action owner. Module unload removes only the matching module's roles,
+  respecting Pending Command and active ReportPublisher lifetime fences.
+- New fixture modules prove separate Consumer, duplicate Report Provider and
+  wrong-schema failures; `umaa_runtime_multirole_test` covers role
+  isolation, Report emission, real mock DDS receive, consumer-only
+  subscription, safe independent unload and failed-load atomicity.
+- **Exact code SHA** `9f98693878167d4170472453a5873e78c0fc0deb`:
+  raw Linux and Windows CTest job logs show **52/52 pass**, including
+  `umaa_runtime_multirole_test`; Linux Clang/UBSan job succeeded.
+  This ledger-only commit must receive its own exact-head CI evidence.
+- **Not achieved:** official approved ServiceBinding records, generic
+  original-source multi-service Host, native GROUP Collection, role/instance
+  routing for multiple providers of the same service, full conformance
+  or production/security certification. Draft #79 is stacked on #78 and
+  remains unmerged pending integration review.

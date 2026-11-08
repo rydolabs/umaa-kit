@@ -1072,3 +1072,25 @@ evidence only. **Latest code HEAD needs fresh CI before merge.**
 - Next: replace the synthetic admission record with source-reviewed,
   executable vendor TypeSupport/Key/QoS records and one original-source
   ServiceBinding-based Host endpoint. Do not claim this is complete.
+
+
+### 2026-11-08 — Generated Provider and Consumer in one Host (PR #80 follow-up)
+
+- Extended `tools/umaa_component_cli.py host-config` with paired
+  `--consumer-project` and `--consumer-module`. It validates the separate
+  generated Consumer's exact demo role and built DLL/SO and emits the strict
+  Reader binding with no user-written Topic/schema/QoS.
+- Extended the **existing** generated Component→Host E2E to generate,
+  build and load a second Consumer project. It checks default Handler
+  rejection, then changes **only** user business Handler methods, preserves
+  those edits on regeneration, builds, smoke-tests, and verifies actual
+  Host Report/Dispose callbacks with zero active sources.
+- CI exposed an existing generator assumption: the generated ABI smoke
+  expected Rejected unconditionally, so correct user-developed Completed
+  Consumer business logic failed its smoke test on Linux and Windows.
+  Fixed the smoke contract to allow Rejected/Completed while preserving
+  invalid payload and no-source negative ABI checks. This is **not** a
+  relaxation of actual Host admission, which requires Completed.
+- **Fresh exact-head CI remains required**; do not carry earlier 53/53
+  Host-only code revision success forward to the codegen update. Official
+  TypeSupport/Key/QoS and generic original-source factories remain blocked.

@@ -111,3 +111,22 @@ target_include_directories(umaa_shared_collection_context_test PRIVATE
 target_link_libraries(umaa_shared_collection_context_test PRIVATE UMAA::Runtime)
 add_test(NAME umaa_shared_collection_context_test
   COMMAND umaa_shared_collection_context_test "$<TARGET_FILE:umaa_mock_dds_backend>")
+
+# Cross-module Provider+Consumer for one Service, with atomic rejection of
+# overlapping roles, incompatible schema and duplicated module identities.
+add_library(umaa_role_consumer_v2_fixture MODULE tests/modules/battery_roles_v2.cpp)
+target_link_libraries(umaa_role_consumer_v2_fixture PRIVATE UMAA::Core)
+add_library(umaa_role_provider_collision_v2_fixture MODULE tests/modules/battery_roles_v2.cpp)
+target_compile_definitions(umaa_role_provider_collision_v2_fixture PRIVATE UMAA_TEST_PROVIDER_COLLISION=1)
+target_link_libraries(umaa_role_provider_collision_v2_fixture PRIVATE UMAA::Core)
+add_library(umaa_role_schema_collision_v2_fixture MODULE tests/modules/battery_roles_v2.cpp)
+target_compile_definitions(umaa_role_schema_collision_v2_fixture PRIVATE UMAA_TEST_BAD_SCHEMA=1)
+target_link_libraries(umaa_role_schema_collision_v2_fixture PRIVATE UMAA::Core)
+add_executable(umaa_runtime_multirole_test tests/test_runtime_multirole.cpp)
+target_link_libraries(umaa_runtime_multirole_test PRIVATE UMAA::Runtime)
+add_test(NAME umaa_runtime_multirole_test COMMAND umaa_runtime_multirole_test
+  "$<TARGET_FILE:umaa_demo_vehicle_v2>"
+  "$<TARGET_FILE:umaa_role_consumer_v2_fixture>"
+  "$<TARGET_FILE:umaa_role_provider_collision_v2_fixture>"
+  "$<TARGET_FILE:umaa_role_schema_collision_v2_fixture>"
+  "$<TARGET_FILE:umaa_mock_dds_backend>")

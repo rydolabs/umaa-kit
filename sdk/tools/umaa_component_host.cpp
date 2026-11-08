@@ -4,6 +4,9 @@
 #include "umaa/internal/component_runtime.hpp"
 #include "umaa/internal/dds_backend.h"
 #include "umaa/internal/host_report_bindings.hpp"
+#if defined(UMAA_WITH_SOURCE_PINNED_BATTERY)
+#include "umaa/internal/native_host_source_bindings.hpp"
+#endif
 #include "umaa/internal/runtime_config.hpp"
 #include "umaa/module_api_v2.h"
 #include <chrono>
@@ -209,6 +212,17 @@ int run(const umaa::internal::RuntimeConfig& config,uint32_t duration_ms){
 
 int main(int argc,char** argv) {
   try {
+#if defined(UMAA_WITH_SOURCE_PINNED_BATTERY)
+    // The *same Host source* accepts an original-source native binding only
+    // when it was explicitly compiled with authentic generated TypeSupport.
+    // All other Host configurations remain subject to normal demo admission.
+    if(argc>1 && std::string(argv[1])=="--native-binding")
+      return umaa::internal::run_source_bound_native_host(argc,argv);
+#else
+    if(argc>1 && std::string(argv[1])=="--native-binding")
+      throw std::invalid_argument(
+        "native source binding not compiled into this SDK Host");
+#endif
     if(argc!=3 && argc!=5)
       throw std::invalid_argument(
         "usage: umaa_component_host --config FILE [--duration-ms 1..600000]");

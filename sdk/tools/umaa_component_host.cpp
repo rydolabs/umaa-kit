@@ -2,6 +2,7 @@
 // ABI-v2 business Provider/Consumer modules and one host-owned DDS Domain.
 // Original UMAA native TypeSupport/Key/QoS is NOT approved by this demo host.
 #include "umaa/internal/component_runtime.hpp"
+#include "umaa/internal/dds_backend.h"
 #include "umaa/internal/host_report_bindings.hpp"
 #include "umaa/internal/runtime_config.hpp"
 #include "umaa/module_api_v2.h"

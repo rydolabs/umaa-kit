@@ -171,3 +171,37 @@ Provider/Consumer modules on Windows and Linux, runs the Host as its own
 process, checks Report/Dispose counts and no remaining active sources,
 proves Provider-only backward compatibility, and verifies fail-closed
 business and binding cases. Real Cyclone/Fast DDS regressions stay separate.
+
+
+### Generate a two-Component Host configuration without manual Topic names
+
+After building a generated Provider project and a separate generated
+Report Consumer project with the installed SDK, use the same CLI:
+
+~~~sh
+python -m tools.umaa_component_cli host-config \
+  --project /path/to/provider-project \
+  --module /path/to/provider-module.so \
+  --consumer-project /path/to/consumer-project \
+  --consumer-module /path/to/consumer-module.so \
+  --backend /path/to/dds-backend.so \
+  --domain-id 92 --instance-key source-1 --interval-ms 20 \
+  --output /path/to/host.yml
+umaa_component_host --config /path/to/host.yml --duration-ms 180
+~~~
+
+The CLI requires the Consumer manifest to declare **exactly** the
+`Demo::EO::BatteryStatus` Consumer role; it does not let the caller input
+Topic/Schema/QoS values or approve an original-source contract.
+One Component exposing both Report Provider and Consumer roles also gets
+a Consumer section automatically with no separate Consumer module.
+The generated default business Consumer returns Rejected, and Host
+propagates it as an error. Edit only the generated *user-owned* Handler to
+accept desired data/Dispose; regenerating preserves the change.
+
+The normal generated Component ABI smoke now accepts either the intentionally
+Rejected default or a user-implemented Completed Report result, while
+continuing to reject invalid payload, missing Source token, wrong ABI
+service/schema and incomplete module descriptors. The process-level
+test still proves **default rejection** and successful real callbacks after
+the business Handler is edited.

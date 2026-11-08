@@ -22,8 +22,15 @@ namespace umaa::internal {
 struct ComponentRuntime::State {
   std::mutex service_mutex;
   std::unordered_set<std::string> unloading;
+  struct ServiceRole {
+    std::shared_ptr<umaa::ComponentModule> module;
+    std::string schema;
+    uint32_t actions;
+  };
   std::vector<std::shared_ptr<umaa::ComponentModule>> modules;
-  std::unordered_map<std::string, std::shared_ptr<umaa::ComponentModule>> services;
+  // One service may have separate Provider and Consumer modules. Overlapping
+  // roles (including duplicate Providers) are rejected before registration.
+  std::unordered_map<std::string,std::vector<ServiceRole>> services;
   std::shared_ptr<umaa::DdsEndpointContext> endpoint_context;
 };
 struct ReportSubscription::State {
@@ -130,21 +137,19 @@ std::unique_ptr<ReportSubscription> ComponentRuntime::subscribe_report_fixture(
   // A Consumer need not load a local Provider device module. The backend's
   // explicitly compiled TypeBinding must authorize Topic, schema and QoS.
   // If this host ALSO provides the service, verify its local role/schema.
-  std::shared_ptr<umaa::ComponentModule> local_provider;
   {
     std::lock_guard<std::mutex> lock(state_->service_mutex);
-    auto it=state_->services.find(service);
+    const auto it=state_->services.find(service);
     if(it!=state_->services.end()){
-      local_provider=it->second;
-      if(state_->unloading.count(local_provider->name()))
-        throw std::runtime_error("component unload is in progress");
+      // A local Consumer-only registration is valid. A local Provider must
+      // still agree on the schema; Provider and Consumer coexist safely.
+      for(const auto& entry:it->second) {
+        if(state_->unloading.count(entry.module->name()))
+          throw std::runtime_error("component unload is in progress");
+        if(entry.schema!=schema)
+          throw std::runtime_error("report type/role mismatch");
+      }
     }
-  }
-  if(local_provider){
-    bool permitted=false;
-    for(const auto& entry:local_provider->services())
-      if(entry.service==service&&entry.schema==schema&&(entry.actions&4u))permitted=true;
-    if(!permitted)throw std::runtime_error("report type/role mismatch");
   }
   // Reject unknown TypeBinding and insufficient QoS by backend->reader().
   // Production generation must also verify Provider/Consumer roles.
@@ -169,11 +174,25 @@ void ComponentRuntime::load_component(const std::string& filename){
   }
   auto mod=std::make_shared<umaa::ComponentModule>(filename);
   std::lock_guard<std::mutex> lock(state_->service_mutex);
+  if(!state_->unloading.empty())
+    throw std::runtime_error("component unload is in progress");
+  for(const auto& installed:state_->modules)
+    if(installed->name()==mod->name())
+      throw std::runtime_error("duplicate Component module ID: "+mod->name());
+  // Validate the entire manifest first: partial registration would leave
+  // a module reachable after an otherwise failed load.
+  for(const auto& service:mod->services()) {
+    const auto found=state_->services.find(service.service);
+    if(found==state_->services.end())continue;
+    for(const auto& entry:found->second) {
+      if(entry.schema!=service.schema)
+        throw std::runtime_error("conflicting service schema: "+service.service);
+      if(entry.actions & service.actions)
+        throw std::runtime_error("duplicate service role between components: "+service.service);
+    }
+  }
   for(const auto& service:mod->services())
-    if(state_->services.count(service.service))
-      throw std::runtime_error("duplicate service between components: "+service.service);
-  for(const auto& service:mod->services())
-    state_->services.emplace(service.service,mod);
+    state_->services[service.service].push_back({mod,service.schema,service.actions});
   state_->modules.push_back(std::move(mod));
 }
 bool ComponentRuntime::unload_component(const std::string& module_id){
@@ -185,8 +204,8 @@ bool ComponentRuntime::unload_component(const std::string& module_id){
     if(found==state_->modules.end() || state_->unloading.count(module_id))
       return false;
     module=*found;
-    // One vector ref, one temporary ref, and one ref per registered service.
-    // ReportPublisher holds an additional ref: do not unload underneath it.
+    // One modules-vector ref, one temporary ref, and one per registered
+    // service role. A live ReportPublisher adds an extra owning ref.
     if(module.use_count()>static_cast<long>(module->services().size()+2))
       return false;
     state_->unloading.insert(module_id);
@@ -198,9 +217,12 @@ bool ComponentRuntime::unload_component(const std::string& module_id){
     std::lock_guard<std::mutex> lock(state_->service_mutex);
     if(stopped){
       for(const auto& service:module->services()){
-        auto pos=state_->services.find(service.service);
-        if(pos!=state_->services.end()&&pos->second==module)
-          state_->services.erase(pos);
+        const auto pos=state_->services.find(service.service);
+        if(pos==state_->services.end())continue;
+        auto& roles=pos->second;
+        roles.erase(std::remove_if(roles.begin(),roles.end(),
+           [&](const auto& role){return role.module==module;}),roles.end());
+        if(roles.empty())state_->services.erase(pos);
       }
       state_->modules.erase(std::remove(state_->modules.begin(),
         state_->modules.end(),module),state_->modules.end());
@@ -231,12 +253,26 @@ std::vector<std::string> ComponentRuntime::services()const{
 int32_t ComponentRuntime::call(const std::string& service_id,uint32_t action,
   const std::vector<uint8_t>& payload,std::vector<uint8_t>& output,
   int32_t& business_result,uint64_t session_id){
+  // Route by C ABI action/role rather than only service name. This prevents
+  // Consumer notifications from reaching a device Provider (or vice versa).
+  uint32_t required=0;
+  switch(action) {
+    case UMAA_COMPONENT_COMMAND:
+    case UMAA_COMPONENT_COMMAND_POLL: required=1u;break;
+    case UMAA_COMPONENT_CANCEL: required=2u;break;
+    case UMAA_COMPONENT_REPORT: required=4u;break;
+    case UMAA_COMPONENT_REPORT_ACCEPT: required=8u;break;
+    case UMAA_COMPONENT_REPORT_DISPOSE: required=16u;break;
+    default:return UMAA_COMPONENT_NOT_FOUND;
+  }
   std::shared_ptr<umaa::ComponentModule> module;
   {
     std::lock_guard<std::mutex> lock(state_->service_mutex);
-    auto found=state_->services.find(service_id);
+    const auto found=state_->services.find(service_id);
     if(found==state_->services.end())return UMAA_COMPONENT_NOT_FOUND;
-    module=found->second;
+    for(const auto& entry:found->second)
+      if(entry.actions & required){module=entry.module;break;}
+    if(!module)return UMAA_COMPONENT_NOT_FOUND;
     if(state_->unloading.count(module->name()))return UMAA_COMPONENT_NOT_ACTIVE;
   }
   return module->call(service_id,action,payload,output,business_result,session_id);
@@ -370,7 +406,9 @@ std::unique_ptr<ReportPublisher> ComponentRuntime::open_report_fixture(
     std::lock_guard<std::mutex> lock(state_->service_mutex);
     const auto found=state_->services.find(service_id);
     if(found==state_->services.end())throw std::runtime_error("unknown report service");
-    module=found->second;
+    for(const auto& entry:found->second)
+      if(entry.actions & 4u){module=entry.module;break;}
+    if(!module)throw std::runtime_error("no local Report Provider for service");
     if(state_->unloading.count(module->name()))
       throw std::runtime_error("component unload is in progress");
   }

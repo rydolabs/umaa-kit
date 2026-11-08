@@ -25,10 +25,17 @@ struct RuntimeConfig {
     std::string instance_key;
     uint32_t interval_ms{};
   };
+  struct ReportConsumerConfig {
+    std::string service_id;
+    std::string topic_name;
+    std::string schema_id;
+    std::string qos_profile;
+  };
   std::string backend;
   uint32_t domain_id{};
   std::vector<std::string> modules;
   std::vector<ReportPublisherConfig> report_publishers;
+  std::vector<ReportConsumerConfig> report_consumers;
   std::unordered_map<std::string, umaa::qos::Policy> qos_profiles;
   static std::string trim(std::string s) {
     auto keep=[](unsigned char c){return !std::isspace(c);};
@@ -51,12 +58,18 @@ struct RuntimeConfig {
     std::ifstream in(filename);
     if(!in)throw std::runtime_error("cannot open UMAA runtime configuration");
     const auto root=std::filesystem::absolute(filename).parent_path();
-    enum class Section { None, Middleware, Modules, QoS, ReportPublishers } section=Section::None;
+    enum class Section { None, Middleware, Modules, QoS, ReportPublishers, ReportConsumers } section=Section::None;
     std::string selected_qos;
     std::unordered_set<std::string> qos_fields;
     bool qos_section_seen=false;
     bool publisher_section_seen=false;
+    bool consumer_section_seen=false;
     std::unordered_set<std::string> publisher_fields;
+    std::unordered_set<std::string> consumer_fields;
+    auto complete_consumer=[&] {
+      if(!consumer_fields.empty() && consumer_fields.size()!=4)
+        throw std::invalid_argument("incomplete Report consumer binding");
+    };
     auto complete_publisher=[&] {
       if(!publisher_fields.empty() && publisher_fields.size()!=6)
         throw std::invalid_argument("incomplete Report publisher binding");
@@ -72,8 +85,9 @@ struct RuntimeConfig {
       if(!line.empty()&&line.back()=='\r')line.pop_back();
       if(trim(line).empty()||trim(line)[0]=='#')continue;
       if(line=="middleware:" || line=="modules:" || line=="qos_profiles:" ||
-         line=="report_publishers:"){
+         line=="report_publishers:" || line=="report_consumers:"){
         if(section==Section::ReportPublishers)complete_publisher();
+        if(section==Section::ReportConsumers)complete_consumer();
       }
       if(line=="middleware:"){section=Section::Middleware;continue;}
       if(line=="modules:"){section=Section::Modules;continue;}
@@ -84,10 +98,49 @@ struct RuntimeConfig {
         section=Section::ReportPublishers;
         continue;
       }
+      if(line=="report_consumers:"){
+        if(consumer_section_seen)
+          throw std::invalid_argument("duplicate Report consumer section");
+        consumer_section_seen=true;
+        section=Section::ReportConsumers;
+        continue;
+      }
       if(line=="qos_profiles:"){
         if(qos_section_seen)throw std::invalid_argument("duplicate QoS profiles section");
         qos_section_seen=true;
         section=Section::QoS;continue;
+      }
+      if(section==Section::ReportConsumers){
+        // Consumer records bind only an explicit Service/Topic/Schema/QoS.
+        // No automatic Topic or TypeSupport inference.
+        if(line.rfind("  - ",0)==0){
+          complete_consumer();
+          if(cfg.report_consumers.size()>=32)
+            throw std::invalid_argument("too many Report consumers");
+          cfg.report_consumers.emplace_back();
+          consumer_fields.clear();
+          if(line.rfind("  - service:",0)!=0)
+            throw std::invalid_argument("Report consumer must start with service");
+          cfg.report_consumers.back().service_id=value(line.substr(12));
+          consumer_fields.insert("service");
+          continue;
+        }
+        if(line.rfind("    ",0)!=0 || line.rfind("     ",0)==0 ||
+           cfg.report_consumers.empty())
+          throw std::invalid_argument("invalid Report consumer indentation");
+        const auto item=line.substr(4);
+        const auto colon=item.find(':');
+        if(colon==std::string::npos)
+          throw std::invalid_argument("invalid Report consumer setting");
+        const auto key=trim(item.substr(0,colon)),v=value(item.substr(colon+1));
+        if(!consumer_fields.insert(key).second)
+          throw std::invalid_argument("duplicate Report consumer setting");
+        auto& sub=cfg.report_consumers.back();
+        if(key=="topic")sub.topic_name=v;
+        else if(key=="schema")sub.schema_id=v;
+        else if(key=="qos")sub.qos_profile=v;
+        else throw std::invalid_argument("unknown Report consumer field");
+        continue;
       }
       if(section==Section::ReportPublishers){
         // Fixed small YAML subset: one 2-space "- service: ...", followed
@@ -222,6 +275,7 @@ struct RuntimeConfig {
     }
     if(!in.eof()&&in.fail())throw std::runtime_error("configuration read failed");
     if(section==Section::ReportPublishers)complete_publisher();
+    if(section==Section::ReportConsumers)complete_consumer();
     if(!backend_set||!domain_set)throw std::invalid_argument("DDS backend and domain_id required");
     for(const auto& entry:cfg.qos_profiles)umaa::qos::validate(entry.second);
     return cfg;

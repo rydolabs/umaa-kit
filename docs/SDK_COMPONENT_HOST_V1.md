@@ -112,3 +112,62 @@ Host path successfully. No user-written DDS APIs, native TypeSupport,
 CMake configuration or Module ABI plumbing is required for this synthetic
 slice. The test backend is an **in-process mock**, not normative DDS wire.
 
+## One-Host Provider → Reader → Consumer ABI v2 (development extension)
+
+The **same** `umaa_component_host` executable now supports an explicit
+`report_consumers:` configuration section. The SDK Host opens the Reader
+using its single shared DDS Context, dispatches each accepted DATA update
+and the **genuine DDS keyed Dispose** to the Consumer Component ABI-v2 role,
+and refuses a rejected business callback or unresolved active source.
+Publisher-only configurations remain supported.
+
+~~~yaml
+middleware:
+  backend: "/absolute/path/to/umaa_mock_dds_backend.so"
+  domain_id: 91
+modules:
+  - "/absolute/path/to/provider_component.so"
+  - "/absolute/path/to/consumer_component.so"
+report_publishers:
+  - service: Demo::EO::BatteryStatus
+    topic: demo/BatteryStatus
+    schema: demo:battery-v1
+    qos: demo-reliable
+    key: source-a
+    interval_ms: 25
+report_consumers:
+  - service: Demo::EO::BatteryStatus
+    topic: demo/BatteryStatus
+    schema: demo:battery-v1
+    qos: demo-reliable
+~~~
+
+The consumer is a separate generated or hand-authored ABI-v2 module that
+registers `component.consume<Service>(sink)` with both ReportAccept and
+ReportDispose actions. The Host verifies service/schema/role before opening
+any DDS Reader/Writer. Consumer-only subscriptions also work when another
+process is responsible for the wire publisher; unresolved active sources
+must fail the Host's clean-shutdown check instead of inventing disposal.
+
+**Security and protocol boundaries:**
+- Only the compiled `internal/host_report_bindings.hpp` **synthetic demo**
+  `Demo::EO::BatteryStatus` contract can be executed in this Host.
+  The larger reviewed literal Topic catalog does NOT approve official runtime
+  TypeSupport, keys, Provider/Consumer applicability or mandatory QoS.
+- The Consumer path calls `ReportSubscription::poll(1)` because its current
+  last-event API is **not a bounded event queue** and batching multiple
+  samples would silently coalesce callbacks. This is a development bridge,
+  not an endorsement of its throughput/resource-budget guarantees.
+- Source tokens are host-local, monotonically increasing, bounded to 64
+  simultaneously active keys, and only retired after **actual** DDS DISPOSE.
+  UNREGISTER, unknown disposal, callback failure, source overflow, or a
+  bounded-drain overflow all fail nonzero.
+- The test's mock DDS transport is in-process only; this exercise does
+  **not** claim original UMAA native DDS, multi-Topic Collection, QoS,
+  official ServiceBinding generation, real-device safety or conformance.
+
+`umaa_host_report_binding_dispatch_e2e` builds independent ABI-v2
+Provider/Consumer modules on Windows and Linux, runs the Host as its own
+process, checks Report/Dispose counts and no remaining active sources,
+proves Provider-only backward compatibility, and verifies fail-closed
+business and binding cases. Real Cyclone/Fast DDS regressions stay separate.

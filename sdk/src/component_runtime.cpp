@@ -250,6 +250,17 @@ std::vector<std::string> ComponentRuntime::services()const{
   for(const auto& s:state_->services)out.push_back(s.first);
   return out;
 }
+bool ComponentRuntime::has_service_role(const std::string& service,
+    const std::string& schema,uint32_t actions) const {
+  if(actions==0 || (actions & ~31u))return false;
+  std::lock_guard<std::mutex> lock(state_->service_mutex);
+  const auto it=state_->services.find(service);
+  if(it==state_->services.end())return false;
+  for(const auto& entry:it->second)
+    if(entry.schema==schema && (entry.actions & actions)==actions &&
+       !state_->unloading.count(entry.module->name()))return true;
+  return false;
+}
 int32_t ComponentRuntime::call(const std::string& service_id,uint32_t action,
   const std::vector<uint8_t>& payload,std::vector<uint8_t>& output,
   int32_t& business_result,uint64_t session_id){

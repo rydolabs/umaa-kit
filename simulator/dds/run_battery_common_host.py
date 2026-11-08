@@ -32,7 +32,7 @@ def denied(host: str,module: str) -> None:
     baseline=args(module)
     invalid=[
         ["--native-binding","UMAA::EO::InventedService",
-         *baseline[3:]],
+         *baseline[2:]],
         [*baseline[:5], "0"*64, *baseline[6:]],
         [*baseline[:7], "0"*64, *baseline[8:]],
         baseline[:-2]+["--timeout-ms","0"],

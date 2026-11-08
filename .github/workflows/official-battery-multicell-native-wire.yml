@@ -89,15 +89,9 @@ jobs:
             --output-on-failure -V
       - name: Prove shared SDK Host original-source Battery factory on good and poisoned checkpoints
         run: |
-          ctest --test-dir "$RUNNER_TEMP/battery-live-build" \
-            -R '^official_umaa_battery_common_host_(good|bad_checkpoint)
-        run: |
-          echo "OFFICIAL_BATTERY_ABI_V2_BUSINESS_MODULE_ORIGINAL_DDS_E2E_PASS"
-          echo "No full Collection/Component QoS, vendor parity or conformance claim"
- \
-            --output-on-failure -V
+          ctest --test-dir "$RUNNER_TEMP/battery-live-build" -R '^official_umaa_battery_common_host_(good|bad_checkpoint)$' --output-on-failure -V
       - name: Explicit limitations
         if: success()
         run: |
-          echo "OFFICIAL_BATTERY_ABI_V2_BUSINESS_MODULE_ORIGINAL_DDS_E2E_PASS"
+          echo "OFFICIAL_BATTERY_COMMON_HOST_SOURCE_PINNED_WIRE_PASS"
           echo "No full Collection/Component QoS, vendor parity or conformance claim"

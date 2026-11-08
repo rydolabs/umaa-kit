@@ -132,7 +132,7 @@ def main():
         completed = run([host, "--config", paired_config, "--duration-ms", "180"])
         import re
         delivery = re.search(
-            r"UMAA_HOST_STOPPED reports=(\\d+) disposes=(\\d+) active=(\\d+)",
+            r"UMAA_HOST_STOPPED reports=(\d+) disposes=(\d+) active=(\d+)",
             completed.stdout)
         if not delivery or int(delivery[1]) < 1 or tuple(
                 map(int, delivery.groups()[1:])) != (1, 0):

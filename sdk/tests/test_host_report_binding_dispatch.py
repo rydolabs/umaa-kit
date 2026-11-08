@@ -82,7 +82,7 @@ def main():
                 f'  - "{provider}"\n') + publishers + consumers,
             prefix + "modules:\n" + f'  - "{consumer}"\n' + publishers + consumers,
             prefix + modules(rejecting) + publishers + consumers,
-            valid.replace("report_consumers:", "report_consumers:\n"),
+            valid.replace("report_consumers:", "report_consumers:\n  - service: Demo::EO::BatteryStatus"),
             valid + consumers,
             valid.replace("    qos: demo-reliable\n", "    qos: forged-profile\n"),
             valid.replace("    schema: demo:battery-v1\n",

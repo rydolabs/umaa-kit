@@ -33,8 +33,13 @@ class BatteryHandler final : public umaa::ReportSink<BatteryStatus> {
  public:
   umaa::Result on_report(const BatteryStatus::Report& value,
                          std::uint64_t source) override {
+#if defined(UMAA_TEST_CONSUMER_REJECT)
+    (void)value;(void)source;
+    return umaa::Result::Rejected;
+#else
     return source!=0 && value.level_pct==80
       ?umaa::Result::Completed:umaa::Result::Rejected;
+#endif
   }
   umaa::Result on_dispose(std::uint64_t source) override {
     return source!=0?umaa::Result::Completed:umaa::Result::Rejected;
@@ -54,6 +59,8 @@ void register_services(umaa::Component& module) {
 UMAA_EXPORT_COMPONENT_V2("battery-duplicate-provider",demo::register_services)
 #elif defined(UMAA_TEST_BAD_SCHEMA)
 UMAA_EXPORT_COMPONENT_V2("battery-wrong-schema-consumer",demo::register_services)
+#elif defined(UMAA_TEST_CONSUMER_REJECT)
+UMAA_EXPORT_COMPONENT_V2("battery-reject-consumer",demo::register_services)
 #else
 UMAA_EXPORT_COMPONENT_V2("battery-consumer",demo::register_services)
 #endif

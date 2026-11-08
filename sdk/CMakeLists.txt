@@ -319,6 +319,15 @@ if(UMAA_BUILD_TESTS AND UMAA_BUILD_MODULE_DEMO)
       "$<TARGET_FILE:umaa_demo_vehicle_v2>"
       "$<TARGET_FILE:umaa_mock_dds_backend>")
   set_tests_properties(umaa_component_host_v1_smoke PROPERTIES TIMEOUT 40)
+  add_test(NAME umaa_host_report_binding_dispatch_e2e
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_host_report_binding_dispatch.py"
+      "$<TARGET_FILE:umaa_component_host>"
+      "$<TARGET_FILE:umaa_demo_vehicle_v2>"
+      "$<TARGET_FILE:umaa_role_consumer_v2_fixture>"
+      "$<TARGET_FILE:umaa_role_reject_consumer_v2_fixture>"
+      "$<TARGET_FILE:umaa_mock_dds_backend>")
+  set_tests_properties(umaa_host_report_binding_dispatch_e2e PROPERTIES TIMEOUT 50)
 endif()
 
 

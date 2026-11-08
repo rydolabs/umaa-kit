@@ -72,6 +72,9 @@ public:
   // Configure before endpoints; an explicit profile MUST use the QoS extension.
   void set_qos_profiles(const std::unordered_map<std::string,umaa::qos::Policy>& profiles);
   std::vector<std::string> services() const;
+  // Validate the exact role and schema before an Endpoint opens.
+  bool has_service_role(const std::string& service,const std::string& schema,
+                        uint32_t actions) const;
   std::unique_ptr<ReportSubscription> subscribe_report_fixture(const std::string& service,
      const std::string& topic,const std::string& schema,const std::string& qos,
      const std::string& idl_type="");

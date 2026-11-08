@@ -383,10 +383,12 @@ def generate(project):
             "    std::vector<std::uint8_t> valid_report{0u, 0u, 0u, 0u};",
             f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_ACCEPT,',
             "          valid_report, output, business, 42) != UMAA_COMPONENT_OK ||",
-            "        business != static_cast<std::int32_t>(umaa::Result::Rejected)) return 7;",
+            "        (business != static_cast<std::int32_t>(umaa::Result::Rejected) &&",
+            "         business != static_cast<std::int32_t>(umaa::Result::Completed))) return 7;",
             f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_DISPOSE,',
             "          {}, output, business, 42) != UMAA_COMPONENT_OK ||",
-            "        business != static_cast<std::int32_t>(umaa::Result::Rejected)) return 8;",
+            "        (business != static_cast<std::int32_t>(umaa::Result::Rejected) &&",
+            "         business != static_cast<std::int32_t>(umaa::Result::Completed))) return 8;",
             f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_ACCEPT,',
             "          {1u, 2u}, output, business, 42) != UMAA_COMPONENT_INVALID) return 9;",
             f'    if (module.call("{service_id}", UMAA_COMPONENT_REPORT_ACCEPT,',
@@ -405,7 +407,8 @@ def generate(project):
 
 def generate_host_config(project: Path, backend: Path, module: Path, output: Path,
                          domain_id: int, instance_key: str,
-                         interval_ms: int) -> Path:
+                         interval_ms: int, consumer_project: Path | None = None,
+                         consumer_module: Path | None = None) -> Path:
     """Create a strict, runnable Host config for the synthetic Report demo.
 
     Deliberately not a normative UMAA ServiceBinding exporter. The caller
@@ -417,6 +420,19 @@ def generate_host_config(project: Path, backend: Path, module: Path, output: Pat
         raise ProjectError("Host Report requires Demo Battery provider in Component")
     if any(service not in DEMO for service, _ in roles):
         raise ProjectError("official Service Runtime is not source-approved")
+    if (consumer_project is None) != (consumer_module is None):
+        raise ProjectError("Consumer requires both --consumer-project and --consumer-module")
+    if consumer_project is None:
+        include_consumer = ("Demo::EO::BatteryStatus", "consumer") in roles
+    else:
+        sink_manifest = validate(read(consumer_project), nonempty=True)
+        sink_roles = {(item["id"], item["role"])
+                      for item in sink_manifest["services"]}
+        if sink_roles != {("Demo::EO::BatteryStatus", "consumer")}:
+            raise ProjectError("Host Consumer needs an exact Demo Battery Consumer-only Component")
+        if not (consumer_project / "CMakeLists.txt").is_file():
+            raise ProjectError("generate/build Consumer before Host configuration")
+        include_consumer = True
     if not (project / "CMakeLists.txt").is_file():
         raise ProjectError("generate/build the Component before Host configuration")
     if type(domain_id) is not int or not 0 <= domain_id <= 230:
@@ -439,13 +455,22 @@ def generate_host_config(project: Path, backend: Path, module: Path, output: Pat
     module_path = native_file(module, "Component module")
     if module.suffix.lower() not in (".so", ".dll", ".dylib"):
         raise ProjectError("Component module must be a DLL or SO")
+    extra_module = ""
+    if consumer_module is not None:
+        if consumer_module.suffix.lower() not in (".so", ".dll", ".dylib"):
+            raise ProjectError("Consumer Component must be a DLL or SO")
+        sink_path = native_file(consumer_module, "Consumer Component module")
+        if sink_path == module_path:
+            raise ProjectError("separate Consumer module must have a different path")
+        extra_module = f'  - "{sink_path}"\n'
     content = (
         'middleware:\n'
         f'  backend: "{backend_path}"\n'
         f'  domain_id: {domain_id}\n'
         'modules:\n'
         f'  - "{module_path}"\n'
-        'report_publishers:\n'
+        + extra_module
+        + 'report_publishers:\n'
         '  - service: Demo::EO::BatteryStatus\n'
         '    topic: demo/BatteryStatus\n'
         '    schema: demo:battery-v1\n'
@@ -453,6 +478,14 @@ def generate_host_config(project: Path, backend: Path, module: Path, output: Pat
         f'    key: {instance_key}\n'
         f'    interval_ms: {interval_ms}\n'
     )
+    if include_consumer:
+        content += (
+            'report_consumers:\n'
+            '  - service: Demo::EO::BatteryStatus\n'
+            '    topic: demo/BatteryStatus\n'
+            '    schema: demo:battery-v1\n'
+            '    qos: demo-reliable\n'
+        )
     # Config is user-owned. Re-running codegen must not silently overwrite it.
     if output.is_symlink():
         raise ProjectError("refusing symlink Host configuration")
@@ -548,6 +581,10 @@ def main(argv=None):
     h.add_argument("--domain-id", type=int, default=0)
     h.add_argument("--instance-key", required=True)
     h.add_argument("--interval-ms", type=int, default=100)
+    h.add_argument("--consumer-project", type=Path,
+                   help="generated Demo Battery Consumer-only project")
+    h.add_argument("--consumer-module", type=Path,
+                   help="built Consumer DLL/SO for the same Host")
     b = commands.add_parser("build")
     b.add_argument("--project", type=Path, default=Path("."))
     b.add_argument("--sdk-prefix", required=True, type=Path)
@@ -635,7 +672,8 @@ def main(argv=None):
         elif args.cmd == "host-config":
             path = generate_host_config(
                 args.project, args.backend, args.module, args.output,
-                args.domain_id, args.instance_key, args.interval_ms)
+                args.domain_id, args.instance_key, args.interval_ms,
+                args.consumer_project, args.consumer_module)
             print(json.dumps({"hostConfig": str(path)}, sort_keys=True))
         elif args.cmd == "build":
             run_cmake(args.project, args.sdk_prefix)

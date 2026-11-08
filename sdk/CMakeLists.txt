@@ -60,6 +60,11 @@ if(UMAA_BUILD_TESTS)
   add_executable(umaa_qos_policy_test tests/test_qos_policy.cpp)
   target_link_libraries(umaa_qos_policy_test PRIVATE UMAA::Core)
   add_test(NAME umaa_qos_policy_test COMMAND umaa_qos_policy_test)
+  add_executable(umaa_native_host_source_bindings_test
+    tests/test_native_host_source_bindings.cpp)
+  target_link_libraries(umaa_native_host_source_bindings_test PRIVATE UMAA::Core)
+  add_test(NAME umaa_native_host_source_bindings_test
+    COMMAND umaa_native_host_source_bindings_test)
   add_executable(umaa_reviewed_service_registry_test tests/test_reviewed_runtime_registry.cpp)
   target_link_libraries(umaa_reviewed_service_registry_test PRIVATE UMAA::Core)
   add_test(NAME umaa_reviewed_service_registry_test COMMAND umaa_reviewed_service_registry_test)

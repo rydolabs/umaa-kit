@@ -136,9 +136,9 @@ def main():
             completed.stdout)
         if not delivery or int(delivery[1]) < 1 or tuple(
                 map(int, delivery.groups()[1:])) != (1, 0):
-            raise AssertionError("generated Provider→Consumer Report/Dispose failed: "
+            raise AssertionError("generated Provider->Consumer Report/Dispose failed: "
                                  + completed.stdout)
-    print("PASS generated Provider+Consumer business DLL/SO → single Host "
+    print("PASS generated Provider+Consumer business DLL/SO -> single Host "
           "with actual Report/Dispose; no DDS code in user Handlers")
 
 

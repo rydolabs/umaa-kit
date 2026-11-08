@@ -130,3 +130,9 @@ add_test(NAME umaa_runtime_multirole_test COMMAND umaa_runtime_multirole_test
   "$<TARGET_FILE:umaa_role_provider_collision_v2_fixture>"
   "$<TARGET_FILE:umaa_role_schema_collision_v2_fixture>"
   "$<TARGET_FILE:umaa_mock_dds_backend>")
+
+# Intentionally rejecting business Consumer to verify the Host never claims
+# clean shutdown when a DDS Report callback is refused by user code.
+add_library(umaa_role_reject_consumer_v2_fixture MODULE tests/modules/battery_roles_v2.cpp)
+target_compile_definitions(umaa_role_reject_consumer_v2_fixture PRIVATE UMAA_TEST_CONSUMER_REJECT=1)
+target_link_libraries(umaa_role_reject_consumer_v2_fixture PRIVATE UMAA::Core)

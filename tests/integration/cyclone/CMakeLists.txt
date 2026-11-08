@@ -255,6 +255,60 @@ if(DEFINED UMAA_OFFICIAL_GENERATED_ROOT)
     umaa_official_type_support ${CMAKE_DL_LIBS})
   install(TARGETS umaa_official_battery_consumer_host RUNTIME DESTINATION bin)
 
+  # Only a source-pinned optional build may add the original Battery factory
+  # to the SAME SDK umaa_component_host source. The default SDK Host never
+  # includes native TypeSupport and refuses --native-binding.
+  #
+  # This check authenticates the supplied original AUVSI IDL archive; the
+  # caller must also generate the matching transient TypeSupport from it.
+  # The pinned ICD digest is source provenance metadata, not full QoS proof.
+  if(DEFINED UMAA_OFFICIAL_IDL_ARCHIVE)
+    if(NOT EXISTS "${UMAA_OFFICIAL_IDL_ARCHIVE}")
+      message(FATAL_ERROR "Original AUVSI IDL archive required for native Host")
+    endif()
+    file(SHA256 "${UMAA_OFFICIAL_IDL_ARCHIVE}" HOST_SOURCE_SHA256)
+    if(NOT HOST_SOURCE_SHA256 STREQUAL
+       "15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08")
+      message(FATAL_ERROR "Native Host denied: original AUVSI IDL SHA256 differs")
+    endif()
+    # Reuse Runtime and Host implementation instead of copying a second
+    # Service-specific Host. No generated original data enters the repo.
+    set(UMAA_BUILD_TESTS OFF CACHE BOOL "Standalone SDK CTests" FORCE)
+    set(UMAA_BUILD_PROCESS_WORKER OFF CACHE BOOL "Standalone IPC worker" FORCE)
+    add_subdirectory(
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk"
+      "${CMAKE_CURRENT_BINARY_DIR}/sdk-common-host")
+    add_executable(umaa_component_host_source_pinned
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/tools/umaa_component_host.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/tools/umaa_native_battery_source_binding.cpp")
+    target_compile_features(umaa_component_host_source_pinned PRIVATE cxx_std_17)
+    target_compile_definitions(umaa_component_host_source_pinned PRIVATE
+      UMAA_WITH_SOURCE_PINNED_BATTERY=1)
+    target_include_directories(umaa_component_host_source_pinned PRIVATE
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../sdk/include"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../../dds-backends/cyclone/include")
+    target_link_libraries(umaa_component_host_source_pinned PRIVATE
+      UMAA::Runtime umaa_official_type_support ${CMAKE_DL_LIBS})
+    # Existing business DLL/SO and original separate native publisher are
+    # retained as strict independent test oracles.
+    foreach(mode IN ITEMS good bad_checkpoint)
+      if(mode STREQUAL "good")
+        set(native_flag "")
+      else()
+        set(native_flag "--bad-checkpoint")
+      endif()
+      add_test(NAME "official_umaa_battery_common_host_${mode}"
+        COMMAND "${Python3_EXECUTABLE}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/../../../simulator/dds/run_battery_common_host.py"
+          "$<TARGET_FILE:umaa_official_battery_multicell_publisher>"
+          "$<TARGET_FILE:umaa_component_host_source_pinned>"
+          "$<TARGET_FILE:umaa_official_battery_business_module>"
+          ${native_flag})
+      set_tests_properties("official_umaa_battery_common_host_${mode}"
+        PROPERTIES TIMEOUT 65)
+    endforeach()
+  endif()
+
   foreach(mode IN ITEMS good bad_checkpoint)
     if(mode STREQUAL "good")
       set(flag "")

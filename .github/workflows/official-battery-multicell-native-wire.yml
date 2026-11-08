@@ -24,6 +24,10 @@ on:
       - 'simulator/dds/run_battery_component_bridge.py'
       - 'simulator/dds/run_battery_consumer_host.py'
       - 'sdk/tools/umaa_official_battery_consumer_host.cpp'
+      - 'sdk/tools/umaa_component_host.cpp'
+      - 'sdk/tools/umaa_native_battery_source_binding.cpp'
+      - 'sdk/include/umaa/internal/native_host_source_bindings.hpp'
+      - 'simulator/dds/run_battery_common_host.py'
       - 'docs/SDK_OFFICIAL_BATTERY_CONSUMER_HOST.md'
   workflow_dispatch:
 permissions:
@@ -74,16 +78,28 @@ jobs:
         run: |
           set -euo pipefail
           cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/battery-live-build" \
-            -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/native-battery"
+            -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/native-battery" \
+            -DUMAA_OFFICIAL_IDL_ARCHIVE="$RUNNER_TEMP/original.zip"
           cmake --build "$RUNNER_TEMP/battery-live-build" --parallel 2 \
-            --target umaa_official_battery_multicell_publisher umaa_official_battery_multicell_consumer umaa_official_battery_multilist_consumer umaa_official_battery_sdk_native_reader_consumer umaa_official_battery_business_module umaa_official_battery_component_consumer umaa_official_battery_consumer_host
+            --target umaa_official_battery_multicell_publisher umaa_official_battery_multicell_consumer umaa_official_battery_multilist_consumer umaa_official_battery_sdk_native_reader_consumer umaa_official_battery_business_module umaa_official_battery_component_consumer umaa_official_battery_consumer_host umaa_component_host_source_pinned
       - name: 'Original DDS: two-source Lists into SDK Reader and loaded ABI-v2 Component positive/negative oracles'
         run: |
           ctest --test-dir "$RUNNER_TEMP/battery-live-build" \
             -R '^official_umaa_battery_(multicell|multilist|sdk_native_reader|component_abi|native_consumer_host)_(good|bad_checkpoint|default_qos_rejected)$' \
             --output-on-failure -V
+      - name: Prove shared SDK Host original-source Battery factory on good and poisoned checkpoints
+        run: |
+          ctest --test-dir "$RUNNER_TEMP/battery-live-build" -R '^official_umaa_battery_common_host_(good|bad_checkpoint)$' --output-on-failure -V
+      - name: Reject forged original IDL archive before compiling Native Host
+        run: |
+          printf 'not an original source archive' > "$RUNNER_TEMP/forged-original.zip"
+          if cmake -S tests/integration/cyclone -B "$RUNNER_TEMP/native-forged-denied" -DUMAA_OFFICIAL_GENERATED_ROOT="$RUNNER_TEMP/native-battery" -DUMAA_OFFICIAL_IDL_ARCHIVE="$RUNNER_TEMP/forged-original.zip" > "$RUNNER_TEMP/native-source-denial.log" 2>&1; then
+            echo "FAIL: unverified source compiled as original Native Host" >&2
+            exit 1
+          fi
+          grep -q "Native Host denied: original AUVSI IDL SHA256 differs" "$RUNNER_TEMP/native-source-denial.log"
       - name: Explicit limitations
         if: success()
         run: |
-          echo "OFFICIAL_BATTERY_ABI_V2_BUSINESS_MODULE_ORIGINAL_DDS_E2E_PASS"
+          echo "OFFICIAL_BATTERY_COMMON_HOST_SOURCE_PINNED_WIRE_PASS"
           echo "No full Collection/Component QoS, vendor parity or conformance claim"

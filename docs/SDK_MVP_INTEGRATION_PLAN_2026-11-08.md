@@ -84,3 +84,28 @@ ServiceBinding readiness.
 `ServiceBinding` records must contain source-reviewed role, literal Topic,
 TypeSupport binding, keyed identity and mandatory QoS requirements. The
 generic Host must consume those records instead of inventing mappings.
+
+
+## 2026-11-08 original-source common Host integration (stacked candidate #81)
+
+- The dev-only common `umaa_component_host` from #80 now supports an
+  **opt-in source-pinned original BatteryStatus factory** compiled into
+  the same Host *source entrypoint* when genuine Cyclone IDL TypeSupport
+  is supplied in a separately authenticated build. Default installed
+  vendor-free Host still refuses `--native-binding`.
+- Executable binding record pins official Battery Report/Cell Type names,
+  Key fields, narrow EO TOPIC-ordered minimum, IDL ZIP SHA and reviewed
+  ICD source digest while explicitly marking full QoS **NOT VERIFIED**.
+- The original Reader/Bridge, host-local Consumer ABI v2, native instance
+  Key tracking, List checkpoint handling and actual keyed Dispose are
+  reused; a second service / generic original-source factory generation
+  remains **not complete**. A compiled native variant is not the same
+  binary as the regular SDK Host.
+- E2E: independent original DDS publisher and source-gated common Host
+  plus independently compiled business DLL/SO, normal/bad checkpoint,
+  exact Report+Cell disposals. This must pass *separately* from the
+  synthetic SDK/Windows, Fast DDS and Protocol Engine regressions.
+- The remaining MVP hard blocker is a **generic, source-reviewed,
+  executable ServiceBinding and native endpoint-factory generator** that
+  eliminates even this single service-specific native source adapter.
+  Do not merge or relabel full original per-Component QoS as verified.

@@ -1094,3 +1094,36 @@ evidence only. **Latest code HEAD needs fresh CI before merge.**
 - **Fresh exact-head CI remains required**; do not carry earlier 53/53
   Host-only code revision success forward to the codegen update. Official
   TypeSupport/Key/QoS and generic original-source factories remain blocked.
+
+
+## 2026-11-08 — Opt-in source-pinned native Battery binding in common Host (Draft #81)
+
+- Dependency: #77 → #78 → #79 → #80 → **#81**. All remain Draft and
+  unmerged; `main` unchanged.
+- Reused the *same* `sdk/tools/umaa_component_host.cpp` entrypoint for
+  an opt-in original-source BatteryStatus factory. The normal SDK binary
+  explicitly rejects `--native-binding`; the optional factory links
+  genuine Cyclone original Report/Cell TypeSupport only after a private
+  original AUVSI IDL archive passes an exact SHA256 CMake gate.
+- Introduced one explicit native source binding record: original service,
+  Report and Cell Element native type names, source/list keys, original
+  IDL/ICD digests, host-only business ABI schema, narrow TOPIC-ordered
+  Presentation minimum, `complete_native_qos_verified=false`. No
+  automatic promotion of the 53-Service reviewed Topic catalog.
+- Reused the already tested `OriginalBatteryStatusReader` and
+  `BatteryStatusComponentBridge`. Retained existing separate Battery
+  Host as a regression oracle. New real-wire good and poisoned-list
+  oracles require exactly **2/2** or **1/1** business accepted/disposed
+  sources, both with **2 Report / 4 Cell actual DDS Dispose** events.
+  Inspect exact-head job logs; no claim of vendor parity or conformance.
+- Added fake-archive configure denial and malformed native binding/Source
+  SHA negative tests; default SDK Host refuses compiled-out native binding.
+- **Verification:** The initial original-source PR run with valid workflow
+  YAML passed both native good/poisoned E2E tests against a real original
+  TypeSupport publisher. Full final-HEAD Linux/Windows SDK, Clang,
+  Cyclone/Fast and forged-source denial checks must be inspected before
+  declaring this revision complete.
+- Still blocked: source-gated dynamic factory registration for a second
+  official service, complete original QoS and mixed-vendor real network.
+  A separate native compiled variant is not yet the single shipped
+  vendor-neutral binary. No merge, certification or deployment.

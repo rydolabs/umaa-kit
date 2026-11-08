@@ -72,6 +72,17 @@ def check():
         )
         if result.returncode == 0:
             raise AssertionError("Host accepted invalid test duration")
+        # Standard SDK binary has no official generated TypeSupport, and
+        # must refuse native factory selection even with plausible source ID.
+        denied_native = subprocess.run(
+            [host, "--native-binding",
+             "UMAA::EO::BatteryStatus/cyclone/original-6.0-host-preview-v1",
+             "--module", component],
+            capture_output=True, text=True, timeout=5,
+        )
+        if denied_native.returncode == 0 or (
+                "native source binding not compiled" not in denied_native.stderr):
+            raise AssertionError("default SDK Host exposed unauthorized native factory")
     print("PASS process Host starts/runs/stops ABI-v2 Report Component "
           "with DDS backend and rejects unapproved source")
 

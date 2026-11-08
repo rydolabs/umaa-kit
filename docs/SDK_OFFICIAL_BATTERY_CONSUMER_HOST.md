@@ -90,3 +90,69 @@ The Reader's RELIABLE / KEEP_LAST(16) policies are explicit demo choices;
 full per-Component mandatory QoS, arbitrary Service binding and
 cross-vendor production behavior remain unverified. This executable
 does not supersede the synthetic-only generic umaa_component_host.
+
+
+## Opt-in original-source binding in the common SDK Host entrypoint (PR #81)
+
+The existing generic `sdk/tools/umaa_component_host.cpp` source now
+also exposes an **explicitly compiled-in**, source-pinned original Battery
+Consumer factory, without using the demo DDS plugin as a surrogate for
+native UMAA TypeSupport. The ordinary installed `umaa_component_host`
+does **not** enable this factory and rejects `--native-binding` before
+module or DDS access.
+
+### Authenticate and compile the optional Native variant
+
+Use the public original AUVSI 6.0 IDL ZIP **only in a private build or
+ephemeral CI runner**, verify its SHA-256 equals
+`15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08`,
+and generate the matching native Cyclone TypeSupport with
+`tools/official_idl_compile.py`. See the
+`official-battery-multicell-native-wire` workflow for the executable
+download, SHA verification, extraction, generation, CMake and CTest steps.
+
+~~~sh
+cmake -S tests/integration/cyclone -B /tmp/official-native-host \
+  -DUMAA_OFFICIAL_GENERATED_ROOT=/private/generated-original-cyclone \
+  -DUMAA_OFFICIAL_IDL_ARCHIVE=/private/verified-umaa6-original.zip
+cmake --build /tmp/official-native-host --target umaa_component_host_source_pinned
+
+/tmp/official-native-host/umaa_component_host_source_pinned \
+  --native-binding UMAA::EO::BatteryStatus/cyclone/original-6.0-host-preview-v1 \
+  --module /path/to/verified-business-component.so \
+  --source-idl-sha256 15e71e24df4663e8b4891c461f0e37823bce5087f0b5d5a52667f3c25cb56d08 \
+  --source-icd-sha256 47e88ecec73e37562ad04f5cf1ee5aef993828f6dc8440d453 \
+  --until-report-disposes 2 --until-element-disposes 4 --timeout-ms 18000
+~~~
+
+The archive is checked by CMake itself before exposing the native
+target; a corrupt or wrong archive SHA **fails configure**. CI also tests
+the forged-archive negative branch. The caller must supply TypeSupport
+*generated from that verified source*; merely pointing at a correctly
+hashed ZIP beside unrelated generated files is not a complete build
+provenance attestation. The ICD SHA here is a pinned record from the
+reviewed source mapping, **not** a runtime hash of the ICD PDF.
+
+The original Battery module is still a host-local ABI-v2 **Consumer**
+with service `UMAA::EO::BatteryStatus` and schema
+`umaa-kit:host-only-battery-stable-v1:NOT-UMAA-CDR`. Its business
+Handler sees a completed StableList value, not DDS CDR or an official
+wire-format ABI. Runtime validates this exact schema and Consumer actions
+before creating a Participant. Actual Report/Cell keyed Dispose, list
+cleanup and business callback errors must agree before success.
+
+The separate original native publisher → optional common Host →
+independent business DLL/SO test requires normal delivery
+**accepted/disposed 2/2** and **Report/Cell Dispose 2/4**; a poisoned
+second list is isolated while genuine DDS Dispose counts stay **2/4**.
+Neither branch invents a Dispose for an intermediate invalid update.
+
+**Scope remains deliberately narrow:** a single original Battery
+Cyclone Reader factory exists only in the opt-in build. It reuses the
+previously tested `OriginalBatteryStatusReader` and
+`BatteryStatusComponentBridge` and the same SDK Host main, but is
+**not** arbitrary vendor/plugin switching, a universal dynamic official
+ServiceBinding factory, native GROUP coherence, complete mandatory
+QoS, or UMAA conformance. The prior dedicated Battery Host is retained
+only as an independent regression oracle; no production deployment or
+automatic PR merge was performed.

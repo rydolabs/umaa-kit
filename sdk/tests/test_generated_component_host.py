@@ -90,8 +90,56 @@ def main():
                 "UMAA_HOST_STOPPED" not in succeeded.stdout):
             raise AssertionError("Host did not run generated Component: "
                                  + succeeded.stdout)
-    print("PASS generated CMake business DLL/SO -> executable Host process "
-          "with only read() edited; mock DDS boundary")
+
+        # A second, independently generated Consumer module uses the SAME
+        # public CLI and requires only business Handler edits. Host config
+        # is generated from exact roles: no user-written Topic/Schema/QoS.
+        consumer_project = root / "consumer"
+        cli.new("sinkgenerated", consumer_project)
+        cli.add(consumer_project, "Demo::EO::BatteryStatus", "consumer")
+        cli.generate(consumer_project)
+        cli.run_cmake(consumer_project, prefix)
+        sink_module = locate_module(consumer_project, "sinkgenerated")
+        paired_config = root / "paired-host.yml"
+        cli.generate_host_config(
+            project, backend, module, paired_config, 92, "source-1", 20,
+            consumer_project, sink_module)
+
+        # Default generated Consumer rejects business updates by design.
+        rejected_sink = subprocess.run(
+            [str(host), "--config", str(paired_config), "--duration-ms", "180"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if rejected_sink.returncode == 0 or "UMAA_HOST_ERROR:" not in rejected_sink.stderr:
+            raise AssertionError("default Consumer accepted Report unexpectedly: "
+                                 + repr(rejected_sink.stdout))
+
+        sink_handler = consumer_project / "src" / "handlers" / "battery_status_consumer.hpp"
+        default = sink_handler.read_text(encoding="utf-8")
+        denial = "return umaa::Result::Rejected;"
+        if default.count(denial) != 2:
+            raise AssertionError("generated Consumer Handler contract changed")
+        sink_handler.write_text(
+            default.replace(denial, "return umaa::Result::Completed;"),
+            encoding="utf-8",
+        )
+        cli.generate(consumer_project)
+        if sink_handler.read_text(encoding="utf-8").count(
+                "return umaa::Result::Completed;") != 2:
+            raise AssertionError("regeneration overwrote Consumer business logic")
+        cli.run_cmake(consumer_project, prefix)
+        cli.run_test(consumer_project)
+        completed = run([host, "--config", paired_config, "--duration-ms", "180"])
+        import re
+        delivery = re.search(
+            r"UMAA_HOST_STOPPED reports=(\\d+) disposes=(\\d+) active=(\\d+)",
+            completed.stdout)
+        if not delivery or int(delivery[1]) < 1 or tuple(
+                map(int, delivery.groups()[1:])) != (1, 0):
+            raise AssertionError("generated Provider→Consumer Report/Dispose failed: "
+                                 + completed.stdout)
+    print("PASS generated Provider+Consumer business DLL/SO → single Host "
+          "with actual Report/Dispose; no DDS code in user Handlers")
 
 
 if __name__ == "__main__":

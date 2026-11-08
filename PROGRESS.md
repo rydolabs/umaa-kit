@@ -1046,3 +1046,29 @@ evidence only. **Latest code HEAD needs fresh CI before merge.**
   routing for multiple providers of the same service, full conformance
   or production/security certification. Draft #79 is stacked on #78 and
   remains unmerged pending integration review.
+
+## 2026-11-08 — Shared Host development Report Consumer dispatch (Draft PR #80)
+
+- Dependency: #77 → #78 → #79 → **#80**, all Draft and unmerged.
+  `main` is unchanged. No new vendor, Component ABI or C protocol layers.
+- Replaced the inline Host hard-coded Report binding check with an explicit
+  `HostReportBinding` admission record. Its only executable entry remains
+  `Demo::EO::BatteryStatus`; no official 53-Service catalog entry is
+  accidentally admitted. Original source-approved ServiceBinding generation
+  and official native factory registration remain **BLOCKED / NOT DONE**.
+- Strict `report_consumers` parser and role/schema checks allow separate
+  Report Provider/Consumer DLLs in the same Host. The shared DDS Domain
+  delivers per-sample callbacks via `poll(1)`; Source-key tokens only
+  retire upon genuine Dispose. Business rejection, unknown Dispose,
+  UNREGISTER, source-budget exhaustion, drain overflow or active-source
+  shutdown refuse success. Provider-only Host CLI remains compatible.
+- New `umaa_host_report_binding_dispatch_e2e` tests actual process
+  orchestration, callback and Dispose counts, missing/wrong module roles,
+  invalid schema/QoS and business-level rejection using mock DDS.
+- **Validation pending for this documentation HEAD.** Check Linux/Windows
+  full SDK CTests (53 including new E2E), Clang/UBSan, standalone
+  Cyclone/Fast plugins, unchanged-binary parity, and selected Flow/
+  Collection/Specialization workflows at the exact PR commit.
+- Next: replace the synthetic admission record with source-reviewed,
+  executable vendor TypeSupport/Key/QoS records and one original-source
+  ServiceBinding-based Host endpoint. Do not claim this is complete.
